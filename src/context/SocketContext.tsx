@@ -2,80 +2,39 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 
-interface SocketContextValue {
-	socket: Socket | null;
-	connected: boolean;
-	reconnecting: boolean;
-}
-
-const SocketContext = createContext<SocketContextValue | undefined>(undefined);
+const SocketContext = createContext<Socket | null>(null);
 
 interface SocketProviderProps {
+	serverUrl?: string;
+	path?: string;
 	children: ReactNode;
 }
 
-export const SocketProvider = ({ children }: SocketProviderProps) => {
+export const SocketProvider = ({ serverUrl, path = "/", children }: SocketProviderProps) => {
 	const [socket, setSocket] = useState<Socket | null>(null);
-	const [connected, setConnected] = useState(false);
-	const [reconnecting, setReconnecting] = useState(false);
 
 	useEffect(() => {
-		const newSocket = io(undefined, {
-			path: "/api/socket",
-			reconnectionAttempts: 5, // Try reconnecting up to 5 times
-			reconnectionDelay: 1000, // Start with 1 second delay
-			reconnectionDelayMax: 5000, // Max delay between reconnect attempts
-		});
+		const url = serverUrl || window.location.origin;
+		const socketIo = io(url, { path });
 
-		setSocket(newSocket);
+		setSocket(socketIo);
 
-		newSocket.on("connect", () => {
-			console.log("Socket connected:", newSocket.id);
-			setConnected(true);
-			setReconnecting(false);
-		});
-
-		newSocket.on("disconnect", (reason) => {
-			console.log("Socket disconnected:", reason);
-			setConnected(false);
-			// If disconnect is unexpected (not manual), start reconnect process
-			if (reason !== "io client disconnect") {
-				setReconnecting(true);
-			}
-		});
-
-		newSocket.on("reconnect_attempt", (attempt) => {
-			console.log(`Reconnection attempt #${attempt}`);
-			setReconnecting(true);
-		});
-
-		newSocket.on("reconnect_failed", () => {
-			console.log("Reconnection failed");
-			setReconnecting(false);
-		});
-
-		newSocket.on("reconnect", (attempt) => {
-			console.log(`Reconnected after ${attempt} attempts`);
-			setConnected(true);
-			setReconnecting(false);
-		});
+		socketIo.on("connect", () => console.log("Socket connected", socketIo.id));
+		socketIo.on("disconnect", (reason) => console.log("Socket disconnected", reason));
 
 		return () => {
-			newSocket.disconnect();
+			socketIo.disconnect();
+			setSocket(null);
 		};
-	}, []);
+	}, [serverUrl, path]);
 
-	return (
-		<SocketContext.Provider value={{ socket, connected, reconnecting }}>
-			{children}
-		</SocketContext.Provider>
-	);
+	return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>;
 };
 
-export const useSocketContext = (): SocketContextValue => {
-	const context = useContext(SocketContext);
-	if (!context) {
-		throw new Error("useSocketContext must be used within a SocketProvider");
+export const useSocketContext = (): Socket => {
+	const socket = useContext(SocketContext);
+	if (!socket) {
+		throw new Error("useSocket must be used within a SocketProvider");
 	}
-	return context;
+	return socket;
 };
