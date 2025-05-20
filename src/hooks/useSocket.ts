@@ -1,23 +1,39 @@
 //src/hooks/useSocket.ts
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-export function useSocket() {
-	const socketRef = useRef<Socket | null>(null);
+type UseSocketOptions = {
+	serverUrl?: string; // Optional: explicitly specify your server URL & port
+	path?: string; // Optional: socket.io path, default "/"
+};
+
+export function useSocket({ serverUrl, path = "/" }: UseSocketOptions = {}) {
+	const [socket, setSocket] = useState<Socket | null>(null);
 
 	useEffect(() => {
-		socketRef.current = io(undefined, {
-			path: "/api/socket",
+		// Default to current origin if no serverUrl given
+		const url = serverUrl || window.location.origin;
+
+		// Create socket connection
+		const socketIo = io(url, { path });
+
+		socketIo.on("connect", () => {
+			console.log("Socket connected:", socketIo.id);
 		});
 
-		socketRef.current.on("connect", () => {
-			console.log("Connected to server");
+		socketIo.on("disconnect", (reason) => {
+			console.log("Socket disconnected:", reason);
 		});
 
+		// Set socket instance into state so components can use it reactively
+		setSocket(socketIo);
+
+		// Cleanup on unmount: disconnect and clear socket state
 		return () => {
-			socketRef.current?.disconnect();
+			socketIo.disconnect();
+			setSocket(null);
 		};
-	}, []);
+	}, [serverUrl, path]);
 
-	return socketRef.current;
+	return socket;
 }
