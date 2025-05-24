@@ -1,34 +1,63 @@
-// src/context/GameContext.tsx
-import { Player } from "@/types/game";
-import React, { createContext, useContext, useState, ReactNode } from "react";
+// src/contexts/GameContext.tsx
+"use client";
 
-interface GameContextValue {
-	roomId: string | null;
-	player: Player | null;
+import { createContext, useContext, useReducer, ReactNode } from "react";
+
+export type Player = { name: string };
+export type Song = { id: number; url: string; submitter: string };
+
+export type RoomState = {
+	code: string;
+	theme: string;
+	backgroundUrl?: string;
 	players: Player[];
-	setPlayer: (player: Player | null) => void;
-	setPlayers: React.Dispatch<React.SetStateAction<Player[]>>; // <--- Change here
-	setRoomId: (roomId: string | null) => void;
+	songs: Song[];
+};
+
+type State = { room: RoomState | null };
+
+type Action =
+	| { type: "SET_ROOM"; room: RoomState }
+	| { type: "ADD_PLAYER"; player: Player }
+	| { type: "SET_PLAYERS"; players: Player[] }
+	| { type: "ADD_SONG"; song: Song }
+	| { type: "SET_SONGS"; songs: Song[] };
+
+const initialState: State = { room: null };
+
+function reducer(state: State, action: Action): State {
+	switch (action.type) {
+		case "SET_ROOM":
+			return { room: action.room };
+		case "ADD_PLAYER":
+			return state.room
+				? { room: { ...state.room, players: [...state.room.players, action.player] } }
+				: state;
+		case "SET_PLAYERS":
+			return state.room ? { room: { ...state.room, players: action.players } } : state;
+		case "ADD_SONG":
+			return state.room
+				? { room: { ...state.room, songs: [...state.room.songs, action.song] } }
+				: state;
+		case "SET_SONGS":
+			return state.room ? { room: { ...state.room, songs: action.songs } } : state;
+		default:
+			return state;
+	}
 }
 
-const GameContext = createContext<GameContextValue | undefined>(undefined);
+const GameContext = createContext<{
+	state: State;
+	dispatch: React.Dispatch<Action>;
+} | null>(null);
 
-export const GameProvider = ({ children }: { children: ReactNode }) => {
-	const [roomId, setRoomId] = useState<string | null>(null);
-	const [player, setPlayer] = useState<Player | null>(null);
-	const [players, setPlayers] = useState<Player[]>([]);
+export function GameProvider({ children }: { children: ReactNode }) {
+	const [state, dispatch] = useReducer(reducer, initialState);
+	return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
+}
 
-	return (
-		<GameContext.Provider value={{ roomId, player, setPlayer, setRoomId, players, setPlayers }}>
-			{children}
-		</GameContext.Provider>
-	);
-};
-
-export const useGameContext = () => {
-	const context = useContext(GameContext);
-	if (!context) {
-		throw new Error("useGameContext must be used within a GameProvider");
-	}
-	return context;
-};
+export function useGame() {
+	const ctx = useContext(GameContext);
+	if (!ctx) throw new Error("useGame must be used within GameProvider");
+	return ctx;
+}

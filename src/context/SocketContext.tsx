@@ -1,40 +1,27 @@
-// src/context/SocketContext.tsx
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+// src/contexts/SocketContext.tsx
+"use client";
+
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 
 const SocketContext = createContext<Socket | null>(null);
 
-interface SocketProviderProps {
-	serverUrl?: string;
-	path?: string;
-	children: ReactNode;
-}
-
-export const SocketProvider = ({ serverUrl, path = "/", children }: SocketProviderProps) => {
+export function SocketProvider({ children }: { children: ReactNode }) {
 	const [socket, setSocket] = useState<Socket | null>(null);
 
 	useEffect(() => {
-		const url = serverUrl || window.location.origin;
-		const socketIo = io(url, { path });
-
-		setSocket(socketIo);
-
-		socketIo.on("connect", () => console.log("Socket connected", socketIo.id));
-		socketIo.on("disconnect", (reason) => console.log("Socket disconnected", reason));
-
+		const s = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000");
+		setSocket(s);
 		return () => {
-			socketIo.disconnect();
-			setSocket(null);
+			s.disconnect();
 		};
-	}, [serverUrl, path]);
+	}, []);
 
 	return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>;
-};
+}
 
-export const useSocketContext = (): Socket => {
+export function useSocket() {
 	const socket = useContext(SocketContext);
-	if (!socket) {
-		throw new Error("useSocket must be used within a SocketProvider");
-	}
+	if (!socket) throw new Error("useSocket must be used within SocketProvider");
 	return socket;
-};
+}
