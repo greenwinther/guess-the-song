@@ -1,8 +1,10 @@
-//src/hooks/useGameSocket.ts
-import { useEffect } from "react";
+// src/hooks/useGameSocket.ts
+"use client";
+
+import { useEffect, useCallback } from "react";
 import { HostCreateRoomPayload } from "@/types/socket";
 import { Player, Room } from "@/types/game";
-import { useSocketContext } from "@/context/SocketContext";
+import { useSocket } from "@/context/SocketContext";
 
 type Handlers = {
 	onRoomCreated?: (room: Room) => void;
@@ -16,29 +18,43 @@ type Handlers = {
 };
 
 export const useGameSocket = (handlers: Handlers = {}) => {
-	const socket = useSocketContext();
+	const socket = useSocket();
 
-	// Emit functions
-	const createRoom = (payload: HostCreateRoomPayload) => {
-		socket.emit("host:createRoom", payload);
-	};
+	// Emit functions with socket null guard and callbacks
+	const createRoom = useCallback(
+		(payload: HostCreateRoomPayload, cb?: (success: boolean) => void) => {
+			if (!socket) {
+				console.error("Socket is not connected.");
+				cb?.(false);
+				return;
+			}
+			socket.emit("host:createRoom", payload, (ack: boolean) => {
+				cb?.(ack);
+			});
+		},
+		[socket]
+	);
 
-	const rejoinRoom = (roomId: string) => {
-		socket.emit("host:rejoinRoom", { roomId });
-	};
+	const rejoinRoom = useCallback(
+		(roomId: string) => {
+			if (!socket) return;
+			socket.emit("host:rejoinRoom", { roomId });
+		},
+		[socket]
+	);
 
-	// Optional: You could add more emits like joinRoom, submitGuess, etc.
-
-	// Listen to server events
+	// Listen to server events with proper cleanup of exact handlers
 	useEffect(() => {
 		if (!socket) return;
 
 		if (handlers.onRoomCreated) {
-			socket.on("host:roomCreated", handlers.onRoomCreated);
+			socket.on("host:roomCreated", (room: Room) => handlers.onRoomCreated!(room));
 		}
 
 		if (handlers.onRejoinSuccess) {
-			socket.on("host:rejoinSuccess", ({ room }) => handlers.onRejoinSuccess!(room));
+			socket.on("host:rejoinSuccess", (payload: { room: Room }) =>
+				handlers.onRejoinSuccess!(payload.room)
+			);
 		}
 
 		if (handlers.onError) {
@@ -65,15 +81,32 @@ export const useGameSocket = (handlers: Handlers = {}) => {
 			socket.on("player:left", handlers.onPlayerLeft);
 		}
 
+		// Cleanup listeners (only those attached)
 		return () => {
-			socket.off("host:roomCreated");
-			socket.off("host:rejoinSuccess");
-			socket.off("error");
-			socket.off("room:closed");
-			socket.off("host:disconnected");
-			socket.off("host:reconnected");
-			socket.off("player:joined");
-			socket.off("player:left");
+			if (handlers.onRoomCreated) {
+				socket.off("host:roomCreated", handlers.onRoomCreated);
+			}
+			if (handlers.onRejoinSuccess) {
+				socket.off("host:rejoinSuccess", handlers.onRejoinSuccess);
+			}
+			if (handlers.onError) {
+				socket.off("error", handlers.onError);
+			}
+			if (handlers.onRoomClosed) {
+				socket.off("room:closed", handlers.onRoomClosed);
+			}
+			if (handlers.onHostDisconnected) {
+				socket.off("host:disconnected", handlers.onHostDisconnected);
+			}
+			if (handlers.onHostReconnected) {
+				socket.off("host:reconnected", handlers.onHostReconnected);
+			}
+			if (handlers.onPlayerJoined) {
+				socket.off("player:joined", handlers.onPlayerJoined);
+			}
+			if (handlers.onPlayerLeft) {
+				socket.off("player:left", handlers.onPlayerLeft);
+			}
 		};
 	}, [socket, handlers]);
 
