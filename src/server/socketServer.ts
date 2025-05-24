@@ -1,98 +1,73 @@
-//src/server/socketServer.ts
-import { Room, Song, GamePhase } from "@/types/game";
-import { HostCreateRoomPayload } from "@/types/socket";
-import { createServer } from "http";
-import { Server, Socket } from "socket.io";
+import http from "http";
+import { Server } from "socket.io";
+import { createRoom, getRoom, addSong, joinRoom } from "@/lib/rooms";
 
-const rooms: Map<string, Room> = new Map();
-const hostDisconnectTimeouts = new Map<string, NodeJS.Timeout>();
-
-const httpServer = createServer();
-const io = new Server(httpServer, {
-	path: "/api/socket", // Wrong path I
+const httpServer = http.createServer((req, res) => {
+	if (req.url === "/" && req.method === "GET") {
+		res.writeHead(200, { "Content-Type": "text/plain" });
+		res.end("Socket server is running");
+	} else {
+		res.writeHead(404);
+		res.end();
+	}
 });
 
-io.on("connection", (socket: Socket) => {
-	console.log(`Socket connected: ${socket.id}`);
+const io = new Server(httpServer, {
+	cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
+});
 
-	socket.on("host:createRoom", (payload: HostCreateRoomPayload) => {
-		const { roomId, songs } = payload;
+io.on("connection", (socket) => {
+	console.log("↔️ socket connected", socket.id);
 
-		if (rooms.has(roomId)) {
-			socket.emit("error", `Room ${roomId} already exists`);
-			return;
+	socket.on("createRoom", async (data, callback) => {
+		try {
+			const newRoom = await createRoom(data.theme, data.backgroundUrl || null);
+			socket.join(newRoom.code);
+			callback({
+				code: newRoom.code,
+				theme: newRoom.theme,
+				backgroundUrl: newRoom.backgroundUrl || undefined,
+			});
+			const fullRoom = await getRoom(newRoom.code);
+			io.to(newRoom.code).emit("roomData", fullRoom);
+		} catch (err: any) {
+			console.error(err);
+			socket.emit("error", err.message);
 		}
-
-		const newRoom: Room = {
-			roomId,
-			hostId: socket.id,
-			songs,
-			players: [],
-			currentPhase: "lobby",
-			currentSongIndex: 0,
-			guesses: {},
-			scores: {},
-		};
-
-		rooms.set(roomId, newRoom);
-		socket.join(roomId);
-
-		console.log(`Host created room ${roomId} with socket ${socket.id}`);
 	});
 
-	socket.on("startGame", ({ roomId }) => {
-		io.to(roomId).emit("gameStarted");
+	socket.on("joinRoom", async (data, callback) => {
+		try {
+			await joinRoom(data.code, data.name);
+			socket.join(data.code);
+			const fullRoom = await getRoom(data.code);
+			io.to(data.code).emit("roomData", fullRoom);
+			callback(true);
+		} catch (err) {
+			console.error(err);
+			callback(false);
+		}
 	});
 
-	socket.on("host:rejoinRoom", ({ roomId }: { roomId: string }) => {
-		const room = rooms.get(roomId);
-		if (!room) {
-			socket.emit("error", "Room not found");
-			return;
+	socket.on("addSong", async (data) => {
+		try {
+			await addSong(data.code, { url: data.url, submitter: data.submitter });
+			io.to(data.code).emit("songAdded", {
+				url: data.url,
+				submitter: data.submitter,
+			});
+		} catch (err: any) {
+			console.error(err);
+			socket.emit("error", err.message);
 		}
-
-		if (hostDisconnectTimeouts.has(roomId)) {
-			clearTimeout(hostDisconnectTimeouts.get(roomId)!);
-			hostDisconnectTimeouts.delete(roomId);
-			console.log(`Host reconnected before timeout, cleared timer for room ${roomId}`);
-		}
-
-		room.hostId = socket.id;
-		socket.join(roomId);
-		socket.emit("host:rejoinSuccess", { room });
-		io.to(roomId).emit("host:reconnected");
-		console.log(`Host rejoined room ${roomId} with socket ${socket.id}`);
 	});
 
 	socket.on("disconnect", () => {
-		for (const [roomId, room] of rooms.entries()) {
-			if (room.hostId === socket.id) {
-				console.log(`Host disconnected from room ${roomId}`);
-				io.to(roomId).emit("host:disconnected");
-
-				const timeout = setTimeout(() => {
-					console.log(`Host did not reconnect. Closing room ${roomId}`);
-
-					io.to(roomId).emit("room:closed");
-
-					rooms.delete(roomId);
-					hostDisconnectTimeouts.delete(roomId);
-
-					const clients = io.sockets.adapter.rooms.get(roomId);
-					if (clients) {
-						for (const clientId of clients) {
-							io.sockets.sockets.get(clientId)?.leave(roomId);
-						}
-					}
-				}, 2 * 60 * 1000);
-
-				hostDisconnectTimeouts.set(roomId, timeout);
-			}
-		}
+		console.log("↔️ socket disconnected", socket.id);
 	});
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || "4000", 10);
 httpServer.listen(PORT, () => {
-	console.log(`Socket.io server running on port ${PORT}`);
+	console.log(`🚀 Socket.IO server listening on port ${PORT}`);
 });
