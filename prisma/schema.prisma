@@ -1,0 +1,32 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Room {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique
+  theme         String
+  backgroundUrl String?
+  songs         Song[]
+  players       Player[]
+}
+
+model Song {
+  id        Int    @id @default(autoincrement())
+  url       String
+  submitter String
+  roomId    Int
+  room      Room   @relation(fields: [roomId], references: [id])
+}
+
+model Player {
+  id      Int    @id @default(autoincrement())
+  name    String
+  room    Room   @relation(fields: [roomId], references: [id])
+  roomId  Int
+}
