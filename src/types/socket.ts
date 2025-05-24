@@ -1,8 +1,8 @@
 //src/types/socket.ts
-import { Player, Song } from "./game";
+import { Player, Song, Room } from "./game";
 
 export interface HostCreateRoomPayload {
-	roomId: string;
+	code: string;
 	songs: Song[];
 }
 
@@ -16,6 +16,6 @@ export interface HostRejoinPayload {
 }
 
 export type JoinSuccessPayload = {
-	roomId: string;
+	room: Room;
 	player: Player;
 };

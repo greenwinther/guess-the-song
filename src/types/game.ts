@@ -14,6 +14,7 @@ export interface Song {
 
 export interface Room {
 	roomId: string;
+	code: string;
 	hostId: string;
 	songs: Song[];
 	players: Player[];
@@ -27,10 +28,5 @@ export interface PlayerGuess {
 	songIndex: number;
 	guessedSubmitterId: string;
 }
-
-export type SongEntry = {
-	title: string;
-	submitterId: string;
-};
 
 export type GamePhase = "lobby" | "guessing" | "reveal" | "scoreboard";
