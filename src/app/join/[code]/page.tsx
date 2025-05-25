@@ -1,7 +1,7 @@
 // src/app/join/[code]/page.tsx
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -10,7 +10,6 @@ import { Room } from "@/types/room";
 
 export default function JoinLobbyPage() {
 	const { code } = useParams();
-	const router = useRouter();
 	const [room, setRoom] = useState<Room | null>(null);
 
 	useEffect(() => {
@@ -31,11 +30,8 @@ export default function JoinLobbyPage() {
 				};
 				setRoom(mapped);
 			})
-			.catch((err) => {
-				toast.error(err.message);
-				router.push("/"); // back to home if room invalid
-			});
-	}, [code, router]);
+			.catch((err) => toast.error(err.message));
+	}, [code]);
 
 	if (!room) return <p>Loading lobby…</p>;
 

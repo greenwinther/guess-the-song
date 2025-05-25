@@ -20,7 +20,6 @@ export default function HostLobbyPage() {
 				return res.json();
 			})
 			.then((raw: Room) => {
-				// Map players & songs to include roomId
 				const mapped: Room = {
 					id: raw.id,
 					code: raw.code,
