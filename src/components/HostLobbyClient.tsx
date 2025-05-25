@@ -4,8 +4,7 @@
 import { useEffect, useRef } from "react";
 import SongSubmitForm from "./SongSubmitForm";
 import { useSocket } from "@/contexts/SocketContext";
-import { RoomState, Song, useGame } from "@/contexts/GameContext";
-import { addSong } from "@/lib/rooms";
+import { Player, RoomState, Song, useGame } from "@/contexts/GameContext";
 
 export default function HostLobbyClient({ initialRoom }: { initialRoom: RoomState }) {
 	const socket = useSocket();
@@ -26,11 +25,9 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: RoomStat
 			hasJoined.current = true;
 		}
 
-		// subscribe to roomData only…
-		socket.on("roomData", (fullRoom: RoomState) => {
-			console.log("🎶 [client] roomData received:", fullRoom.songs);
-			dispatch({ type: "SET_PLAYERS", players: fullRoom.players });
-			dispatch({ type: "SET_SONGS", songs: fullRoom.songs });
+		socket.on("playerJoined", (player: Player) => {
+			console.log("👤 [client] playerJoined received:", player);
+			dispatch({ type: "ADD_PLAYER", player });
 		});
 
 		socket.on("songAdded", (song: Song) => {
@@ -39,7 +36,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: RoomStat
 		});
 
 		return () => {
-			socket.off("roomData");
+			socket.off("playerJoined");
 			socket.off("songAdded");
 		};
 	}, [socket, dispatch, initialRoom]);
@@ -56,8 +53,8 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: RoomStat
 			<section className="mt-6">
 				<h2 className="text-2xl">Players</h2>
 				<ul className="list-disc pl-6">
-					{state.room.players.map((p) => (
-						<li key={p.id}>{p.name}</li>
+					{state.room.players.map((p, idx) => (
+						<li key={`${p.id}-${idx}`}>{p.name}</li>
 					))}
 				</ul>
 			</section>
@@ -65,8 +62,8 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: RoomStat
 			<section className="mt-6">
 				<h2 className="text-2xl">Songs</h2>
 				<ul className="list-decimal pl-6">
-					{state.room.songs.map((s) => (
-						<li key={s.id}>
+					{state.room.songs.map((s, idx) => (
+						<li key={`${s.id}-${idx}`}>
 							{s.url} <em>({s.submitter})</em>
 						</li>
 					))}
