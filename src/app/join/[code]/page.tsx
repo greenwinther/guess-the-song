@@ -1,35 +1,52 @@
-// src/app/join/[roomId]/page.tsx
+// src/app/join/[code]/page.tsx
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
-export default function JoinLobbyPage({ params }: { params: { roomId: string } }) {
-	const { roomId } = params;
-	const search = useSearchParams();
-	const name = search.get("name") || "";
+import type { RoomState } from "@/contexts/GameContext";
+import JoinLobbyClient from "@/components/JoinLobbyClient";
 
-	const [players, setPlayers] = useState<string[]>([]);
+type RawRoom = {
+	id: number;
+	code: string;
+	theme: string;
+	backgroundUrl: string | null;
+	players: { id: number; name: string }[];
+	songs: { id: number; url: string; submitter: string }[];
+};
+
+export default function JoinLobbyPage() {
+	const { code } = useParams();
+	const router = useRouter();
+	const [room, setRoom] = useState<RoomState | null>(null);
 
 	useEffect(() => {
-		// TODO: fetch initial player list or subscribe via socket
-		setPlayers([name]);
-	}, [name]);
+		if (!code) return;
+		fetch(`/api/rooms/${code}`)
+			.then((res) => {
+				if (!res.ok) throw new Error("Room not found");
+				return res.json();
+			})
+			.then((raw: RawRoom) => {
+				const mapped: RoomState = {
+					id: raw.id,
+					code: raw.code,
+					theme: raw.theme,
+					backgroundUrl: raw.backgroundUrl ?? undefined,
+					players: raw.players.map((p) => ({ ...p, roomId: raw.id })),
+					songs: raw.songs.map((s) => ({ ...s, roomId: raw.id })),
+				};
+				setRoom(mapped);
+			})
+			.catch((err) => {
+				toast.error(err.message);
+				router.push("/"); // back to home if room invalid
+			});
+	}, [code, router]);
 
-	return (
-		<main className="min-h-screen p-8 bg-gray-50">
-			<header className="mb-6 text-center">
-				<h1 className="text-3xl font-bold">Joining Lobby: {roomId}</h1>
-			</header>
+	if (!room) return <p>Loading lobby…</p>;
 
-			<section className="max-w-md mx-auto bg-white shadow rounded-lg p-6">
-				<h2 className="text-2xl mb-4">Players</h2>
-				<ul className="list-disc list-inside space-y-2">
-					{players.map((p, i) => (
-						<li key={i}>{p}</li>
-					))}
-				</ul>
-			</section>
-		</main>
-	);
+	return <JoinLobbyClient initialRoom={room} />;
 }
