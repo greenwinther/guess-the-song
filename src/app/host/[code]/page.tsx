@@ -5,21 +5,12 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-import type { RoomState } from "@/contexts/GameContext";
 import HostLobbyClient from "@/components/HostLobbyClient";
-
-type RawRoom = {
-	id: number;
-	code: string;
-	theme: string;
-	backgroundUrl: string | null;
-	players: { id: number; name: string }[];
-	songs: { id: number; url: string; submitter: string }[];
-};
+import { Room } from "@/types/room";
 
 export default function HostLobbyPage() {
 	const { code } = useParams();
-	const [room, setRoom] = useState<RoomState | null>(null);
+	const [room, setRoom] = useState<Room | null>(null);
 
 	useEffect(() => {
 		if (!code) return;
@@ -28,9 +19,9 @@ export default function HostLobbyPage() {
 				if (!res.ok) throw new Error("Room not found");
 				return res.json();
 			})
-			.then((raw: RawRoom) => {
+			.then((raw: Room) => {
 				// Map players & songs to include roomId
-				const mapped: RoomState = {
+				const mapped: Room = {
 					id: raw.id,
 					code: raw.code,
 					theme: raw.theme,

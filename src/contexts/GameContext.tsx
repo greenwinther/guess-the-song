@@ -1,22 +1,11 @@
 // src/contexts/GameContext.tsx
 "use client";
+import { Player, Room, Song } from "@/types/room";
 import { createContext, useContext, useReducer, ReactNode } from "react";
 
-export type Player = { id: number; name: string; roomId: number };
-export type Song = { id: number; url: string; submitter: string; roomId: number };
-
-export type RoomState = {
-	id: number;
-	code: string;
-	theme: string;
-	backgroundUrl?: string;
-	players: Player[];
-	songs: Song[];
-};
-
-type State = { room: RoomState | null };
+type State = { room: Room | null };
 type Action =
-	| { type: "SET_ROOM"; room: RoomState }
+	| { type: "SET_ROOM"; room: Room }
 	| { type: "ADD_PLAYER"; player: Player }
 	| { type: "SET_PLAYERS"; players: Player[] }
 	| { type: "ADD_SONG"; song: Song }

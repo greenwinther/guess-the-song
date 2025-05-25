@@ -1,8 +1,8 @@
 // src/components/SongSubmitForm.tsx
 "use client";
 
-import { Song } from "@/contexts/GameContext";
 import { useSocket } from "@/contexts/SocketContext";
+import { Song } from "@/types/room";
 import { useState } from "react";
 import toast from "react-hot-toast";
 

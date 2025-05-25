@@ -7,17 +7,11 @@ import Input from "./Input";
 import Button from "./Button";
 
 export interface JoinCardProps {
-	/** Player's display name */
 	name: string;
-	/** Handler for name input changes */
 	onNameChange: (value: string) => void;
-	/** Room code (6 characters) */
 	code: string;
-	/** Handler for room code input changes */
 	onRoomCodeChange: (value: string) => void;
-	/** Submit handler for joining the lobby */
 	onJoin: (e: FormEvent) => void;
-	/** Optional additional styles */
 	className?: string;
 }
 

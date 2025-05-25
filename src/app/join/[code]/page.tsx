@@ -5,22 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-import type { RoomState } from "@/contexts/GameContext";
 import JoinLobbyClient from "@/components/JoinLobbyClient";
-
-type RawRoom = {
-	id: number;
-	code: string;
-	theme: string;
-	backgroundUrl: string | null;
-	players: { id: number; name: string }[];
-	songs: { id: number; url: string; submitter: string }[];
-};
+import { Room } from "@/types/room";
 
 export default function JoinLobbyPage() {
 	const { code } = useParams();
 	const router = useRouter();
-	const [room, setRoom] = useState<RoomState | null>(null);
+	const [room, setRoom] = useState<Room | null>(null);
 
 	useEffect(() => {
 		if (!code) return;
@@ -29,8 +20,8 @@ export default function JoinLobbyPage() {
 				if (!res.ok) throw new Error("Room not found");
 				return res.json();
 			})
-			.then((raw: RawRoom) => {
-				const mapped: RoomState = {
+			.then((raw: Room) => {
+				const mapped: Room = {
 					id: raw.id,
 					code: raw.code,
 					theme: raw.theme,

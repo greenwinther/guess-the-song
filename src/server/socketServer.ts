@@ -1,7 +1,7 @@
 import http from "http";
 import { Server } from "socket.io";
 import { createRoom, getRoom, addSong, joinRoom } from "@/lib/rooms";
-import { Song } from "@/contexts/GameContext";
+import { Song } from "@/types/room";
 
 const httpServer = http.createServer((req, res) => {
 	if (req.url === "/" && req.method === "GET") {

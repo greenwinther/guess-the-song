@@ -4,9 +4,10 @@
 import { useEffect, useRef } from "react";
 import SongSubmitForm from "./SongSubmitForm";
 import { useSocket } from "@/contexts/SocketContext";
-import { Player, RoomState, Song, useGame } from "@/contexts/GameContext";
+import { useGame } from "@/contexts/GameContext";
+import { Player, Room, Song } from "@/types/room";
 
-export default function HostLobbyClient({ initialRoom }: { initialRoom: RoomState }) {
+export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
 	const hasJoined = useRef(false);

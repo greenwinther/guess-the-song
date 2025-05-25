@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { useGame, Player, RoomState, Song } from "@/contexts/GameContext";
+import { useGame } from "@/contexts/GameContext";
+import { Player, Room, Song } from "@/types/room";
 
-export default function JoinLobbyClient({ initialRoom }: { initialRoom: RoomState }) {
+export default function JoinLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
 	const [name, setName] = useState<string>("");
