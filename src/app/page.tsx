@@ -1,8 +1,8 @@
 // src/app/page.tsx
 "use client";
 
-import HostCard from "@/component/ui/HostCard";
-import JoinCard from "@/component/ui/JoinCard";
+import HostCard from "@/components/ui/HostCard";
+import JoinCard from "@/components/ui/JoinCard";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -62,7 +62,7 @@ export default function HomePage() {
 				<JoinCard
 					name={name}
 					onNameChange={setName}
-					roomCode={roomCode}
+					code={roomCode}
 					onRoomCodeChange={setRoomCode}
 					onJoin={handleJoin}
 				/>
