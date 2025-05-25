@@ -36,30 +36,31 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	socket.on("joinRoom", async (data, callback) => {
+	socket.on("joinRoom", async (data: { code: string; name: string }, callback) => {
 		try {
 			await joinRoom(data.code, data.name);
 			socket.join(data.code);
+
+			// 1) Tell everyone “hey, someone new joined”
+			io.to(data.code).emit("playerJoined", data.name);
+
+			// 2) Fetch the fresh room (with all players + songs) and broadcast it
 			const fullRoom = await getRoom(data.code);
 			io.to(data.code).emit("roomData", fullRoom);
+
 			callback(true);
-		} catch (err) {
-			console.error(err);
+		} catch (err: any) {
+			console.error("joinRoom error:", err);
 			callback(false);
 		}
 	});
 
 	socket.on("addSong", async (data) => {
-		try {
-			await addSong(data.code, { url: data.url, submitter: data.submitter });
-			io.to(data.code).emit("songAdded", {
-				url: data.url,
-				submitter: data.submitter,
-			});
-		} catch (err: any) {
-			console.error(err);
-			socket.emit("error", err.message);
-		}
+		console.log("🔔 [server] addSong received:", data);
+		await addSong(data.code, { url: data.url, submitter: data.submitter });
+		const fullRoom = await getRoom(data.code);
+		console.log("🔔 [server] broadcasting roomData with songs:", fullRoom.songs);
+		io.to(data.code).emit("roomData", fullRoom);
 	});
 
 	socket.on("disconnect", () => {
