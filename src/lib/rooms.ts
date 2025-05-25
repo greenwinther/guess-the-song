@@ -13,8 +13,10 @@ export async function createRoom(theme: string, backgroundUrl: string | null) {
 }
 
 export async function joinRoom(code: string, name: string) {
-	const room = await prisma.room.findUnique({ where: { code } });
+	const room = await prisma.room.findUnique({ where: { code }, include: { players: true } });
 	if (!room) throw new Error("Room not found");
+	// if they’re already in the room, skip
+	if (room.players.some((p) => p.name === name)) return;
 	return await prisma.player.create({
 		data: { name, roomId: room.id },
 	});
