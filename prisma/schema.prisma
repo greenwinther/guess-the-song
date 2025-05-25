@@ -17,16 +17,16 @@ model Room {
 }
 
 model Song {
-  id        Int    @id @default(autoincrement())
-  url       String
-  submitter String
-  roomId    Int
-  room      Room   @relation(fields: [roomId], references: [id])
+  id         Int    @id @default(autoincrement())
+  url        String
+  submitter  String
+  roomId     Int
+  room       Room   @relation(fields: [roomId], references: [id])
 }
 
 model Player {
   id      Int    @id @default(autoincrement())
   name    String
-  room    Room   @relation(fields: [roomId], references: [id])
   roomId  Int
+  room    Room   @relation(fields: [roomId], references: [id])
 }
