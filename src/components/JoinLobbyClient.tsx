@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { useGame, Player, RoomState } from "@/contexts/GameContext";
+import { useGame, Player, RoomState, Song } from "@/contexts/GameContext";
 
 export default function JoinLobbyClient({ initialRoom }: { initialRoom: RoomState }) {
 	const socket = useSocket();
@@ -16,19 +16,19 @@ export default function JoinLobbyClient({ initialRoom }: { initialRoom: RoomStat
 		dispatch({ type: "SET_PLAYERS", players: initialRoom.players });
 		dispatch({ type: "SET_SONGS", songs: initialRoom.songs });
 
-		socket.on("playerJoined", (playerName: string) => {
-			// we’ll also get a full roomData, but just in case:
-			dispatch({ type: "ADD_PLAYER", player: { name: playerName } as Player });
+		socket.on("playerJoined", (player: Player) => {
+			console.log("👤 [client] playerJoined received:", player);
+			dispatch({ type: "ADD_PLAYER", player });
 		});
 
-		socket.on("roomData", (fullRoom: RoomState) => {
-			dispatch({ type: "SET_PLAYERS", players: fullRoom.players });
-			dispatch({ type: "SET_SONGS", songs: fullRoom.songs });
+		socket.on("songAdded", (song: Song) => {
+			console.log("🎵 [client] songAdded received:", song);
+			dispatch({ type: "ADD_SONG", song });
 		});
 
 		return () => {
+			socket.off("songAdded");
 			socket.off("playerJoined");
-			socket.off("roomData");
 		};
 	}, [socket, dispatch, initialRoom]);
 
