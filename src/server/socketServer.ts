@@ -1,6 +1,7 @@
 import http from "http";
 import { Server } from "socket.io";
 import { createRoom, getRoom, addSong, joinRoom } from "@/lib/rooms";
+import { Song } from "@/contexts/GameContext";
 
 const httpServer = http.createServer((req, res) => {
 	if (req.url === "/" && req.method === "GET") {
@@ -36,32 +37,47 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	socket.on("joinRoom", async (data: { code: string; name: string }, callback) => {
+	socket.on("joinRoom", async (data: { code: string; name: string }, callback: (ok: boolean) => void) => {
 		try {
-			await joinRoom(data.code, data.name);
+			// Persist & retrieve the Player record with id, name, roomId
+			const newPlayer = await joinRoom(data.code, data.name);
 			socket.join(data.code);
 
-			// 1) Tell everyone “hey, someone new joined”
-			io.to(data.code).emit("playerJoined", data.name);
-
-			// 2) Fetch the fresh room (with all players + songs) and broadcast it
-			const fullRoom = await getRoom(data.code);
-			io.to(data.code).emit("roomData", fullRoom);
+			console.log("🔔 [server] newPlayer:", newPlayer);
+			// Now broadcast the full object
+			io.to(data.code).emit("playerJoined", newPlayer);
 
 			callback(true);
 		} catch (err: any) {
-			console.error("joinRoom error:", err);
+			console.error("🔔 joinRoom error:", err);
 			callback(false);
 		}
 	});
 
-	socket.on("addSong", async (data) => {
-		console.log("🔔 [server] addSong received:", data);
-		await addSong(data.code, { url: data.url, submitter: data.submitter });
-		const fullRoom = await getRoom(data.code);
-		console.log("🔔 [server] broadcasting roomData with songs:", fullRoom.songs);
-		io.to(data.code).emit("roomData", fullRoom);
-	});
+	socket.on(
+		"addSong",
+		async (
+			data: { code: string; url: string; submitter: string },
+			callback: (res: { success: boolean; song?: Song; error?: string }) => void
+		) => {
+			try {
+				// Persist & get back `id` + `roomId`
+				const song = await addSong(data.code, {
+					url: data.url,
+					submitter: data.submitter,
+				});
+
+				console.log("🔔 [server] emitting songAdded:", song);
+				// Broadcast just the new song
+				io.to(data.code).emit("songAdded", song);
+
+				callback({ success: true, song });
+			} catch (err: any) {
+				console.error("🔔 [server] addSong error", err);
+				callback({ success: false, error: err.message });
+			}
+		}
+	);
 
 	socket.on("disconnect", () => {
 		console.log("↔️ socket disconnected", socket.id);
