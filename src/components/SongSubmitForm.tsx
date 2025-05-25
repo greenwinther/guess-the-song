@@ -16,11 +16,13 @@ export default function SongSubmitForm({ code }: { code: string }) {
 		socket.emit(
 			"addSong",
 			{ code, url, submitter },
-			(res: { success: boolean; error?: string; song?: Song }) => {
+			(res: { success: boolean; song?: Song; error?: string }) => {
 				if (!res.success) {
 					toast.error("Add song failed: " + res.error);
+				} else {
+					setUrl("");
+					setSubmitter("");
 				}
-				// optionally clear inputs or optimistically add the song
 			}
 		);
 		setUrl("");
