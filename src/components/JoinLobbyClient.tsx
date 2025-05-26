@@ -1,7 +1,7 @@
 "use client";
 // src/components/JoinLobbyClient.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
@@ -9,8 +9,6 @@ import { Player, Room, Song } from "@/types/room";
 export default function JoinLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
-	const [name, setName] = useState<string>("");
-	const [joined, setJoined] = useState<boolean>(false);
 
 	// 1) Seed initial data & subscribe to events
 	useEffect(() => {
@@ -34,42 +32,7 @@ export default function JoinLobbyClient({ initialRoom }: { initialRoom: Room }) 
 		};
 	}, [socket, dispatch, initialRoom]);
 
-	// 2) When the user clicks “Join Lobby”
-	const handleJoin = (e: React.FormEvent) => {
-		e.preventDefault();
-		socket.emit("joinRoom", { code: initialRoom.code, name }, (ok: boolean) => {
-			if (ok) {
-				setJoined(true);
-			} else {
-				alert("Failed to join — try again or check the room code.");
-			}
-		});
-	};
-
-	// 3) Render
-	if (!joined) {
-		// Show the join form
-		return (
-			<div className="min-h-screen flex items-center justify-center p-8">
-				<form onSubmit={handleJoin} className="space-y-4">
-					<h1 className="text-2xl font-bold">Join Lobby {initialRoom.code}</h1>
-					<input
-						type="text"
-						placeholder="Your name"
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						required
-						className="input"
-					/>
-					<button type="submit" className="btn">
-						Join Lobby
-					</button>
-				</form>
-			</div>
-		);
-	}
-
-	// 4) Once joined, show the live lobby
+	// 2) Once joined, show the live lobby
 	return (
 		<div
 			className="min-h-screen bg-cover bg-center p-8"
