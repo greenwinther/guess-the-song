@@ -1,13 +1,15 @@
-// src/app/page.tsx
 "use client";
+// src/app/page.tsx
 
 import HostCard from "@/components/ui/HostCard";
 import JoinCard from "@/components/ui/JoinCard";
+import { useSocket } from "@/contexts/SocketContext";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 export default function HomePage() {
 	const router = useRouter();
+	const socket = useSocket();
 	const [theme, setTheme] = useState<string>("");
 	const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
 	const [name, setName] = useState<string>("");
@@ -45,7 +47,14 @@ export default function HomePage() {
 	const handleJoin = (e: FormEvent) => {
 		e.preventDefault();
 		if (!name.trim() || !roomCode.trim()) return;
-		router.push(`/join/${roomCode}?name=${encodeURIComponent(name)}`);
+
+		socket.emit("joinRoom", { code: roomCode, name }, (ok: boolean) => {
+			if (ok) {
+				router.push(`/join/${roomCode}?name=${encodeURIComponent(name)}`);
+			} else {
+				alert("Failed to join—check the room code and try again.");
+			}
+		});
 	};
 
 	return (

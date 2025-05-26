@@ -1,5 +1,5 @@
-// src/components/ui/JoinCard.tsx
 "use client";
+// src/components/ui/JoinCard.tsx
 
 import { FC, FormEvent } from "react";
 import clsx from "clsx";

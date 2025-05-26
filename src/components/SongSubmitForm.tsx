@@ -1,5 +1,5 @@
-// src/components/SongSubmitForm.tsx
 "use client";
+// src/components/SongSubmitForm.tsx
 
 import { useSocket } from "@/contexts/SocketContext";
 import { Song } from "@/types/room";

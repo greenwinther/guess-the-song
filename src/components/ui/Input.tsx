@@ -1,5 +1,5 @@
-// src/components/ui/Input.tsx
 "use client";
+// src/components/ui/Input.tsx
 
 import { FC, InputHTMLAttributes } from "react";
 import clsx from "clsx";

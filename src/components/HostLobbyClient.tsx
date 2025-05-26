@@ -1,5 +1,5 @@
-// src/components/HostLobbyClient.tsx
 "use client";
+// src/components/HostLobbyClient.tsx
 
 import { useEffect, useRef } from "react";
 import SongSubmitForm from "./SongSubmitForm";

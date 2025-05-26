@@ -1,5 +1,5 @@
-// src/app/join/[code]/page.tsx
 "use client";
+// src/app/join/[code]/page.tsx
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";

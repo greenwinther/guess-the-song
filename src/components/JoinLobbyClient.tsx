@@ -1,5 +1,5 @@
-// src/components/JoinLobbyClient.tsx
 "use client";
+// src/components/JoinLobbyClient.tsx
 
 import { useEffect, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";

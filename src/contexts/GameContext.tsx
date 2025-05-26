@@ -1,5 +1,5 @@
-// src/contexts/GameContext.tsx
 "use client";
+// src/contexts/GameContext.tsx
 import { Player, Room, Song } from "@/types/room";
 import { createContext, useContext, useReducer, ReactNode } from "react";
 

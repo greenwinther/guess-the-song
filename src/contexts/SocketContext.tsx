@@ -1,5 +1,5 @@
-// src/contexts/SocketContext.tsx
 "use client";
+// src/contexts/SocketContext.tsx
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 

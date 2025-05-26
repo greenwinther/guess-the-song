@@ -1,5 +1,5 @@
-// src/app/host/[code]/page.tsx
 "use client";
+// src/app/host/[code]/page.tsx
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";

@@ -1,3 +1,4 @@
+// src/server/socketServer.ts
 import http from "http";
 import { Server } from "socket.io";
 import { createRoom, getRoom, addSong, joinRoom } from "@/lib/rooms";
