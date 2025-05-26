@@ -3,15 +3,26 @@
 import { Player, Room, Song } from "@/types/room";
 import { createContext, useContext, useReducer, ReactNode } from "react";
 
-type State = { room: Room | null };
+type Round = {
+	songId: number;
+	clipUrl: string;
+	timeLimit: number;
+	guesses: Record<string, string>;
+};
+
+type State = { room: Room | null; currentRound?: Round | null; scores?: Record<string, number> };
+
 type Action =
 	| { type: "SET_ROOM"; room: Room }
 	| { type: "ADD_PLAYER"; player: Player }
 	| { type: "SET_PLAYERS"; players: Player[] }
 	| { type: "ADD_SONG"; song: Song }
-	| { type: "SET_SONGS"; songs: Song[] };
+	| { type: "SET_SONGS"; songs: Song[] }
+	| { type: "ROUND_STARTED"; payload: Round }
+	| { type: "GUESS_SUBMITTED"; payload: { player: string; guess: string } }
+	| { type: "ROUND_ENDED"; payload: { correctAnswer: string; scores: Record<string, number> } };
 
-const initialState: State = { room: null };
+const initialState: State = { room: null, currentRound: null, scores: {} };
 
 function reducer(state: State, action: Action): State {
 	switch (action.type) {
@@ -29,6 +40,31 @@ function reducer(state: State, action: Action): State {
 				: state;
 		case "SET_SONGS":
 			return state.room ? { room: { ...state.room, songs: action.songs } } : state;
+		case "ROUND_STARTED":
+			return {
+				...state,
+				currentRound: { ...action.payload, guesses: {} },
+			};
+
+		case "GUESS_SUBMITTED":
+			if (!state.currentRound) return state;
+			return {
+				...state,
+				currentRound: {
+					...state.currentRound,
+					guesses: {
+						...state.currentRound.guesses,
+						[action.payload.player]: action.payload.guess,
+					},
+				},
+			};
+		case "ROUND_ENDED":
+			return {
+				...state,
+				currentRound: null,
+				scores: action.payload.scores,
+			};
+
 		default:
 			return state;
 	}
