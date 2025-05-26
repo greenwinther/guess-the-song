@@ -16,6 +16,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 		};
 	}, []);
 
+	if (!socket) {
+		return <div>Connecting…</div>;
+	}
+
 	return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>;
 }
 
