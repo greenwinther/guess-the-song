@@ -3,6 +3,10 @@ import http from "http";
 import { Server } from "socket.io";
 import { createRoom, getRoom, addSong, joinRoom } from "@/lib/rooms";
 import { Song } from "@/types/room";
+import { startRoundData, lookupCorrectAnswer, computeScores, storeOrder, getAllOrders } from "@/lib/game";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 const httpServer = http.createServer((req, res) => {
 	if (req.url === "/" && req.method === "GET") {
@@ -79,6 +83,63 @@ io.on("connection", (socket) => {
 			}
 		}
 	);
+
+	// 1. Host starts the next round
+
+	socket.on(
+		"startRound",
+		async (
+			data: { code: string; songId: number },
+			callback: (res: { success: boolean; error?: string }) => void
+		) => {
+			try {
+				// Load just the chosen song
+				const song = await prisma.song.findUnique({ where: { id: data.songId } });
+				if (!song) return callback({ success: false, error: "Song not found." });
+
+				// Store round + “correct answer” (here using URL as placeholder)
+				startRoundData(data.code, song.id, song.url);
+				io.to(data.code).emit("roundStarted", {
+					songId: song.id,
+					clipUrl: song.url,
+				});
+
+				callback({ success: true });
+			} catch (err: any) {
+				console.error("startRound error", err);
+				callback({ success: false, error: err.message });
+			}
+		}
+	);
+
+	// 2. Players submit guesses
+	socket.on(
+		"submitOrder",
+		(
+			data: { code: string; songId: number; order: string[]; playerName: string },
+			callback: (ok: boolean) => void
+		) => {
+			try {
+				storeOrder(data.code, data.songId, data.playerName, data.order);
+				callback(true);
+			} catch {
+				callback(false);
+			}
+		}
+	);
+
+	//    This could be a server‐side setTimeout after emit("roundStarted")
+	socket.on("endRound", (data: { code: string; songId: number }, callback: (ok: boolean) => void) => {
+		try {
+			const correctAnswer = lookupCorrectAnswer(data.code, data.songId);
+			const allOrders = getAllOrders(data.code, data.songId);
+			const scores = computeScores(allOrders, correctAnswer);
+			io.to(data.code).emit("roundEnded", { songId: data.songId, correctAnswer, scores });
+			callback(true);
+		} catch {
+			callback(false);
+		}
+	});
 
 	socket.on("disconnect", () => {
 		console.log("↔️ socket disconnected", socket.id);
