@@ -5,34 +5,43 @@ import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
+import { useRouter } from "next/navigation";
 
-export default function JoinLobbyClient({ initialRoom }: { initialRoom: Room }) {
+export default function JoinLobbyClient({
+	initialRoom,
+	currentUserName,
+}: {
+	initialRoom: Room;
+	currentUserName: string;
+}) {
 	const socket = useSocket();
+	const router = useRouter();
 	const { state, dispatch } = useGame();
 
-	// 1) Seed initial data & subscribe to events
 	useEffect(() => {
 		dispatch({ type: "SET_ROOM", room: initialRoom });
 		dispatch({ type: "SET_PLAYERS", players: initialRoom.players });
 		dispatch({ type: "SET_SONGS", songs: initialRoom.songs });
 
 		socket.on("playerJoined", (player: Player) => {
-			console.log("👤 [client] playerJoined received:", player);
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 
 		socket.on("songAdded", (song: Song) => {
-			console.log("🎵 [client] songAdded received:", song);
 			dispatch({ type: "ADD_SONG", song });
 		});
 
-		return () => {
-			socket.off("songAdded");
-			socket.off("playerJoined");
-		};
-	}, [socket, dispatch, initialRoom]);
+		socket.on("gameStarted", () => {
+			router.push(`/join/${initialRoom.code}/game?name=${encodeURIComponent(currentUserName)}`);
+		});
 
-	// 2) Once joined, show the live lobby
+		return () => {
+			socket.off("playerJoined");
+			socket.off("songAdded");
+			socket.off("gameStarted");
+		};
+	}, [socket, dispatch, initialRoom, currentUserName, router]);
+
 	return (
 		<div
 			className="min-h-screen bg-cover bg-center p-8"
