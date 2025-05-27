@@ -1,15 +1,16 @@
-"use client";
 // src/app/join/[code]/page.tsx
+"use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-
 import JoinLobbyClient from "@/components/JoinLobbyClient";
 import { Room } from "@/types/room";
 
 export default function JoinLobbyPage() {
 	const { code } = useParams();
+	const searchParams = useSearchParams();
+	const name = searchParams.get("name");
 	const [room, setRoom] = useState<Room | null>(null);
 
 	useEffect(() => {
@@ -33,7 +34,7 @@ export default function JoinLobbyPage() {
 			.catch((err) => toast.error(err.message));
 	}, [code]);
 
-	if (!room) return <p>Loading lobby…</p>;
+	if (!room || !name) return <p>Loading lobby…</p>;
 
-	return <JoinLobbyClient initialRoom={room} />;
+	return <JoinLobbyClient initialRoom={room} currentUserName={name} />;
 }
