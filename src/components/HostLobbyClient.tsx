@@ -6,9 +6,11 @@ import SongSubmitForm from "./SongSubmitForm";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
+import { useRouter } from "next/router";
 
 export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
+	const router = useRouter();
 	const { state, dispatch } = useGame();
 	const hasJoined = useRef(false);
 
@@ -44,6 +46,17 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 
 	if (!state.room) return <p>Loading lobby…</p>;
 
+	const startGame = () => {
+		socket.emit("gameStarted", { code: initialRoom.code }, (ok: boolean) => {
+			if (ok) {
+				// send everyone (including host) to the game page
+				router.push(`/host/${initialRoom.code}/game`);
+			} else {
+				alert("Could not start game");
+			}
+		});
+	};
+
 	return (
 		<div
 			className="min-h-screen bg-cover bg-center p-8"
@@ -64,14 +77,19 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				<h2 className="text-2xl">Songs</h2>
 				<ul className="list-decimal pl-6">
 					{state.room.songs.map((s, idx) => (
-						<li key={`${s.id}-${idx}`}>
-							{s.url} <em>({s.submitter})</em>
+						<li key={s.id} className="flex items-center space-x-4">
+							<span className="flex-1">
+								{s.url} <em>({s.submitter})</em>
+							</span>
 						</li>
 					))}
 				</ul>
 			</section>
 
 			<SongSubmitForm code={state.room.code} />
+			<button onClick={startGame} className="btn btn-primary mt-6">
+				Start Game
+			</button>
 		</div>
 	);
 }
