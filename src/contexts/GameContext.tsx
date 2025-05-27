@@ -6,7 +6,6 @@ import { createContext, useContext, useReducer, ReactNode } from "react";
 type Round = {
 	songId: number;
 	clipUrl: string;
-	timeLimit: number;
 	guesses: Record<string, string>;
 };
 
