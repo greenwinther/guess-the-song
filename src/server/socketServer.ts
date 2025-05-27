@@ -141,6 +141,12 @@ io.on("connection", (socket) => {
 		}
 	});
 
+	socket.on("gameStarted", ({ code }, callback) => {
+		// You could load initial game state here if needed
+		io.to(code).emit("gameStarted");
+		callback(true);
+	});
+
 	socket.on("disconnect", () => {
 		console.log("↔️ socket disconnected", socket.id);
 	});
