@@ -8,7 +8,6 @@ import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import Button from "./ui/Button";
-import Input from "./ui/Input";
 
 export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
@@ -61,13 +60,17 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 
 	return (
 		<div
-			className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary"
+			className="
+    min-h-screen p-8 
+    bg-gradient-to-br from-bg to-secondary 
+    bg-no-repeat bg-cover bg-center
+  "
 			style={{
 				backgroundImage: `url(${state.room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
 			}}
 		>
-			<div className="max-w-7xl mx-auto bg-card bg-opacity-20 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
+			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
 				{/* Sidebar */}
 				<aside className="w-full lg:w-1/4 p-8 border-r border-border flex flex-col items-center">
 					<h1 className="text-3xl font-bold text-text mb-4">
@@ -105,7 +108,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 									<span className="inline-block w-6 h-6 mr-3 text-text-muted font-semibold text-center">
 										{i + 1}
 									</span>
-									<span className="font-semibold text-text">{s.url}</span>
+									<span className="font-semibold text-text">{s.title}</span>
 									<div className="text-text-muted text-sm">{s.submitter}</div>
 								</div>
 							</div>
