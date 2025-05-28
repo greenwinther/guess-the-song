@@ -39,7 +39,7 @@
     "src/server/**/*.ts" // <-- make sure your socket server lives in an included folder
     ,
     ".next/types/**/*.ts"
-  ],
+, "tailwind.config.js"  ],
   "exclude": [
     "node_modules"
   ]
