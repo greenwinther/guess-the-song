@@ -1,11 +1,24 @@
 @tailwind base;
 @tailwind components;
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
 
 :root {
+	/* existing foreground/background */
 	--foreground-rgb: 0, 0, 0;
 	--background-start-rgb: 214, 219, 220;
 	--background-end-rgb: 255, 255, 255;
+
+	/* theme colors from tailwind.config.js */
+	--color-bg: #0d0c1f;
+	--color-primary: #a96cfa;
+	--color-secondary: #3daeff;
+	--color-highlight: #69f8d6;
+	--color-text: #e1e1e9;
+	--color-text-muted: #a9a9d2;
+	--color-card: #1b1838;
+	--color-border: #2a2c48;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -13,6 +26,9 @@
 		--foreground-rgb: 255, 255, 255;
 		--background-start-rgb: 0, 0, 0;
 		--background-end-rgb: 0, 0, 0;
+
+		/* optionally invert or adjust theme colors for dark mode */
+		/* keep theme colors same or adjust as needed */
 	}
 }
 
