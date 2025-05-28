@@ -3,13 +3,24 @@
 
 import { useSocket } from "@/contexts/SocketContext";
 import { Song } from "@/types/room";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import Input from "./ui/Input";
+import Button from "./ui/Button";
 
-export default function SongSubmitForm({ code }: { code: string }) {
+interface Props {
+	code: string;
+	defaultSubmitter?: string;
+}
+
+export default function SongSubmitForm({ code, defaultSubmitter = "" }: Props) {
 	const socket = useSocket();
 	const [url, setUrl] = useState("");
-	const [submitter, setSubmitter] = useState("");
+	const [submitter, setSubmitter] = useState(defaultSubmitter);
+
+	useEffect(() => {
+		if (defaultSubmitter) setSubmitter(defaultSubmitter);
+	}, [defaultSubmitter]);
 
 	const onSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -21,35 +32,38 @@ export default function SongSubmitForm({ code }: { code: string }) {
 					toast.error("Add song failed: " + res.error);
 				} else {
 					setUrl("");
-					setSubmitter("");
+					if (!defaultSubmitter) setSubmitter("");
 				}
 			}
 		);
-		setUrl("");
-		setSubmitter("");
 	};
 
 	return (
-		<form onSubmit={onSubmit} className="mt-8 flex space-x-2">
-			<input
+		<form onSubmit={onSubmit} className="mt-6 flex gap-4">
+			<Input
 				type="text"
 				placeholder="Song URL"
 				value={url}
 				onChange={(e) => setUrl(e.target.value)}
 				required
-				className="input flex-1"
+				size="md"
+				variant="default"
+				className="flex-1"
 			/>
-			<input
+			<Input
 				type="text"
-				placeholder="Your name"
+				placeholder="Submitter Name"
 				value={submitter}
 				onChange={(e) => setSubmitter(e.target.value)}
 				required
-				className="input flex-1"
+				size="md"
+				variant="default"
+				className="flex-1"
+				disabled={!!defaultSubmitter}
 			/>
-			<button type="submit" className="btn">
+			<Button type="submit" variant="primary" size="md" className="px-6">
 				Add Song
-			</button>
+			</Button>
 		</form>
 	);
 }
