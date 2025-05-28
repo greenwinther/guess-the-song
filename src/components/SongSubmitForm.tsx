@@ -72,7 +72,8 @@ export default function SongSubmitForm({ code, defaultSubmitter = "" }: Props) {
 		socket.emit("addSong", { code, url, submitter, title }, () => {
 			setUrl("");
 			setTitle("");
-			if (!defaultSubmitter) setSubmitter("");
+			setQuery("");
+			setSubmitter(defaultSubmitter);
 		});
 	};
 
