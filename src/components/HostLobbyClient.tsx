@@ -6,7 +6,9 @@ import SongSubmitForm from "./SongSubmitForm";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+import Button from "./ui/Button";
+import Input from "./ui/Input";
 
 export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
@@ -59,37 +61,62 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 
 	return (
 		<div
-			className="min-h-screen bg-cover bg-center p-8"
-			style={{ backgroundImage: `url(${state.room.backgroundUrl})` }}
+			className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary"
+			style={{
+				backgroundImage: `url(${state.room.backgroundUrl})`,
+				backgroundBlendMode: "overlay",
+			}}
 		>
-			<h1 className="text-4xl font-bold">{state.room.theme}</h1>
+			<div className="max-w-7xl mx-auto bg-card bg-opacity-20 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
+				{/* Sidebar */}
+				<aside className="w-full lg:w-1/4 p-8 border-r border-border flex flex-col items-center">
+					<h1 className="text-3xl font-bold text-text mb-4">
+						Guess <span className="text-secondary underline decoration-highlight">the</span> Song
+					</h1>
+					<div className="bg-card bg-opacity-50 border border-border rounded-lg p-4 text-center mb-6">
+						<p className="text-text-muted text-sm">Room code</p>
+						<p className="text-4xl font-mono font-bold text-secondary">{state.room.code}</p>
+					</div>
+					<p className="text-text-muted mb-4">Waiting for players...</p>
+					<ul className="space-y-2 w-full">
+						{state.room.players.map((p) => (
+							<li key={p.id} className="flex items-center space-x-2 text-text">
+								<span className="w-3 h-3 rounded-full bg-primary" />
+								<span>{p.name}</span>
+							</li>
+						))}
+					</ul>
+				</aside>
 
-			<section className="mt-6">
-				<h2 className="text-2xl">Players</h2>
-				<ul className="list-disc pl-6">
-					{state.room.players.map((p, idx) => (
-						<li key={`${p.id}-${idx}`}>{p.name}</li>
-					))}
-				</ul>
-			</section>
+				{/* Main panel */}
+				<main className="flex-1 p-8 space-y-6">
+					<h2 className="text-3xl font-semibold text-text">Song Setup</h2>
 
-			<section className="mt-6">
-				<h2 className="text-2xl">Songs</h2>
-				<ul className="list-decimal pl-6">
-					{state.room.songs.map((s, idx) => (
-						<li key={s.id} className="flex items-center space-x-4">
-							<span className="flex-1">
-								{s.url} <em>({s.submitter})</em>
-							</span>
-						</li>
-					))}
-				</ul>
-			</section>
+					<SongSubmitForm code={state.room.code} />
 
-			<SongSubmitForm code={state.room.code} />
-			<button onClick={startGame} className="btn btn-primary mt-6">
-				Start Game
-			</button>
+					{/* Song list */}
+					<div className="bg-card bg-opacity-50 border border-border rounded-lg divide-y divide-border overflow-hidden">
+						{state.room.songs.map((s, i) => (
+							<div
+								key={s.id}
+								className="flex items-center justify-between px-4 py-3 hover:bg-card hover:bg-opacity-30 transition"
+							>
+								<div>
+									<span className="inline-block w-6 h-6 mr-3 text-text-muted font-semibold text-center">
+										{i + 1}
+									</span>
+									<span className="font-semibold text-text">{s.url}</span>
+									<div className="text-text-muted text-sm">{s.submitter}</div>
+								</div>
+							</div>
+						))}
+					</div>
+
+					<Button onClick={startGame} variant="primary" size="lg" className="w-full py-4 text-2xl">
+						Start Game
+					</Button>
+				</main>
+			</div>
 		</div>
 	);
 }
