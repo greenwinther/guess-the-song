@@ -2,14 +2,15 @@
 // src/components/ui/HostCard.tsx
 import { FC, FormEvent } from "react";
 import clsx from "clsx";
-import Input from "./Input";
+
 import Button from "./Button";
+import Input from "./Input";
 
 export interface HostCardProps {
 	theme: string;
-	onThemeChange: (value: string) => void;
-	backgroundFile: File | null;
-	onBackgroundChange: (file: File | null) => void;
+	onThemeChange: (val: string) => void;
+	backgroundUrl: string;
+	onBackgroundChange: (url: string) => void;
 	onCreate: (e: FormEvent) => void;
 	className?: string;
 }
@@ -17,7 +18,7 @@ export interface HostCardProps {
 export const HostCard: FC<HostCardProps> = ({
 	theme,
 	onThemeChange,
-	backgroundFile,
+	backgroundUrl,
 	onBackgroundChange,
 	onCreate,
 	className,
@@ -39,15 +40,14 @@ export const HostCard: FC<HostCardProps> = ({
 					onChange={(e) => onThemeChange(e.target.value)}
 					className="w-full"
 				/>
-				<label className="flex flex-col text-text-muted text-sm">
-					<span>Background (optional)</span>
-					<input
-						type="file"
-						accept="image/*"
-						onChange={(e) => onBackgroundChange(e.target.files?.[0] || null)}
-						className="mt-1 text-text"
-					/>
-				</label>
+				<Input
+					type="text"
+					variant="default"
+					placeholder="Background image URL (optional)"
+					value={backgroundUrl}
+					onChange={(e) => onBackgroundChange(e.target.value)}
+					className="w-full"
+				/>
 				<Button type="submit" variant="primary" size="md" className="w-full">
 					Create Lobby
 				</Button>
