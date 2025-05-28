@@ -2,6 +2,7 @@
 
 import { GameProvider } from "@/contexts/GameContext";
 import { SocketProvider } from "@/contexts/SocketContext";
+import "./globals.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
