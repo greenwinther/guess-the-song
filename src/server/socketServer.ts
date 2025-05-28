@@ -62,21 +62,21 @@ io.on("connection", (socket) => {
 	socket.on(
 		"addSong",
 		async (
-			data: { code: string; url: string; submitter: string },
+			data: { code: string; url: string; submitter: string; title: string },
 			callback: (res: { success: boolean; song?: Song; error?: string }) => void
 		) => {
 			try {
-				// Persist & get back `id` + `roomId`
 				const song = await addSong(data.code, {
 					url: data.url,
 					submitter: data.submitter,
 				});
+				const withTitle = { ...song, title: data.title };
 
 				console.log("🔔 [server] emitting songAdded:", song);
 				// Broadcast just the new song
-				io.to(data.code).emit("songAdded", song);
+				io.to(data.code).emit("songAdded", withTitle);
 
-				callback({ success: true, song });
+				callback({ success: true, song: withTitle });
 			} catch (err: any) {
 				console.error("🔔 [server] addSong error", err);
 				callback({ success: false, error: err.message });
