@@ -27,47 +27,39 @@ export default function JoinLobbyClient({
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 
-		socket.on("songAdded", (song: Song) => {
-			dispatch({ type: "ADD_SONG", song });
-		});
-
 		socket.on("gameStarted", () => {
 			router.push(`/join/${initialRoom.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		});
 
 		return () => {
 			socket.off("playerJoined");
-			socket.off("songAdded");
 			socket.off("gameStarted");
 		};
 	}, [socket, dispatch, initialRoom, currentUserName, router]);
 
 	return (
 		<div
-			className="min-h-screen bg-cover bg-center p-8"
-			style={{ backgroundImage: `url(${state.room?.backgroundUrl})` }}
+			className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary"
+			style={{
+				backgroundImage: `url(${state.room?.backgroundUrl})`,
+				backgroundBlendMode: "overlay",
+			}}
 		>
-			<h1 className="text-4xl font-bold">{state.room?.theme}</h1>
+			<div className="max-w-4xl mx-auto bg-card bg-opacity-20 border border-border rounded-2xl backdrop-blur-xl p-8">
+				<h1 className="text-4xl font-bold text-text mb-6">{state.room?.theme}</h1>
 
-			<section className="mt-6">
-				<h2 className="text-2xl">Players</h2>
-				<ul className="list-disc pl-6">
-					{state.room?.players.map((p, i) => (
-						<li key={i}>{p.name}</li>
-					))}
-				</ul>
-			</section>
-
-			<section className="mt-6">
-				<h2 className="text-2xl">Songs</h2>
-				<ul className="list-decimal pl-6">
-					{state.room?.songs.map((s) => (
-						<li key={s.id}>
-							{s.url} <em>({s.submitter})</em>
-						</li>
-					))}
-				</ul>
-			</section>
+				<section>
+					<h2 className="text-2xl font-semibold text-text-muted mb-4">Players in Lobby</h2>
+					<ul className="space-y-2 list-none">
+						{state.room?.players.map((p, i) => (
+							<li key={i} className="flex items-center space-x-2 text-text">
+								<span className="w-3 h-3 rounded-full bg-primary" />
+								<span>{p.name}</span>
+							</li>
+						))}
+					</ul>
+				</section>
+			</div>
 		</div>
 	);
 }
