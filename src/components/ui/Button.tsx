@@ -24,8 +24,8 @@ const sizeStyles: Record<NonNullable<ButtonProps["size"]>, string> = {
 };
 
 const variantStyles: Record<NonNullable<ButtonProps["variant"]>, string> = {
-	primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-	secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400",
+	primary: "bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 focus:ring-secondary",
+	secondary: "bg-card bg-opacity-20 border border-border text-text hover:bg-opacity-30 focus:ring-primary",
 	danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
 };
 

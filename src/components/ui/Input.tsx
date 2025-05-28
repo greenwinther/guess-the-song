@@ -16,7 +16,8 @@ export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
 	variant?: InputVariant;
 };
 
-const baseStyles = "border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 transition";
+const baseStyles =
+	"bg-transparent border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 transition";
 
 // Explicitly map size keys
 const sizeStyles: Record<InputSize, string> = {
@@ -27,8 +28,8 @@ const sizeStyles: Record<InputSize, string> = {
 
 // Explicitly map variant keys
 const variantStyles: Record<InputVariant, string> = {
-	default: "border-gray-300 focus:border-blue-500 focus:ring-blue-500",
-	error: "border-red-500 focus:border-red-600 focus:ring-red-600",
+	default: "border border-border focus:border-primary focus:ring-primary",
+	error: "border border-red-500 focus:border-red-600 focus:ring-red-600",
 };
 
 export const Input: FC<InputProps> = ({ size = "md", variant = "default", className, ...props }) => {
