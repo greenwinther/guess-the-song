@@ -1,10 +1,11 @@
 // src/app/api/upload/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import formidable from "formidable";
+import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
+import streamifier from "streamifier";
 
-export const config = { api: { bodyParser: false } };
+export const config = {
+	api: { bodyParser: false }, // disable built-in parser
+};
 
 cloudinary.config({
 	cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
@@ -12,23 +13,35 @@ cloudinary.config({
 	api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
-export async function POST(req: NextRequest) {
-	const form = formidable({ maxFileSize: 5 * 1024 * 1024 });
-	// parse and get files
-	const { files } = await new Promise<{ fields: any; files: formidable.Files }>((resolve, reject) =>
-		form.parse(req as any, (err, fields, files) => (err ? reject(err) : resolve({ fields, files })))
-	);
-
-	// force TS to see this as a formidable.File
-	const file = (Array.isArray(files.file) ? files.file[0] : files.file) as formidable.File;
-
-	const localPath = file.filepath; // now exists
-	const uploadResult: any = await new Promise((res, rej) => {
-		cloudinary.uploader.upload(localPath, { folder: "guess-the-song/backgrounds" }, (err, result) =>
-			err ? rej(err) : res(result)
-		);
+// Helper: upload a Buffer via Cloudinary’s upload_stream
+function uploadBuffer(buffer: Buffer, folder: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const uploadStream = cloudinary.uploader.upload_stream({ folder }, (err, result) => {
+			if (err) return reject(err);
+			resolve(result!.secure_url);
+		});
+		streamifier.createReadStream(buffer).pipe(uploadStream);
 	});
+}
 
-	fs.unlinkSync(localPath);
-	return NextResponse.json({ url: uploadResult.secure_url });
+export async function POST(req: Request) {
+	// Parse the incoming multipart/form-data
+	const formData = await (req as any).formData();
+	const file = formData.get("file") as File | null;
+	if (!file) {
+		return NextResponse.json({ error: "No file provided" }, { status: 400 });
+	}
+
+	// Read it into a Buffer
+	const arrayBuffer = await file.arrayBuffer();
+	const buffer = Buffer.from(arrayBuffer);
+
+	try {
+		// Upload to the `guess-the-song/backgrounds` folder
+		const url = await uploadBuffer(buffer, "guess-the-song/backgrounds");
+		return NextResponse.json({ url });
+	} catch (err: any) {
+		console.error("Upload error:", err);
+		return NextResponse.json({ error: err.message }, { status: 500 });
+	}
 }
