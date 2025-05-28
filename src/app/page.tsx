@@ -58,23 +58,48 @@ export default function HomePage() {
 	};
 
 	return (
-		<main className="min-h-screen flex flex-col items-center justify-center p-8 bg-gray-50">
-			<h1 className="text-4xl font-bold mb-8">Guess the Song</h1>
-			<div className="flex flex-col md:flex-row gap-6">
-				<HostCard
-					theme={theme}
-					onThemeChange={setTheme}
-					backgroundFile={backgroundFile}
-					onBackgroundChange={setBackgroundFile}
-					onCreate={handleCreate}
-				/>
-				<JoinCard
-					name={name}
-					onNameChange={setName}
-					code={roomCode}
-					onRoomCodeChange={setRoomCode}
-					onJoin={handleJoin}
-				/>
+		<main
+			className="
+  min-h-screen flex flex-col items-center justify-center p-8 
+  bg-gradient-to-br from-bg to-secondary
+"
+		>
+			<h1
+				className="
+    text-6xl font-extrabold mb-12 
+    text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary
+  "
+			>
+				Guess <span className="underline decoration-highlight">the</span> Song
+			</h1>
+
+			<div
+				className="
+    border border-border rounded-2xl p-8 
+    flex flex-col md:flex-row gap-8 
+    bg-card bg-opacity-20 backdrop-blur-xl
+  "
+			>
+				<div className="flex-1">
+					<HostCard
+						theme={theme}
+						onThemeChange={setTheme}
+						backgroundFile={backgroundFile}
+						onBackgroundChange={setBackgroundFile}
+						onCreate={handleCreate}
+						className="space-y-4"
+					/>
+				</div>
+				<div className="flex-1">
+					<JoinCard
+						name={name}
+						onNameChange={setName}
+						code={roomCode}
+						onRoomCodeChange={setRoomCode}
+						onJoin={handleJoin}
+						className="space-y-4"
+					/>
+				</div>
 			</div>
 		</main>
 	);
