@@ -9,6 +9,7 @@ export type Song = {
 	url: string;
 	submitter: string;
 	roomId: number;
+	title?: string;
 };
 
 export type Room = {
