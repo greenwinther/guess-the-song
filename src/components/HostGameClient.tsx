@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Song } from "@/types/room";
+import ReactPlayer from "react-player";
 
 export default function HostGameClient({ code }: { code: string }) {
 	const socket = useSocket();
@@ -76,7 +77,20 @@ export default function HostGameClient({ code }: { code: string }) {
 						{currentSong ? (
 							<div>
 								<h3 className="text-2xl mb-2">Now Playing</h3>
-								<audio src={currentSong.url} controls autoPlay className="w-full" />
+								{currentSong ? (
+									<div>
+										<h3 className="text-2xl mb-2">Now Playing</h3>
+										<ReactPlayer
+											url={currentSong.url}
+											controls
+											playing
+											width="100%"
+											height="360px"
+										/>
+									</div>
+								) : (
+									<p className="text-gray-500">Select a song to play</p>
+								)}
 							</div>
 						) : (
 							<p className="text-gray-500">Select a song to play</p>
