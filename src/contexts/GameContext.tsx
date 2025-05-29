@@ -16,6 +16,7 @@ type Action =
 	| { type: "ADD_PLAYER"; player: Player }
 	| { type: "SET_PLAYERS"; players: Player[] }
 	| { type: "ADD_SONG"; song: Song }
+	| { type: "REMOVE_SONG"; songId: number }
 	| { type: "SET_SONGS"; songs: Song[] }
 	| { type: "ROUND_STARTED"; payload: Round }
 	| { type: "GUESS_SUBMITTED"; payload: { player: string; guess: string } }
@@ -37,6 +38,14 @@ function reducer(state: State, action: Action): State {
 			return state.room
 				? { room: { ...state.room, songs: [...state.room.songs, action.song] } }
 				: state;
+		case "REMOVE_SONG":
+			return {
+				...state,
+				room: {
+					...state.room!,
+					songs: state.room!.songs.filter((s) => s.id !== action.songId),
+				},
+			};
 		case "SET_SONGS":
 			return state.room ? { room: { ...state.room, songs: action.songs } } : state;
 		case "ROUND_STARTED":
