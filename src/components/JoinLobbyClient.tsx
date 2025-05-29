@@ -1,10 +1,10 @@
 "use client";
 // src/components/JoinLobbyClient.tsx
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
-import { Player, Room, Song } from "@/types/room";
+import { Player, Room } from "@/types/room";
 import { useRouter } from "next/navigation";
 
 export default function JoinLobbyClient({
@@ -17,17 +17,28 @@ export default function JoinLobbyClient({
 	const socket = useSocket();
 	const router = useRouter();
 	const { state, dispatch } = useGame();
+	const hasJoined = useRef(false);
 
 	useEffect(() => {
 		dispatch({ type: "SET_ROOM", room: initialRoom });
 		dispatch({ type: "SET_PLAYERS", players: initialRoom.players });
 		dispatch({ type: "SET_SONGS", songs: initialRoom.songs });
 
+		// 1) Join the socket.io room exactly once
+		if (!hasJoined.current) {
+			socket.emit("joinRoom", { code: initialRoom.code, name: currentUserName }, (ok: boolean) => {
+				if (!ok) console.error("❌ Failed to join socket room");
+			});
+			hasJoined.current = true;
+		}
+
+		// 2) Listen for new players
 		socket.on("playerJoined", (player: Player) => {
 			console.log("👤 [client] playerJoined received:", player);
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 
+		// 3) Listen for the host's "gameStarted" broadcast
 		socket.on("gameStarted", () => {
 			router.push(`/join/${initialRoom.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		});
