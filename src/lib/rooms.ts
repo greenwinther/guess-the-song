@@ -46,3 +46,13 @@ export async function addSong(code: string, song: { url: string; submitter: stri
 		data: { url: song.url, submitter: song.submitter, roomId: room.id },
 	});
 }
+
+export async function removeSong(code: string, songId: number) {
+	// Optionally verify the song belongs to the room first…
+	await prisma.song.delete({
+		where: { id: songId },
+	});
+
+	// Return the deleted ID so we can broadcast it
+	return songId;
+}
