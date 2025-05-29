@@ -90,11 +90,11 @@ export default function HostGameClient({ code }: { code: string }) {
 						{currentSong ? currentSong.submitter : "Submitter Name"}
 					</h2>
 
-					<div className="w-full rounded-lg overflow-hidden mb-4 border border-border">
+					<div className="w-full rounded-lg overflow-hidden border border-border mt-12 mb-6 h-96">
 						{currentSong ? (
-							<ReactPlayer url={currentSong.url} controls playing width="100%" height="360px" />
+							<ReactPlayer url={currentSong.url} controls playing width="100%" height="100%" />
 						) : (
-							<div className="w-full h-64 bg-[#000]" />
+							<div className="w-full" />
 						)}
 					</div>
 
