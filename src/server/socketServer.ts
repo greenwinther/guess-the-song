@@ -1,7 +1,7 @@
 // src/server/socketServer.ts
 import http from "http";
 import { Server } from "socket.io";
-import { createRoom, getRoom, addSong, joinRoom } from "@/lib/rooms";
+import { createRoom, getRoom, addSong, joinRoom, removeSong } from "@/lib/rooms";
 import { Song } from "@/types/room";
 import {
 	startRoundData,
@@ -76,6 +76,26 @@ io.on("connection", (socket) => {
 		}
 	);
 
+	// 5) Remove a song
+	socket.on(
+		"removeSong",
+		async (
+			data: { code: string; songId: number },
+			callback: (res: { success: boolean; error?: string }) => void
+		) => {
+			try {
+				const deletedId = await removeSong(data.code, data.songId);
+
+				// Broadcast to everyone in-room that this song is gone
+				io.to(data.code).emit("songRemoved", { songId: deletedId });
+				callback({ success: true });
+			} catch (err: any) {
+				console.error("removeSong error", err);
+				callback({ success: false, error: err.message });
+			}
+		}
+	);
+
 	// 1) Host clicks “Start Game” in the lobby
 
 	socket.on("gameStarted", ({ code }: { code: string }, callback: (ok: boolean) => void) => {
@@ -88,7 +108,6 @@ io.on("connection", (socket) => {
 	});
 
 	// 2) Host picks a song → round begins
-
 	socket.on(
 		"startGame",
 		async (
