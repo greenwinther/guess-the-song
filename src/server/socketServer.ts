@@ -87,23 +87,35 @@ io.on("connection", (socket) => {
 	// 1. Host starts the next round
 
 	socket.on(
-		"startRound",
+		"startGame",
 		async (
 			data: { code: string; songId: number },
 			callback: (res: { success: boolean; error?: string }) => void
 		) => {
 			try {
-				// Load just the chosen song
+				// 1) Load the chosen song
 				const song = await prisma.song.findUnique({ where: { id: data.songId } });
 				if (!song) return callback({ success: false, error: "Song not found." });
 
-				// Store round + “correct answer” (here using URL as placeholder)
-				startRoundData(data.code, song.id, song.url);
+				// 2) Fetch the full room so we can grab _all_ the submitters
+				const room = await getRoom(data.code);
+				const submitters = room.songs.map((s) => s.submitter);
+
+				// 3) Store the round.  Use `song.submitter` as the correct answer,
+				//    but pass in the whole list of `submitters`
+				startRoundData(
+					data.code,
+					song.id,
+					song.submitter, // correctAnswer = the one who submitted this song
+					submitters // the array we’ll shuffle on the clients
+				);
+
+				// 4) Broadcast startRound, including the array
 				io.to(data.code).emit("roundStarted", {
 					songId: song.id,
 					clipUrl: song.url,
+					submitters, // now an array, not a single string
 				});
-
 				callback({ success: true });
 			} catch (err: any) {
 				console.error("startRound error", err);
@@ -111,6 +123,12 @@ io.on("connection", (socket) => {
 			}
 		}
 	);
+
+	socket.on("gameStarted", ({ code }, callback) => {
+		// You could load initial game state here if needed
+		io.to(code).emit("gameStarted");
+		callback(true);
+	});
 
 	// 2. Players submit guesses
 	socket.on(
@@ -129,7 +147,7 @@ io.on("connection", (socket) => {
 	);
 
 	//    This could be a server‐side setTimeout after emit("roundStarted")
-	socket.on("endRound", (data: { code: string; songId: number }, callback: (ok: boolean) => void) => {
+	socket.on("showResults", (data: { code: string; songId: number }, callback: (ok: boolean) => void) => {
 		try {
 			const correctAnswer = lookupCorrectAnswer(data.code, data.songId);
 			const allOrders = getAllOrders(data.code, data.songId);
@@ -139,12 +157,6 @@ io.on("connection", (socket) => {
 		} catch {
 			callback(false);
 		}
-	});
-
-	socket.on("gameStarted", ({ code }, callback) => {
-		// You could load initial game state here if needed
-		io.to(code).emit("gameStarted");
-		callback(true);
 	});
 
 	socket.on("disconnect", () => {
