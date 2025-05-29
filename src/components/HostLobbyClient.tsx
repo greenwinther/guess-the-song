@@ -48,14 +48,23 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	if (!state.room) return <p>Loading lobby…</p>;
 
 	const startGame = () => {
-		socket.emit("gameStarted", { code: initialRoom.code }, (ok: boolean) => {
-			if (ok) {
-				// send everyone (including host) to the game page
-				router.push(`/host/${initialRoom.code}/game`);
-			} else {
-				alert("Could not start game");
+		// pick first song in playlist
+		const first = state.room!.songs[0];
+		if (!first) return alert("Add at least one song before starting!");
+
+		socket.emit(
+			"startGame",
+			{ code: initialRoom.code, songId: first.id },
+			(res: { success: boolean; error?: string }) => {
+				if (!res.success) {
+					alert(res.error);
+				} else {
+					// now that server has broadcast gameStarted+roundStarted,
+					// navigate host into the game page:
+					router.push(`/host/${initialRoom.code}/game`);
+				}
 			}
-		});
+		);
 	};
 
 	return (
@@ -115,7 +124,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 						))}
 					</div>
 
-					<Button onClick={startGame} variant="primary" size="lg" className="w-full py-4 text-2xl">
+					<Button onClick={startGame} variant="primary" size="lg" className="w-full">
 						Start Game
 					</Button>
 				</main>
