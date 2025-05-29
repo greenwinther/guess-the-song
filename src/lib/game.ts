@@ -57,3 +57,5 @@ export function computeScores(
 	}
 	return scores;
 }
+
+export const activeRounds = rounds;
