@@ -1,19 +1,21 @@
 "use client";
 // src/components/HostLobbyClient.tsx
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import SongSubmitForm from "./SongSubmitForm";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import Button from "./ui/Button";
+import ReactPlayer from "react-player";
 
 export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
 	const router = useRouter();
 	const { state, dispatch } = useGame();
 	const hasJoined = useRef(false);
+	const [previewUrl, setPreviewUrl] = useState<string>("");
 
 	useEffect(() => {
 		// seed context…
@@ -118,7 +120,13 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				<main className="flex-2 p-8 flex flex-col justify-between h-full">
 					<div>
 						<h2 className="text-3xl font-semibold text-text mb-6">Song Setup</h2>
-						<SongSubmitForm code={state.room.code} />
+						{/* pass our setter down so the form can tell us current URL */}
+						<SongSubmitForm code={state.room.code} onUrlChange={setPreviewUrl} />
+
+						{/* Always-shown preview player, taller and spaced further down */}
+						<div className="w-full rounded-lg overflow-hidden border border-border mt-12 mb-6 h-96">
+							<ReactPlayer url={previewUrl} controls width="100%" height="100%" />
+						</div>
 					</div>
 
 					{/* Start button pinned to bottom */}
