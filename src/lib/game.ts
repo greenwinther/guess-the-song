@@ -2,6 +2,7 @@
 type RoundData = {
 	correctAnswer: string;
 	orders: Record<string, string[]>;
+	submitters: string[];
 };
 
 // In-memory map: roomCode → its active round
@@ -13,9 +14,18 @@ const rounds: Record<string, Record<number, RoundData>> = {};
  * @param songId ID of the song being guessed
  * @param correctAnswer The exact answer to check guesses against
  */
-export function startRoundData(code: string, songId: number, correctAnswer: string) {
+export function startRoundData(
+	code: string,
+	songId: number,
+	correctAnswer: string,
+	submitters: string[] // <<< new
+) {
 	if (!rounds[code]) rounds[code] = {};
-	rounds[code][songId] = { correctAnswer, orders: {} };
+	rounds[code][songId] = {
+		correctAnswer,
+		orders: {},
+		submitters, // <<< stash the list here
+	};
 }
 
 /** Store a single guess for the active round in a room */
