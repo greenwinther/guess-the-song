@@ -78,15 +78,14 @@ export default function SongSubmitForm({ code, defaultSubmitter = "" }: Props) {
 	};
 
 	return (
-		<form onSubmit={onSubmit} className="relative flex gap-2">
-			<div className="flex-1">
+		<form onSubmit={onSubmit} className="relative flex gap-2 items-center">
+			{/* 1) Search / URL — twice as wide */}
+			<div className="flex-[2] min-w-0">
 				<Input
 					placeholder="Search or paste YouTube URL"
-					// 1) show `title` when set, otherwise the raw URL or query
 					value={title || query || url}
 					onChange={(e) => {
 						const v = e.target.value;
-						// as soon as they type, drop any previously chosen title
 						setTitle("");
 						if (/youtu/.test(v)) {
 							setUrl(v);
@@ -98,28 +97,42 @@ export default function SongSubmitForm({ code, defaultSubmitter = "" }: Props) {
 					}}
 					className="w-full"
 				/>
-				{results.length > 0 && (
-					<ul className="absolute z-10 bg-card bg-opacity-80 border border-border mt-1 w-full max-h-60 overflow-auto rounded">
-						{results.map((v) => (
-							<li
-								key={v.id.videoId}
-								onClick={() => pick(v)}
-								className="p-2 hover:bg-card hover:bg-opacity-60 cursor-pointer flex items-center space-x-2"
-							>
-								<img src={v.snippet.thumbnails.default.url} width={40} />
-								<span className="text-text">{v.snippet.title}</span>
-							</li>
-						))}
-					</ul>
-				)}
 			</div>
-			<Input
-				placeholder="Your name"
-				value={submitter}
-				onChange={(e) => setSubmitter(e.target.value)}
-				className="flex-1"
-			/>
+
+			{/* 2) Name — half the width of search */}
+			<div className="flex-1 min-w-0">
+				<Input
+					placeholder="Your name"
+					value={submitter}
+					onChange={(e) => setSubmitter(e.target.value)}
+					className="w-full"
+				/>
+			</div>
+
+			{/* 3) Button */}
 			<Button type="submit">Add Song</Button>
+
+			{/* 4) Dropdown spanning full form width */}
+			{results.length > 0 && (
+				<ul
+					className={`
+        absolute left-0 top-full w-full
+        z-10 bg-card bg-opacity-80 border border-border
+        mt-1 max-h-60 overflow-auto rounded
+      `}
+				>
+					{results.map((v) => (
+						<li
+							key={v.id.videoId}
+							onClick={() => pick(v)}
+							className="p-2 hover:bg-card hover:bg-opacity-60 cursor-pointer flex items-center space-x-2"
+						>
+							<img src={v.snippet.thumbnails.default.url} width={40} />
+							<span className="text-text">{v.snippet.title}</span>
+						</li>
+					))}
+				</ul>
+			)}
 		</form>
 	);
 }
