@@ -24,6 +24,7 @@ export default function JoinLobbyClient({
 		dispatch({ type: "SET_SONGS", songs: initialRoom.songs });
 
 		socket.on("playerJoined", (player: Player) => {
+			console.log("👤 [client] playerJoined received:", player);
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 
