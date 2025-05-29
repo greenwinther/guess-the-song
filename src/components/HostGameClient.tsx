@@ -15,10 +15,10 @@ export default function HostGameClient({ code }: { code: string }) {
 
 	// subscribe to round events (if still used)
 	useEffect(() => {
-		socket.on("roundStarted", (round) => {
+		socket.on("startGame", (round) => {
 			dispatch({ type: "ROUND_STARTED", payload: round });
 		});
-		socket.on("roundEnded", ({ correctAnswer, scores }) => {
+		socket.on("showResults", ({ correctAnswer, scores }) => {
 			dispatch({ type: "ROUND_ENDED", payload: { correctAnswer, scores } });
 		});
 		socket.on("playerJoined", (player: Player) => {
@@ -26,8 +26,8 @@ export default function HostGameClient({ code }: { code: string }) {
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 		return () => {
-			socket.off("roundStarted");
-			socket.off("roundEnded");
+			socket.off("startGame");
+			socket.off("showResults");
 			socket.off("playerJoined");
 		};
 	}, [socket, dispatch]);
@@ -35,14 +35,14 @@ export default function HostGameClient({ code }: { code: string }) {
 	// handler to play a selected song
 	const handlePlay = (song: Song) => {
 		setCurrentSong(song);
-		socket.emit("startRound", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
+		socket.emit("startGame", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
 			if (!res.success) alert("Could not play song: " + res.error);
 		});
 	};
 
 	// handler to end the game
 	const handleEndGame = () => {
-		socket.emit("endGame", { code }, (ok: boolean) => {
+		socket.emit("showResults", { code }, (ok: boolean) => {
 			if (!ok) alert("Failed to end game");
 			// maybe navigate or show a final summary
 		});
