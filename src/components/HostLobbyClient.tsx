@@ -39,9 +39,14 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			dispatch({ type: "ADD_SONG", song });
 		});
 
+		socket.on("songRemoved", ({ songId }: { songId: number }) => {
+			dispatch({ type: "REMOVE_SONG", songId });
+		});
+
 		return () => {
 			socket.off("playerJoined");
 			socket.off("songAdded");
+			socket.off("songRemoved");
 		};
 	}, [socket, dispatch, initialRoom]);
 
@@ -70,26 +75,35 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	return (
 		<div
 			className="
-    min-h-screen p-8 
-    bg-gradient-to-br from-bg to-secondary 
-    bg-no-repeat bg-cover bg-center
-  "
+        min-h-screen p-8
+        bg-gradient-to-br from-bg to-secondary
+        bg-no-repeat bg-cover bg-center
+        flex items-center justify-center
+      "
 			style={{
 				backgroundImage: `url(${state.room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
 			}}
 		>
-			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
-				{/* Sidebar */}
-				<aside className="w-full lg:w-1/4 p-8 border-r border-border flex flex-col items-center">
-					<h1 className="text-3xl font-bold text-text mb-4">
+			<div
+				className="
+          w-[90vw] max-w-screen-xl
+          bg-card bg-opacity-60 border border-border
+          rounded-2xl backdrop-blur-xl
+          flex flex-col lg:flex-row overflow-hidden
+          h-[80vh]
+        "
+			>
+				{/* Left sidebar */}
+				<aside className="flex-1 p-8 border-r border-border flex flex-col items-center h-full">
+					<h1 className="text-3xl font-bold text-text mb-4 text-center">
 						Guess <span className="text-secondary underline decoration-highlight">the</span> Song
 					</h1>
-					<div className="bg-card bg-opacity-50 border border-border rounded-lg p-4 text-center mb-6">
+					<div className="bg-card bg-opacity-50 border border-border rounded-lg p-4 text-center mb-6 w-full">
 						<p className="text-text-muted text-sm">Room code</p>
 						<p className="text-4xl font-mono font-bold text-secondary">{state.room.code}</p>
 					</div>
-					<p className="text-text-muted mb-4">Waiting for players...</p>
+					<p className="text-text-muted mb-4">Waiting for players…</p>
 					<ul className="space-y-2 w-full">
 						{state.room.players.map((p) => (
 							<li key={p.id} className="flex items-center space-x-2 text-text">
@@ -100,14 +114,30 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 					</ul>
 				</aside>
 
-				{/* Main panel */}
-				<main className="flex-1 p-8 space-y-6">
-					<h2 className="text-3xl font-semibold text-text">Song Setup</h2>
+				{/* Center panel */}
+				<main className="flex-2 p-8 flex flex-col justify-between h-full">
+					<div>
+						<h2 className="text-3xl font-semibold text-text mb-6">Song Setup</h2>
+						<SongSubmitForm code={state.room.code} />
+					</div>
 
-					<SongSubmitForm code={state.room.code} />
+					{/* Start button pinned to bottom */}
+					<div className="mt-4">
+						<Button
+							onClick={startGame}
+							variant="primary"
+							size="lg"
+							className="w-full py-4 text-2xl"
+						>
+							Start Game
+						</Button>
+					</div>
+				</main>
 
-					{/* Song list */}
-					<div className="bg-card bg-opacity-50 border border-border rounded-lg divide-y divide-border overflow-hidden">
+				{/* Right sidebar */}
+				<aside className="flex-1 p-6 border-l border-border flex flex-col h-full">
+					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
+					<div className="bg-card bg-opacity-50 border border-border rounded-lg divide-y divide-border overflow-hidden mt-6">
 						{state.room.songs.map((s, i) => (
 							<div
 								key={s.id}
@@ -120,14 +150,30 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 									<span className="font-semibold text-text">{s.title}</span>
 									<div className="text-text-muted text-sm">{s.submitter}</div>
 								</div>
+
+								{/* ← Add this Remove button */}
+								<button
+									onClick={() =>
+										socket.emit(
+											"removeSong",
+											{ code: state.room!.code, songId: s.id },
+											(res: { success: boolean; error?: string }) => {
+												if (!res.success) {
+													return alert("Could not remove song: " + res.error);
+												}
+												// nothing else here — your `songRemoved` socket listener
+												// (see useEffect below) will update state for you
+											}
+										)
+									}
+									className="ml-4 text-sm text-red-500 hover:text-red-400"
+								>
+									Remove
+								</button>
 							</div>
 						))}
 					</div>
-
-					<Button onClick={startGame} variant="primary" size="lg" className="w-full">
-						Start Game
-					</Button>
-				</main>
+				</aside>
 			</div>
 		</div>
 	);
