@@ -10,6 +10,7 @@ import { getYouTubeID } from "@/lib/youtube";
 interface Props {
 	code: string;
 	defaultSubmitter?: string;
+	onUrlChange?: (url: string) => void;
 }
 
 interface VideoResult {
@@ -17,7 +18,7 @@ interface VideoResult {
 	snippet: { title: string; thumbnails: any };
 }
 
-export default function SongSubmitForm({ code, defaultSubmitter = "" }: Props) {
+export default function SongSubmitForm({ code, defaultSubmitter = "", onUrlChange }: Props) {
 	const socket = useSocket();
 	const [query, setQuery] = useState("");
 	const [results, setResults] = useState<VideoResult[]>([]);
@@ -65,6 +66,12 @@ export default function SongSubmitForm({ code, defaultSubmitter = "" }: Props) {
 			setTitle("");
 		}
 	}, [url]);
+
+	useEffect(() => {
+		if (onUrlChange) {
+			onUrlChange(url);
+		}
+	}, [url, onUrlChange]);
 
 	const onSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
