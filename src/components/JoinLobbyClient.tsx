@@ -59,15 +59,18 @@ export default function JoinLobbyClient({
 
 	return (
 		<div
-			className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary"
+			className="
+        min-h-screen p-8
+        bg-gradient-to-br from-bg to-secondary
+        bg-no-repeat bg-cover bg-center
+        flex items-center justify-center
+      "
 			style={{
-				backgroundImage: `url(${state.room?.backgroundUrl})`,
+				backgroundImage: `url(${state.room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
 			}}
 		>
 			<div className="max-w-4xl mx-auto bg-card bg-opacity-20 border border-border rounded-2xl backdrop-blur-xl p-8">
-				<h1 className="text-4xl font-bold text-text mb-6">{state.room?.theme}</h1>
-
 				<section>
 					<h2 className="text-2xl font-semibold text-text-muted mb-4">Players in Lobby</h2>
 					<ul className="space-y-2 list-none">
