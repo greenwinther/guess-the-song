@@ -55,14 +55,18 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	if (!state.room) return <p>Loading lobby…</p>;
 
 	const startGame = () => {
-		// 1) Don’t proceed if we haven’t loaded a room yet, or if there are no songs
-		if (!state.room || state.room.songs.length === 0) {
-			return alert("Add at least one song before starting!");
-		}
-
-		// 2) Safe to destruct out code & navigate
-		const { code } = state.room;
-		router.push(`/host/${code}/game`);
+		const first = state.room!.songs[0];
+		if (!first) return alert("Add at least one song before starting!");
+		// 1) Navigate host into the HostGameClient
+		router.push(`/host/${state.room!.code}/game`);
+		// 2) Then broadcast playSong for everyone (including late-joiners)
+		socket.emit(
+			"playSong",
+			{ code: state.room!.code, songId: first.id },
+			(res: { success: boolean; error?: string }) => {
+				if (!res.success) alert("Could not start game: " + res.error);
+			}
+		);
 	};
 
 	return (
