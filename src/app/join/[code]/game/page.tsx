@@ -1,6 +1,6 @@
 "use client";
 // src/app/join/[code]/game/page.tsx
-import PlayerGameClient from "@/components/PlayerGameClient";
+import JoinGameClient from "@/components/JoinGameClient";
 import { useParams, useSearchParams } from "next/navigation";
 
 export default function PlayerGamePage() {
@@ -14,5 +14,5 @@ export default function PlayerGamePage() {
 		code = code[0];
 	}
 
-	return <PlayerGameClient code={code} playerName={name} />;
+	return <JoinGameClient code={code} playerName={name} />;
 }
