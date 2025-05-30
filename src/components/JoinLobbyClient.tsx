@@ -20,11 +20,10 @@ export default function JoinLobbyClient({
 	const hasJoined = useRef(false);
 
 	useEffect(() => {
+		// seed the entire room (players + songs) in one go
 		dispatch({ type: "SET_ROOM", room: initialRoom });
-		dispatch({ type: "SET_PLAYERS", players: initialRoom.players });
-		dispatch({ type: "SET_SONGS", songs: initialRoom.songs });
 
-		// 1) Join the socket.io room exactly once
+		// 2. Join socket.io room exactly once
 		if (!hasJoined.current) {
 			socket.emit("joinRoom", { code: initialRoom.code, name: currentUserName }, (ok: boolean) => {
 				if (!ok) console.error("❌ Failed to join socket room");
@@ -38,16 +37,25 @@ export default function JoinLobbyClient({
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 
-		// 3) Listen for the host's "gameStarted" broadcast
-		socket.on("gameStarted", () => {
+		// 3) Listen for the host's "startGame" broadcast
+		socket.on("startGame", () => {
 			router.push(`/join/${initialRoom.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		});
 
 		return () => {
 			socket.off("playerJoined");
-			socket.off("gameStarted");
+			socket.off("startGame");
 		};
 	}, [socket, dispatch, initialRoom, currentUserName, router]);
+
+	// Render a loading state if for some reason the room isn't set yet
+	if (!state.room) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<p className="text-lg">Loading lobby…</p>
+			</div>
+		);
+	}
 
 	return (
 		<div
