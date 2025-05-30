@@ -3,14 +3,7 @@ import http from "http";
 import { Server } from "socket.io";
 import { createRoom, getRoom, addSong, joinRoom, removeSong } from "@/lib/rooms";
 import { Song } from "@/types/room";
-import {
-	startRoundData,
-	lookupCorrectAnswer,
-	computeScores,
-	storeOrder,
-	getAllOrders,
-	activeRounds,
-} from "@/lib/game";
+import { startRoundData, computeScores, storeOrder, activeRounds } from "@/lib/game";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -29,7 +22,7 @@ const io = new Server(httpServer, {
 	cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
 });
 
-const gamesStarted = new Set<string>();
+const finalScoresByRoom: Record<string, Record<string, number>> = {};
 
 io.on("connection", (socket) => {
 	console.log("↔️ socket connected", socket.id);
@@ -96,33 +89,19 @@ io.on("connection", (socket) => {
 		}
 	);
 
-	// 1) Host clicks “Start Game” in the lobby
-
-	socket.on("gameStarted", ({ code }: { code: string }, callback: (ok: boolean) => void) => {
-		// mark the room as in‐game
-		gamesStarted.add(code);
-
-		// broadcast to everyone in that room
-		io.to(code).emit("gameStarted");
-		callback(true);
-	});
-
 	// 2) Host picks a song → round begins
 	socket.on(
-		"startGame",
+		"playSong",
 		async (
 			data: { code: string; songId: number },
 			callback: (res: { success: boolean; error?: string }) => void
 		) => {
 			try {
-				// 1) Mark room as in‐game
-				gamesStarted.add(data.code);
-
 				// 2) Load the chosen song
 				const song = await prisma.song.findUnique({ where: { id: data.songId } });
 				if (!song) return callback({ success: false, error: "Song not found." });
 
-				// 3) Gather all submitter names (players who added songs)
+				// 3) collect all submitter names
 				const room = await getRoom(data.code);
 				const submitters = room.songs.map((s) => s.submitter);
 
@@ -130,10 +109,7 @@ io.on("connection", (socket) => {
 				startRoundData(data.code, song.id, song.submitter, submitters);
 
 				// 5a) Navigate everyone (including late-joiners) into the game page
-				io.to(data.code).emit("gameStarted");
-
-				// 5b) Then broadcast the actual round data (clip + submitters)
-				io.to(data.code).emit("roundStarted", {
+				io.to(data.code).emit("playSong", {
 					songId: song.id,
 					clipUrl: song.url,
 					submitters,
@@ -154,30 +130,28 @@ io.on("connection", (socket) => {
 			// Persist & retrieve the Player record with id, name, roomId
 			const newPlayer = await joinRoom(data.code, data.name);
 			socket.join(data.code);
-
-			// Now broadcast the full object
-			console.log("🔔 [server] newPlayer:", newPlayer);
 			io.to(data.code).emit("playerJoined", newPlayer);
-
-			// replay navigation if the game already started
-			if (gamesStarted.has(data.code)) {
-				socket.emit("gameStarted");
-			}
 
 			// replay in-flight round if already kicked off
 			const roundsForCode = activeRounds[data.code];
 			if (roundsForCode) {
-				const songIds = Object.keys(roundsForCode).map((i) => parseInt(i, 10));
+				const songIds = Object.keys(roundsForCode).map(Number);
 				const current = Math.max(...songIds);
 				const rd = roundsForCode[current];
-				const theSong = await prisma.song.findUnique({ where: { id: current } });
-				if (theSong) {
-					socket.emit("roundStarted", {
+				const clip = await prisma.song.findUnique({ where: { id: current } });
+				if (clip) {
+					socket.emit("playSong", {
 						songId: current,
-						clipUrl: theSong.url,
+						clipUrl: clip.url,
 						submitters: rd.submitters,
 					});
 				}
+			}
+
+			if (finalScoresByRoom[data.code]) {
+				socket.emit("gameOver", {
+					scores: finalScoresByRoom[data.code]!,
+				});
 			}
 
 			callback(true);
@@ -187,32 +161,49 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	// 4. Players submit guesses
-
+	// 4a) Collect every player’s guesses in one shot
 	socket.on(
-		"submitOrder",
-		(
-			data: { code: string; songId: number; order: string[]; playerName: string },
+		"submitAllOrders",
+		async (
+			data: {
+				code: string;
+				playerName: string;
+				guesses: Record<string /*songId*/, string[]>;
+			},
 			callback: (ok: boolean) => void
 		) => {
 			try {
-				storeOrder(data.code, data.songId, data.playerName, data.order);
+				for (const [sid, order] of Object.entries(data.guesses)) {
+					storeOrder(data.code, parseInt(sid, 10), data.playerName, order);
+				}
 				callback(true);
-			} catch {
+			} catch (err) {
+				console.error("submitAllOrders error", err);
 				callback(false);
 			}
 		}
 	);
 
-	//    This could be a server‐side setTimeout after emit("roundStarted")
-	socket.on("showResults", (data: { code: string; songId: number }, callback: (ok: boolean) => void) => {
+	// 5) When the host is finally ready, score every round and send totals
+	socket.on("showResults", (data: { code: string }, callback: (ok: boolean) => void) => {
 		try {
-			const correctAnswer = lookupCorrectAnswer(data.code, data.songId);
-			const allOrders = getAllOrders(data.code, data.songId);
-			const scores = computeScores(allOrders, correctAnswer);
-			io.to(data.code).emit("roundEnded", { songId: data.songId, correctAnswer, scores });
+			const finalScores: Record<string, number> = {};
+			const roundsForCode = activeRounds[data.code] || {};
+			for (const rd of Object.values(roundsForCode)) {
+				const perSong = computeScores(rd.orders, rd.correctAnswer);
+				for (const [player, pts] of Object.entries(perSong)) {
+					finalScores[player] = (finalScores[player] || 0) + pts;
+				}
+			}
+
+			// 1) cache them
+			finalScoresByRoom[data.code] = finalScores;
+
+			// 2) broadcast the end-of-game
+			io.to(data.code).emit("gameOver", { scores: finalScores });
 			callback(true);
-		} catch {
+		} catch (err) {
+			console.error("showResults error", err);
 			callback(false);
 		}
 	});
