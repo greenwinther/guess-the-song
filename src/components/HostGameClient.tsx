@@ -1,7 +1,7 @@
 "use client";
 // src/components/HostGameClient.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Song } from "@/types/room";
@@ -12,44 +12,64 @@ export default function HostGameClient({ code }: { code: string }) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
 	const [currentSong, setCurrentSong] = useState<Song | null>(null);
+	const hasAutoStarted = useRef(false);
 
 	// subscribe to round events (if still used)
 	useEffect(() => {
-		socket.on("startGame", (round) => {
-			dispatch({ type: "ROUND_STARTED", payload: round });
-		});
-		socket.on("showResults", ({ correctAnswer, scores }) => {
-			dispatch({ type: "ROUND_ENDED", payload: { correctAnswer, scores } });
-		});
-		socket.on("playerJoined", (player: Player) => {
-			console.log("👤 [client] playerJoined received:", player);
-			dispatch({ type: "ADD_PLAYER", player });
-		});
-		return () => {
-			socket.off("startGame");
-			socket.off("showResults");
-			socket.off("playerJoined");
+		const onPlaySong = ({
+			songId,
+			clipUrl,
+			submitters,
+		}: {
+			songId: number;
+			clipUrl: string;
+			submitters: string[];
+		}) => {
+			// tell context to show a new clip
+			dispatch({
+				type: "PLAY_SONG",
+				payload: { songId, clipUrl, submitters },
+			});
+			// find the full Song object so we can render title/url
+			const s = state.room?.songs.find((x) => x.id === songId) || null;
+			setCurrentSong(s);
 		};
-	}, [socket, dispatch]);
+		const onPlayerJoined = (p: Player) => dispatch({ type: "ADD_PLAYER", player: p });
+		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
+			dispatch({ type: "GAME_OVER", payload: { scores } });
+		};
 
-	// handler to play a selected song
+		socket.on("playSong", onPlaySong);
+		socket.on("playerJoined", onPlayerJoined);
+		socket.on("gameOver", onGameOver);
+
+		return () => {
+			socket.off("playSong", onPlaySong);
+			socket.off("playerJoined", onPlayerJoined);
+			socket.off("gameOver", onGameOver);
+		};
+	}, [socket, dispatch, state.room]);
+
+	// 2) Let the host pick any song from the playlist
 	const handlePlay = (song: Song) => {
-		setCurrentSong(song);
-		socket.emit("startGame", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
-			if (!res.success) alert("Could not play song: " + res.error);
+		socket.emit("playSong", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
+			if (!res.success) {
+				alert("Could not play that song: " + res.error);
+			}
 		});
 	};
 
-	// handler to end the game
-	const handleEndGame = () => {
+	// 3) When host is ready, show final results
+	const handleShowResults = () => {
 		socket.emit("showResults", { code }, (ok: boolean) => {
-			if (!ok) alert("Failed to end game");
-			// maybe navigate or show a final summary
+			if (!ok) {
+				alert("Failed to show results");
+			}
 		});
 	};
 
 	if (!state.room) {
-		return <p>Loading game...</p>;
+		return <p>Loading game…</p>;
 	}
 
 	return (
@@ -94,12 +114,12 @@ export default function HostGameClient({ code }: { code: string }) {
 						{currentSong ? (
 							<ReactPlayer url={currentSong.url} controls playing width="100%" height="100%" />
 						) : (
-							<div className="w-full" />
+							<div className="w-full h-full bg-[#000]" />
 						)}
 					</div>
 
 					<div className="flex gap-4">
-						<Button variant="secondary" size="md" onClick={handleEndGame}>
+						<Button variant="secondary" size="md" onClick={handleShowResults}>
 							Show Results
 						</Button>
 					</div>
@@ -107,6 +127,7 @@ export default function HostGameClient({ code }: { code: string }) {
 
 				{/* Right sidebar */}
 				<aside className="w-1/4 p-6 border-l border-border flex flex-col">
+					{/* Playlist buttons */}
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 					<div className="space-y-3 flex-1 overflow-y-auto">
 						{state.room.songs.map((s) => (
