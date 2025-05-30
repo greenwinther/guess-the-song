@@ -38,13 +38,13 @@ export default function JoinLobbyClient({
 		});
 
 		// 3) Listen for the host's "startGame" broadcast
-		socket.on("startGame", () => {
+		socket.on("playSong", () => {
 			router.push(`/join/${initialRoom.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		});
 
 		return () => {
 			socket.off("playerJoined");
-			socket.off("startGame");
+			socket.off("playSong");
 		};
 	}, [socket, dispatch, initialRoom, currentUserName, router]);
 
