@@ -1,84 +1,99 @@
-"use client";
 // src/contexts/GameContext.tsx
+"use client";
+
 import { Player, Room, Song } from "@/types/room";
 import { createContext, useContext, useReducer, ReactNode } from "react";
 
-type Round = {
+// When the host plays a new clip:
+export type Clip = {
 	songId: number;
 	clipUrl: string;
-	guesses: Record<string, string>;
+	submitters: string[];
 };
 
-type State = { room: Room | null; currentRound?: Round | null; scores?: Record<string, number> };
+export type State = {
+	room: Room | null;
+	currentClip: Clip | null;
+	// for each songId, what ranking the player chose
+	guesses: Record<number, string[]>;
+	// after host calls showResults
+	scores: Record<string, number> | null;
+};
 
 type Action =
 	| { type: "SET_ROOM"; room: Room }
 	| { type: "ADD_PLAYER"; player: Player }
-	| { type: "SET_PLAYERS"; players: Player[] }
 	| { type: "ADD_SONG"; song: Song }
 	| { type: "REMOVE_SONG"; songId: number }
-	| { type: "SET_SONGS"; songs: Song[] }
-	| { type: "ROUND_STARTED"; payload: Round }
-	| { type: "GUESS_SUBMITTED"; payload: { player: string; guess: string } }
-	| { type: "ROUND_ENDED"; payload: { correctAnswer: string; scores: Record<string, number> } };
+	| { type: "PLAY_SONG"; payload: Clip }
+	| { type: "SET_GUESS"; payload: { songId: number; order: string[] } }
+	| { type: "GAME_OVER"; payload: { scores: Record<string, number> } };
 
-const initialState: State = { room: null, currentRound: null, scores: {} };
+const initialState: State = {
+	room: null,
+	currentClip: null,
+	guesses: {},
+	scores: null,
+};
 
 function reducer(state: State, action: Action): State {
 	switch (action.type) {
 		case "SET_ROOM":
-			return { room: action.room };
+			return { ...initialState, room: action.room };
 		case "ADD_PLAYER":
-			return state.room
-				? { room: { ...state.room, players: [...state.room.players, action.player] } }
-				: state;
-		case "SET_PLAYERS":
-			return state.room ? { room: { ...state.room, players: action.players } } : state;
-		case "ADD_SONG":
-			return state.room
-				? { room: { ...state.room, songs: [...state.room.songs, action.song] } }
-				: state;
-		case "REMOVE_SONG":
+			if (!state.room) return state;
 			return {
 				...state,
 				room: {
-					...state.room!,
-					songs: state.room!.songs.filter((s) => s.id !== action.songId),
+					...state.room,
+					players: [...state.room.players, action.player],
 				},
 			};
-		case "SET_SONGS":
-			return state.room ? { room: { ...state.room, songs: action.songs } } : state;
-		case "ROUND_STARTED":
+		case "ADD_SONG":
+			if (!state.room) return state;
 			return {
 				...state,
-				currentRound: { ...action.payload, guesses: {} },
-			};
-
-		case "GUESS_SUBMITTED":
-			if (!state.currentRound) return state;
-			return {
-				...state,
-				currentRound: {
-					...state.currentRound,
-					guesses: {
-						...state.currentRound.guesses,
-						[action.payload.player]: action.payload.guess,
-					},
+				room: {
+					...state.room,
+					songs: [...state.room.songs, action.song],
 				},
 			};
-		case "ROUND_ENDED":
+		case "REMOVE_SONG":
+			if (!state.room) return state;
 			return {
 				...state,
-				currentRound: null,
+				room: {
+					...state.room,
+					songs: state.room.songs.filter((s) => s.id !== action.songId),
+				},
+			};
+		case "PLAY_SONG":
+			return {
+				...state,
+				currentClip: action.payload,
+			};
+		case "SET_GUESS":
+			return {
+				...state,
+				guesses: {
+					...state.guesses,
+					[action.payload.songId]: action.payload.order,
+				},
+			};
+		case "GAME_OVER":
+			return {
+				...state,
 				scores: action.payload.scores,
 			};
-
 		default:
 			return state;
 	}
 }
 
-const GameContext = createContext<{ state: State; dispatch: React.Dispatch<Action> } | null>(null);
+const GameContext = createContext<{
+	state: State;
+	dispatch: React.Dispatch<Action>;
+} | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
 	const [state, dispatch] = useReducer(reducer, initialState);
