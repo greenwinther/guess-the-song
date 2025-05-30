@@ -19,12 +19,10 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	const [revealedId, setRevealedId] = useState<number | null>(null);
 
 	useEffect(() => {
-		// seed context…
+		// seed the entire room (players + songs) in one go
 		dispatch({ type: "SET_ROOM", room: initialRoom });
-		dispatch({ type: "SET_PLAYERS", players: initialRoom.players });
-		dispatch({ type: "SET_SONGS", songs: initialRoom.songs });
 
-		// only emit once
+		// only join the socket once
 		if (!hasJoined.current) {
 			socket.emit("joinRoom", { code: initialRoom.code, name: "Host" }, (ok: boolean) => {
 				if (!ok) console.error("❌ Failed to join socket room");
@@ -32,16 +30,17 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			hasJoined.current = true;
 		}
 
+		// when new players arrive
 		socket.on("playerJoined", (player: Player) => {
-			console.log("👤 [client] playerJoined received:", player);
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 
+		// when someone adds a song
 		socket.on("songAdded", (song: Song) => {
-			console.log("🎵 [client] songAdded received:", song);
 			dispatch({ type: "ADD_SONG", song });
 		});
 
+		// when someone (host) removes a song
 		socket.on("songRemoved", ({ songId }: { songId: number }) => {
 			dispatch({ type: "REMOVE_SONG", songId });
 		});
@@ -56,23 +55,14 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	if (!state.room) return <p>Loading lobby…</p>;
 
 	const startGame = () => {
-		// pick first song in playlist
-		const first = state.room!.songs[0];
-		if (!first) return alert("Add at least one song before starting!");
+		// 1) Don’t proceed if we haven’t loaded a room yet, or if there are no songs
+		if (!state.room || state.room.songs.length === 0) {
+			return alert("Add at least one song before starting!");
+		}
 
-		socket.emit(
-			"startGame",
-			{ code: initialRoom.code, songId: first.id },
-			(res: { success: boolean; error?: string }) => {
-				if (!res.success) {
-					alert(res.error);
-				} else {
-					// now that server has broadcast gameStarted+roundStarted,
-					// navigate host into the game page:
-					router.push(`/host/${initialRoom.code}/game`);
-				}
-			}
-		);
+		// 2) Safe to destruct out code & navigate
+		const { code } = state.room;
+		router.push(`/host/${code}/game`);
 	};
 
 	return (
