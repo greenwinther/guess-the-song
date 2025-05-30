@@ -3,7 +3,7 @@
 import JoinGameClient from "@/components/JoinGameClient";
 import { useParams, useSearchParams } from "next/navigation";
 
-export default function PlayerGamePage() {
+export default function JoinGamePage() {
 	const params = useParams();
 	let { code } = params;
 	const name = useSearchParams().get("name");
