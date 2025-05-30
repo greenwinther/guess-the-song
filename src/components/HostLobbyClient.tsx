@@ -16,6 +16,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	const { state, dispatch } = useGame();
 	const hasJoined = useRef(false);
 	const [previewUrl, setPreviewUrl] = useState<string>("");
+	const [revealedId, setRevealedId] = useState<number | null>(null);
 
 	useEffect(() => {
 		// seed context…
@@ -145,41 +146,56 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				{/* Right sidebar */}
 				<aside className="flex-1 p-6 border-l border-border flex flex-col h-full">
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
-					<div className="bg-card bg-opacity-50 border border-border rounded-lg divide-y divide-border overflow-hidden mt-6">
-						{state.room.songs.map((s, i) => (
-							<div
-								key={s.id}
-								className="flex items-center justify-between px-4 py-3 hover:bg-card hover:bg-opacity-30 transition"
-							>
-								<div>
-									<span className="inline-block w-6 h-6 mr-3 text-text-muted font-semibold text-center">
-										{i + 1}
-									</span>
-									<span className="font-semibold text-text">{s.title}</span>
-									<div className="text-text-muted text-sm">{s.submitter}</div>
-								</div>
-
-								{/* ← Add this Remove button */}
-								<button
-									onClick={() =>
-										socket.emit(
-											"removeSong",
-											{ code: state.room!.code, songId: s.id },
-											(res: { success: boolean; error?: string }) => {
-												if (!res.success) {
-													return alert("Could not remove song: " + res.error);
-												}
-												// nothing else here — your `songRemoved` socket listener
-												// (see useEffect below) will update state for you
-											}
-										)
-									}
-									className="ml-4 text-sm text-red-500 hover:text-red-400"
+					<div className="bg-card bg-opacity-50 border border-border rounded-lg divide-y divide-border overflow-auto mt-6">
+						{state.room.songs.map((s, i) => {
+							const isRevealed = revealedId === s.id;
+							return (
+								<div
+									key={s.id}
+									// clicking the row toggles reveal
+									onClick={() => setRevealedId(isRevealed ? null : s.id)}
+									className="relative flex items-center px-4 py-3 hover:bg-card hover:bg-opacity-30 cursor-pointer transition"
 								>
-									Remove
-								</button>
-							</div>
-						))}
+									{/* badge + (maybe) details */}
+									<div className="flex items-start space-x-3 flex-1">
+										<div className="items-center justify-center font-semibold">
+											{i + 1}
+										</div>
+										{isRevealed && (
+											<div className="flex flex-col">
+												<span className="font-semibold text-text">{s.title}</span>
+												<span className="text-sm text-text-muted">
+													Submitted by {s.submitter}
+												</span>
+											</div>
+										)}
+									</div>
+
+									{/* Remove button only if revealed */}
+									{isRevealed && (
+										<button
+											onClick={(e) => {
+												e.stopPropagation(); // don’t re-toggle when removing
+												socket.emit(
+													"removeSong",
+													{ code: state.room!.code, songId: s.id },
+													(res: { success: boolean; error?: string }) => {
+														if (!res.success)
+															return alert(
+																"Could not remove song: " + res.error
+															);
+													}
+												);
+											}}
+											className="absolute top-0 right-0 text-red-500 hover:text-red-400 p-1 text-lg leading-none"
+											aria-label="Remove song"
+										>
+											X
+										</button>
+									)}
+								</div>
+							);
+						})}
 					</div>
 				</aside>
 			</div>
