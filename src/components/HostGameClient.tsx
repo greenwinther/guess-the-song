@@ -12,6 +12,8 @@ export default function HostGameClient({ code }: { code: string }) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
 	const [currentSong, setCurrentSong] = useState<Song | null>(null);
+	const [showSubmitter, setShowSubmitter] = useState(false);
+	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 	const hasAutoStarted = useRef(false);
 
 	// subscribe to round events (if still used)
@@ -33,6 +35,7 @@ export default function HostGameClient({ code }: { code: string }) {
 			// find the full Song object so we can render title/url
 			const s = state.room?.songs.find((x) => x.id === songId) || null;
 			setCurrentSong(s);
+			setShowSubmitter(false);
 		};
 		const onPlayerJoined = (p: Player) => dispatch({ type: "ADD_PLAYER", player: p });
 		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
@@ -51,10 +54,14 @@ export default function HostGameClient({ code }: { code: string }) {
 	}, [socket, dispatch, state.room]);
 
 	// 2) Let the host pick any song from the playlist
+	// emit playSong AND mark title revealed
 	const handlePlay = (song: Song) => {
 		socket.emit("playSong", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
 			if (!res.success) {
 				alert("Could not play that song: " + res.error);
+			} else {
+				// reveal this song's title in the playlist
+				setRevealedSongs((prev) => (prev.includes(song.id) ? prev : [...prev, song.id]));
 			}
 		});
 	};
@@ -75,10 +82,10 @@ export default function HostGameClient({ code }: { code: string }) {
 	return (
 		<div
 			className="
-    min-h-screen p-8 
-    bg-gradient-to-br from-bg to-secondary 
-    bg-no-repeat bg-cover bg-center
-  "
+        min-h-screen p-8 
+        bg-gradient-to-br from-bg to-secondary 
+        bg-no-repeat bg-cover bg-center
+      "
 			style={{
 				backgroundImage: `url(${state.room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
@@ -106,11 +113,15 @@ export default function HostGameClient({ code }: { code: string }) {
 
 				{/* Center panel */}
 				<main className="flex-1 p-6 flex flex-col items-center">
-					<h2 className="text-2xl font-semibold text-text mb-4">
-						{currentSong ? currentSong.submitter : "Submitter Name"}
+					{/* Click to reveal submitter */}
+					<h2
+						className="text-2xl font-semibold text-text cursor-pointer select-none"
+						onClick={() => setShowSubmitter(true)}
+					>
+						{showSubmitter && currentSong ? currentSong.submitter : "Click to reveal submitter"}
 					</h2>
 
-					<div className="w-full rounded-lg overflow-hidden border border-border mt-12 mb-6 h-96">
+					<div className="w-full rounded-lg overflow-hidden border border-border mt-6 mb-6 h-96">
 						{currentSong ? (
 							<ReactPlayer url={currentSong.url} controls playing width="100%" height="100%" />
 						) : (
@@ -127,7 +138,6 @@ export default function HostGameClient({ code }: { code: string }) {
 
 				{/* Right sidebar */}
 				<aside className="w-1/4 p-6 border-l border-border flex flex-col">
-					{/* Playlist buttons */}
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 					<div className="space-y-3 flex-1 overflow-y-auto">
 						{state.room.songs.map((s) => (
@@ -138,7 +148,7 @@ export default function HostGameClient({ code }: { code: string }) {
 								className="w-full justify-start"
 								onClick={() => handlePlay(s)}
 							>
-								{s.title ?? s.url}
+								{revealedSongs.includes(s.id) ? s.title ?? s.url : "Click to reveal song"}
 							</Button>
 						))}
 					</div>
