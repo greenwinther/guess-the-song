@@ -82,7 +82,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		);
 	}
 
-	const { clipUrl, songId, submitters } = state.currentClip;
+	const { songId } = state.currentClip;
 
 	const handleSubmit = () => {
 		const nameOrder = order.map((o) => o.name);
@@ -123,8 +123,6 @@ export default function JoinGameClient({ code, playerName }: Props) {
 					<h1 className="text-h1 font-display text-primary text-center mb-4">
 						Guess the Submitter
 					</h1>
-
-					<audio src={clipUrl} controls autoPlay className="w-full mb-6" />
 
 					<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
 						<ul className="space-y-4">
