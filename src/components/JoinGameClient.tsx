@@ -1,7 +1,7 @@
 "use client";
 // src/components/JoinGameClient.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { Player, Room, Song } from "@/types/room";
@@ -26,65 +26,68 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	// 2) Track which songs have been “revealed” by the host
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 
-	// 1) On game start, initialize the order of submitters
+	// flag to skip that first replay
+	const hasSeenFirstPlay = useRef(false);
+
 	useEffect(() => {
-		console.log("[JoinGameClient] effect mount: joining room", code, playerName);
+		// Handler: gameStarted → seed context & reset reveals
+		const onGameStarted = (room: Room) => {
+			dispatch({ type: "SET_ROOM", room });
+			dispatch({ type: "START_GAME" });
+			hasSeenFirstPlay.current = false;
+			setRevealedSongs([]);
+		};
 
-		// 1) Join the socket room and seed initial Room state
-		socket.emit("joinRoom", { code, name: playerName }, (ok: boolean) => {
-			console.log("[JoinGameClient] joinRoom callback, ok=", ok);
-			if (!ok) console.error("[JoinGameClient] Failed to join room");
-		});
-
-		// receive full room on join or new song/player
-		socket.on("roomData", (room: Room) => {
-			console.log("[JoinGameClient] roomData event", room);
+		// Handler: roomData → seed context + build shuffled submitter order
+		const onRoomData = (room: Room) => {
 			dispatch({ type: "SET_ROOM", room });
 
-			// Build a fresh, shuffled list of submitters
 			const submitterList: OrderItem[] = room.songs.map((s) => ({
-				id: s.id, // song.id
+				id: s.id,
 				name: s.submitter,
 			}));
 			setOrder(shuffleArray(submitterList));
-		});
+		};
 
-		// 2) When game starts, set up submitter list
-		socket.on("gameStarted", (room: Room) => {
-			console.log("[JoinGameClient] gameStarted event", room);
-			dispatch({ type: "START_GAME" });
-		});
+		// Handler: playerJoined → add new player (reducer will dedupe)
+		const onPlayerJoined = (player: Player) => {
+			dispatch({ type: "ADD_PLAYER", player });
+		};
 
-		// 3) Register listeners without blocking on hasJoined
-		socket.on("playerJoined", (player: Player) => {
-			// Deduplicate: only dispatch if that player.id isn’t already in state.room
-			if (!state.room?.players.find((p) => p.id === player.id)) {
-				dispatch({ type: "ADD_PLAYER", player });
+		// Handler: playSong → skip the first replay, then reveal by ID
+		const onPlaySong = ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
+			if (!hasSeenFirstPlay.current) {
+				hasSeenFirstPlay.current = true;
+				return;
 			}
-		});
-
-		// When the host “plays” a clip (reveals that song’s title)
-		socket.on("playSong", ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
-			// 1) Let context know which clip is playing
 			dispatch({ type: "PLAY_SONG", payload: { songId, clipUrl } });
-
-			// 2) Mark this song ID as revealed, so the playlist title becomes visible
 			setRevealedSongs((prev) => (prev.includes(songId) ? prev : [...prev, songId]));
-		});
+		};
 
-		// 3) When game ends, show final scores
-		socket.on("gameOver", ({ scores }: { scores: Record<string, number> }) => {
-			console.log("[JoinGameClient] gameOver event", scores);
+		// Handler: gameOver → store final scores
+		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
 			dispatch({ type: "GAME_OVER", payload: { scores } });
+		};
+
+		// → subscribe to all
+		socket.on("gameStarted", onGameStarted);
+		socket.on("roomData", onRoomData);
+		socket.on("playerJoined", onPlayerJoined);
+		socket.on("playSong", onPlaySong);
+		socket.on("gameOver", onGameOver);
+
+		// Join the room, ask for initial roomData
+		socket.emit("joinRoom", { code, name: playerName }, (ok: boolean) => {
+			if (!ok) console.error("❌ Failed to join room");
 		});
 
 		return () => {
-			console.log("[JoinGameClient] effect cleanup: removing listeners");
-			socket.off("roomData");
-			socket.off("gameStarted");
-			socket.off("playSong");
-			socket.off("gameOver");
-			socket.off("playerJoined");
+			// unsubscribe everything on cleanup
+			socket.off("gameStarted", onGameStarted);
+			socket.off("roomData", onRoomData);
+			socket.off("playerJoined", onPlayerJoined);
+			socket.off("playSong", onPlaySong);
+			socket.off("gameOver", onGameOver);
 		};
 	}, [socket, code, playerName, dispatch]);
 
