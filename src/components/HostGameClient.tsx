@@ -14,6 +14,7 @@ export default function HostGameClient({ code }: { code: string }) {
 	const [currentSong, setCurrentSong] = useState<Song | null>(null);
 	const [showSubmitter, setShowSubmitter] = useState(false);
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
+	const [revealedRanking, setRevealedRanking] = useState<number[]>([]);
 	const hasJoined = useRef(false);
 
 	// 1) On game start, seed context
@@ -44,7 +45,7 @@ export default function HostGameClient({ code }: { code: string }) {
 		};
 	}, [socket, dispatch, state.room]);
 
-	// 2) On each playSong, update clip locally and in context
+	// 3) On each playSong, update clip locally and in context
 	useEffect(() => {
 		const onPlaySong = ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
 			// update context currentClip
@@ -60,6 +61,17 @@ export default function HostGameClient({ code }: { code: string }) {
 			socket.off("playSong", onPlaySong);
 		};
 	}, [socket, dispatch, state.room]);
+
+	// 4) Listen for "gameOver" so Host can render the leaderboard
+	useEffect(() => {
+		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
+			dispatch({ type: "GAME_OVER", payload: { scores } });
+		};
+		socket.on("gameOver", onGameOver);
+		return () => {
+			socket.off("gameOver", onGameOver);
+		};
+	}, [socket, dispatch]);
 
 	// 3) Host triggers clip
 	const handlePlay = (song: Song) => {
@@ -83,27 +95,10 @@ export default function HostGameClient({ code }: { code: string }) {
 		return <p>Loading game…</p>;
 	}
 
-	// If gameOver, show results
-	if (state.scores) {
-		// Sort players by descending score
-		const ranking = Object.entries(state.scores).sort(([, a], [, b]) => b - a);
-
-		return (
-			<div className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary">
-				<div className="max-w-md mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl p-6 text-center">
-					<h2 className="text-2xl font-semibold text-text mb-4">Final Results</h2>
-					<ol className="list-decimal list-inside space-y-2 text-text">
-						{ranking.map(([name, pts], idx) => (
-							<li key={name} className="flex justify-between">
-								<span>{name}</span>
-								<span>{pts} pts</span>
-							</li>
-						))}
-					</ol>
-				</div>
-			</div>
-		);
-	}
+	// Build a sorted ranking of [playerName, points], or empty array if no scores yet
+	const ranking: [string, number][] = state.scores
+		? (Object.entries(state.scores) as [string, number][]).sort(([, a], [, b]) => b - a)
+		: [];
 
 	return (
 		<div
@@ -118,7 +113,7 @@ export default function HostGameClient({ code }: { code: string }) {
 			}}
 		>
 			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
-				{/* Sidebar */}
+				{/* Left Sidebar */}
 				<aside className="w-full lg:w-1/4 p-8 border-r border-border flex flex-col items-center">
 					<h1 className="text-3xl font-bold text-text mb-4">
 						Guess <span className="text-secondary underline decoration-highlight">the</span> Song
@@ -137,29 +132,75 @@ export default function HostGameClient({ code }: { code: string }) {
 					</ul>
 				</aside>
 
-				{/* Center panel */}
+				{/* Center Panel */}
 				<main className="flex-1 p-6 flex flex-col items-center">
-					{/* Click to reveal submitter */}
-					<h2
-						className="text-2xl font-semibold text-text cursor-pointer select-none"
-						onClick={() => setShowSubmitter(true)}
-					>
-						{showSubmitter && currentSong ? currentSong.submitter : "Click to reveal submitter"}
-					</h2>
+					{state.scores ? (
+						// -------- Top-3 Leaderboard (Game Over) --------
+						<>
+							<h2 className="text-2xl font-semibold text-text mb-4">Final Results</h2>
+							<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
+								{ranking.slice(0, 3).map(([name, pts]: [string, number], idx: number) => {
+									const isRevealed = revealedRanking.includes(idx);
+									return (
+										<div
+											key={name}
+											className="flex justify-between py-2 border-b border-border last:border-b-0 cursor-pointer"
+											onClick={() => {
+												if (!isRevealed) {
+													setRevealedRanking((prev) => [...prev, idx]);
+												}
+											}}
+										>
+											{isRevealed ? (
+												<>
+													<span className="text-text">
+														#{idx + 1} {name}
+													</span>
+													<span className="text-text font-medium">{pts} pts</span>
+												</>
+											) : (
+												<span className="text-text italic">
+													#{idx + 1} Click to reveal
+												</span>
+											)}
+										</div>
+									);
+								})}
+							</div>
+						</>
+					) : (
+						// -------- In-Progress (ReactPlayer + “Show Results”) --------
+						<>
+							<h2
+								className="text-2xl font-semibold text-text cursor-pointer select-none"
+								onClick={() => setShowSubmitter(true)}
+							>
+								{showSubmitter && currentSong
+									? currentSong.submitter
+									: "Click to reveal submitter"}
+							</h2>
 
-					<div className="w-full rounded-lg overflow-hidden border border-border mt-6 mb-6 h-96">
-						{currentSong ? (
-							<ReactPlayer url={currentSong.url} controls playing width="100%" height="100%" />
-						) : (
-							<div className="w-full h-full bg-[#000]" />
-						)}
-					</div>
+							<div className="w-full rounded-lg overflow-hidden border border-border mt-6 mb-6 h-96">
+								{currentSong ? (
+									<ReactPlayer
+										url={currentSong.url}
+										controls
+										playing
+										width="100%"
+										height="100%"
+									/>
+								) : (
+									<div className="w-full h-full bg-[#000]" />
+								)}
+							</div>
 
-					<div className="flex gap-4">
-						<Button variant="secondary" size="md" onClick={handleShowResults}>
-							Show Results
-						</Button>
-					</div>
+							<div className="flex gap-4">
+								<Button variant="secondary" size="md" onClick={handleShowResults}>
+									Show Results
+								</Button>
+							</div>
+						</>
+					)}
 				</main>
 
 				{/* Right sidebar */}
