@@ -22,6 +22,7 @@ const io = new Server(httpServer, {
 	cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
 });
 
+const gamesInProgress: Record<string, boolean> = {};
 const finalScoresByRoom: Record<string, Record<string, number>> = {};
 
 io.on("connection", (socket) => {
@@ -89,7 +90,22 @@ io.on("connection", (socket) => {
 		}
 	);
 
-	// 2) Host picks a song → round begins
+	// NEW: host clicks “Start Game” → broadcast full Room, once
+	socket.on("startGame", async (data: { code: string }, callback: (ok: boolean) => void) => {
+		try {
+			const room = await getRoom(data.code);
+			// mark this room as “game started”
+			gamesInProgress[data.code] = true;
+
+			// broadcast to everyone (host + all players) that the game has begun
+			io.to(data.code).emit("gameStarted", room);
+			callback(true);
+		} catch (err: any) {
+			console.error("startGame error", err);
+			callback(false);
+		}
+	});
+
 	socket.on(
 		"playSong",
 		async (
@@ -97,57 +113,64 @@ io.on("connection", (socket) => {
 			callback: (res: { success: boolean; error?: string }) => void
 		) => {
 			try {
-				// 2) Load the chosen song
+				// 1) Look up the clip
 				const song = await prisma.song.findUnique({ where: { id: data.songId } });
-				if (!song) return callback({ success: false, error: "Song not found." });
+				if (!song) {
+					return callback({ success: false, error: "Song not found." });
+				}
 
-				// 3) collect all submitter names
+				// 2) Grab the submitter list from the room
 				const room = await getRoom(data.code);
 				const submitters = room.songs.map((s) => s.submitter);
 
-				// 4) Persist the round
+				// 3) Persist the round (now passing all four arguments)
 				startRoundData(data.code, song.id, song.submitter, submitters);
 
-				// 5a) Navigate everyone (including late-joiners) into the game page
+				// 4) Emit only the clip info (no more submitters payload here)
 				io.to(data.code).emit("playSong", {
 					songId: song.id,
 					clipUrl: song.url,
-					submitters,
 				});
 
 				callback({ success: true });
 			} catch (err: any) {
-				console.error("startGame error", err);
+				console.error("playSong error", err);
 				callback({ success: false, error: err.message });
 			}
 		}
 	);
 
-	// 3) Any socket (host or player) calls joinRoom
-
+	// 3) joinRoom: give every new joiner the up-to-date Room
 	socket.on("joinRoom", async (data: { code: string; name: string }, callback: (ok: boolean) => void) => {
 		try {
-			// Persist & retrieve the Player record with id, name, roomId
+			// …persist the newPlayer, join the socket…
 			const newPlayer = await joinRoom(data.code, data.name);
 			socket.join(data.code);
 			io.to(data.code).emit("playerJoined", newPlayer);
 
-			// replay in-flight round if already kicked off
+			// 1) Always send the freshest Room to this socket
+			const room = await getRoom(data.code);
+			socket.emit("roomData", room);
+
+			// 2) If a round is already active, immediately tell them the game has started
 			const roundsForCode = activeRounds[data.code];
-			if (roundsForCode) {
-				const songIds = Object.keys(roundsForCode).map(Number);
-				const current = Math.max(...songIds);
-				const rd = roundsForCode[current];
-				const clip = await prisma.song.findUnique({ where: { id: current } });
+			if (roundsForCode && Object.keys(roundsForCode).length > 0) {
+				// Emit gameStarted so that JoinGameClient can flip state.gameStarted = true
+				socket.emit("gameStarted", room);
+
+				// If there’s a clip live, replay it too
+				const currentSongId = Math.max(...Object.keys(roundsForCode).map(Number));
+				const rd = roundsForCode[currentSongId];
+				const clip = await prisma.song.findUnique({ where: { id: currentSongId } });
 				if (clip) {
 					socket.emit("playSong", {
-						songId: current,
+						songId: currentSongId,
 						clipUrl: clip.url,
-						submitters: rd.submitters,
 					});
 				}
 			}
 
+			// 3) If the game is over already, send results
 			if (finalScoresByRoom[data.code]) {
 				socket.emit("gameOver", {
 					scores: finalScoresByRoom[data.code]!,
