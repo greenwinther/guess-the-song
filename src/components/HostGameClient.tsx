@@ -83,6 +83,28 @@ export default function HostGameClient({ code }: { code: string }) {
 		return <p>Loading game…</p>;
 	}
 
+	// If gameOver, show results
+	if (state.scores) {
+		// Sort players by descending score
+		const ranking = Object.entries(state.scores).sort(([, a], [, b]) => b - a);
+
+		return (
+			<div className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary">
+				<div className="max-w-md mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl p-6 text-center">
+					<h2 className="text-2xl font-semibold text-text mb-4">Final Results</h2>
+					<ol className="list-decimal list-inside space-y-2 text-text">
+						{ranking.map(([name, pts], idx) => (
+							<li key={name} className="flex justify-between">
+								<span>{name}</span>
+								<span>{pts} pts</span>
+							</li>
+						))}
+					</ol>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div
 			className="
