@@ -5,14 +5,15 @@ import { useEffect, useState } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { useSocket } from "@/contexts/SocketContext";
 import Button from "./ui/Button";
-import { Player } from "@/types/room";
+import ReactPlayer from "react-player";
+import { Player, Room } from "@/types/room";
 
 interface Props {
 	code: string;
 	playerName: string;
 }
 
-type OrderItem = { id: string; name: string };
+type OrderItem = { id: number; name: string };
 
 export default function JoinGameClient({ code, playerName }: Props) {
 	const socket = useSocket();
@@ -28,6 +29,46 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			.map(([, v]) => v);
 	}
 
+	// 1) On game start, initialize the order of submitters
+	useEffect(() => {
+		console.log("[JoinGameClient] effect mount: joining room", code, playerName);
+
+		// 1) Join the socket room and seed initial Room state
+		socket.emit("joinRoom", { code, name: playerName }, (ok: boolean) => {
+			console.log("[JoinGameClient] joinRoom callback, ok=", ok);
+			if (!ok) console.error("[JoinGameClient] Failed to join room");
+		});
+
+		// receive full room on join or new song/player
+		socket.on("roomData", (room: Room) => {
+			console.log("[JoinGameClient] roomData event", room);
+			dispatch({ type: "SET_ROOM", room });
+			// Immediately build submitter list from all songs
+			const items = room.songs.map((s) => ({ id: s.id, name: s.submitter }));
+			setOrder(shuffleArray(items));
+		});
+
+		// 2) When game starts, set up submitter list
+		socket.on("gameStarted", (room: Room) => {
+			console.log("[JoinGameClient] gameStarted event", room);
+			dispatch({ type: "SET_ROOM", room });
+			dispatch({ type: "START_GAME" });
+		});
+
+		// 3) When game ends, show final scores
+		socket.on("gameOver", ({ scores }: { scores: Record<string, number> }) => {
+			console.log("[JoinGameClient] gameOver event", scores);
+			dispatch({ type: "GAME_OVER", payload: { scores } });
+		});
+
+		return () => {
+			console.log("[JoinGameClient] effect cleanup: removing listeners");
+			socket.off("roomData");
+			socket.off("gameStarted");
+			socket.off("gameOver");
+		};
+	}, [socket, code, playerName, dispatch]);
+
 	// Move an item up or down by offset (+1 or -1)
 	const move = (i: number, by: number) => {
 		const next = [...order];
@@ -36,64 +77,16 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		setOrder(next);
 	};
 
-	// When a round starts, initialize ordering
-	useEffect(() => {
-		if (!state.room) return;
-
-		// 1) When host plays a song
-		const onPlay = ({
-			songId,
-			clipUrl,
-			submitters,
-		}: {
-			songId: number;
-			clipUrl: string;
-			submitters: string[];
-		}) => {
-			// Tell your GameContext about the new clip
-			dispatch({ type: "PLAY_SONG", payload: { songId, clipUrl, submitters } });
-
-			// Build & shuffle your local order
-			const items = submitters.map((name, i) => ({
-				id: `${name}-${i}`,
-				name,
-			}));
-			setOrder(shuffleArray(items));
-			setSubmitted(false);
-		};
-		socket.on("playSong", onPlay);
-
-		// 2) Final results from host
-		socket.on("gameOver", ({ scores }: { scores: Record<string, number> }) => {
-			dispatch({ type: "GAME_OVER", payload: { scores } });
-		});
-
-		return () => {
-			socket.off("playSong", onPlay);
-			socket.off("gameOver");
-		};
-	}, [socket, state.room, dispatch]);
-
-	if (!state.currentClip) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-bg text-text">
-				<p className="text-lg">Waiting for host to start…</p>
-			</div>
-		);
-	}
-
-	const { songId } = state.currentClip;
-
 	const handleSubmit = () => {
-		const nameOrder = order.map((o) => o.name);
-		socket.emit(
-			"submitAllOrders",
-			{ code, playerName, guesses: { [songId]: nameOrder } },
-			(ok: boolean) => {
-				if (ok) setSubmitted(true);
-				else alert("Failed to submit your order. Try again?");
-			}
-		);
+		console.log("[JoinGameClient] handleSubmit, currentClip=", state.currentClip, "order=", order);
+		if (!state.currentClip) return;
+		const guesses: Record<string, string[]> = {};
+		guesses[state.currentClip.songId.toString()] = order.map((o) => o.name);
+		socket.emit("submitAllOrders", { code, playerName, guesses }, (ok: boolean) => {
+			console.log("[JoinGameClient] submitAllOrders callback, ok=", ok);
+			if (!ok) alert("Failed to submit guesses");
+			else setSubmitted(true);
+		});
 	};
 
 	return (
@@ -118,12 +111,11 @@ export default function JoinGameClient({ code, playerName }: Props) {
 					</ul>
 				</aside>
 
-				{/* Main Panel: Guess list */}
+				{/* Main Panel: Guess list + clip */}
 				<main className="flex-1 p-6 flex flex-col items-center">
-					<h1 className="text-h1 font-display text-primary text-center mb-4">
-						Guess the Submitter
-					</h1>
+					<h1 className="text-2xl font-semibold text-text mb-4">Guess the Submitter</h1>
 
+					{/* Ordering UI */}
 					<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
 						<ul className="space-y-4">
 							{order.map((item, idx) => (
@@ -145,7 +137,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 										<Button
 											size="sm"
 											variant="secondary"
-											onClick={() => move(idx, +1)}
+											onClick={() => move(idx, 1)}
 											disabled={idx === order.length - 1 || submitted}
 										>
 											↓
@@ -163,7 +155,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 						</Button>
 					</div>
 
-					{/* If the host has already ended the game, show your score */}
+					{/* Final score if available */}
 					{state.scores && state.scores[playerName] != null && (
 						<div className="mt-6 text-center">
 							<p className="text-lg">
