@@ -1,10 +1,10 @@
 "use client";
 // src/components/HostGameClient.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
-import { Room, Song } from "@/types/room";
+import { Player, Room, Song } from "@/types/room";
 import ReactPlayer from "react-player";
 import Button from "./ui/Button";
 
@@ -14,6 +14,7 @@ export default function HostGameClient({ code }: { code: string }) {
 	const [currentSong, setCurrentSong] = useState<Song | null>(null);
 	const [showSubmitter, setShowSubmitter] = useState(false);
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
+	const hasJoined = useRef(false);
 
 	// 1) On game start, seed context
 	useEffect(() => {
@@ -26,6 +27,22 @@ export default function HostGameClient({ code }: { code: string }) {
 			socket.off("gameStarted", onGameStarted);
 		};
 	}, [socket, dispatch]);
+
+	// 2) Listen for new players joining (so host sees updated player list)
+	useEffect(() => {
+		if (hasJoined.current) return; // Only join once
+		const onPlayerJoined = (player: Player) => {
+			// If we already have that player.id, skip
+			if (!state.room?.players.find((p) => p.id === player.id)) {
+				dispatch({ type: "ADD_PLAYER", player });
+			}
+		};
+		socket.on("playerJoined", onPlayerJoined);
+		hasJoined.current = true; // Mark as joined
+		return () => {
+			socket.off("playerJoined", onPlayerJoined);
+		};
+	}, [socket, dispatch, state.room]);
 
 	// 2) On each playSong, update clip locally and in context
 	useEffect(() => {
