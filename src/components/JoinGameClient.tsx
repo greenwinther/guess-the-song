@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { useSocket } from "@/contexts/SocketContext";
-import { Player, Room } from "@/types/room";
+import { Player, Room, Song } from "@/types/room";
 import Button from "./ui/Button";
 import { shuffleArray } from "@/utils/shuffelArray";
 
@@ -18,8 +18,13 @@ type OrderItem = { id: number; name: string };
 export default function JoinGameClient({ code, playerName }: Props) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
+
+	// 1) For shuffling submitters
 	const [order, setOrder] = useState<OrderItem[]>([]);
 	const [submitted, setSubmitted] = useState(false);
+
+	// 2) Track which songs have been “revealed” by the host
+	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 
 	// 1) On game start, initialize the order of submitters
 	useEffect(() => {
@@ -50,6 +55,15 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			dispatch({ type: "START_GAME" });
 		});
 
+		// When the host “plays” a clip (reveals that song’s title)
+		socket.on("playSong", ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
+			// 1) Let context know which clip is playing
+			dispatch({ type: "PLAY_SONG", payload: { songId, clipUrl } });
+
+			// 2) Mark this song ID as revealed, so the playlist title becomes visible
+			setRevealedSongs((prev) => (prev.includes(songId) ? prev : [...prev, songId]));
+		});
+
 		// 3) When game ends, show final scores
 		socket.on("gameOver", ({ scores }: { scores: Record<string, number> }) => {
 			console.log("[JoinGameClient] gameOver event", scores);
@@ -60,6 +74,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			console.log("[JoinGameClient] effect cleanup: removing listeners");
 			socket.off("roomData");
 			socket.off("gameStarted");
+			socket.off("playSong");
 			socket.off("gameOver");
 		};
 	}, [socket, code, playerName, dispatch]);
@@ -165,12 +180,13 @@ export default function JoinGameClient({ code, playerName }: Props) {
 				<aside className="w-full lg:w-1/4 p-6 border-l border-border flex flex-col">
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 					<div className="space-y-2 flex-1 overflow-y-auto">
-						{state.room!.songs.map((s) => (
+						{state.room?.songs.map((s: Song) => (
 							<div
 								key={s.id}
 								className="px-3 py-2 rounded-lg bg-card hover:bg-border text-text"
 							>
-								{s.title ?? s.url}
+								{/* If this songId has been revealed, show title; otherwise show a placeholder */}
+								{revealedSongs.includes(s.id) ? s.title : "Hidden"}
 							</div>
 						))}
 					</div>
