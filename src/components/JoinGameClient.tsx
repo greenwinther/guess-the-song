@@ -55,6 +55,14 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			dispatch({ type: "START_GAME" });
 		});
 
+		// 3) Register listeners without blocking on hasJoined
+		socket.on("playerJoined", (player: Player) => {
+			// Deduplicate: only dispatch if that player.id isn’t already in state.room
+			if (!state.room?.players.find((p) => p.id === player.id)) {
+				dispatch({ type: "ADD_PLAYER", player });
+			}
+		});
+
 		// When the host “plays” a clip (reveals that song’s title)
 		socket.on("playSong", ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
 			// 1) Let context know which clip is playing
@@ -76,6 +84,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			socket.off("gameStarted");
 			socket.off("playSong");
 			socket.off("gameOver");
+			socket.off("playerJoined");
 		};
 	}, [socket, code, playerName, dispatch]);
 

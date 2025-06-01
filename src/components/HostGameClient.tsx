@@ -37,17 +37,18 @@ export default function HostGameClient({ code }: { code: string }) {
 
 	// 2) Listen for new players joining (so host sees updated player list)
 	useEffect(() => {
-		if (hasJoined.current) return; // Only join once
-		const onPlayerJoined = (player: Player) => {
-			// If we already have that player.id, skip
+		hasJoined.current = true; // Mark as joined
+
+		// 2) Register listeners without blocking on hasJoined
+		socket.on("playerJoined", (player: Player) => {
+			// Deduplicate: only dispatch if that player.id isn’t already in state.room
 			if (!state.room?.players.find((p) => p.id === player.id)) {
 				dispatch({ type: "ADD_PLAYER", player });
 			}
-		};
-		socket.on("playerJoined", onPlayerJoined);
-		hasJoined.current = true; // Mark as joined
+		});
+
 		return () => {
-			socket.off("playerJoined", onPlayerJoined);
+			socket.off("playerJoined");
 		};
 	}, [socket, dispatch, state.room]);
 

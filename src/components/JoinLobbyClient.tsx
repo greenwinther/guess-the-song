@@ -23,13 +23,21 @@ export default function JoinLobbyClient({
 		// Seed the entire room (players + songs) in one go
 		dispatch({ type: "SET_ROOM", room: initialRoom });
 
-		// Join socket.io room exactly once
+		// 1) Join socket.io room exactly once
 		if (!hasJoined.current) {
 			socket.emit("joinRoom", { code: initialRoom.code, name: currentUserName }, (ok: boolean) => {
 				if (!ok) console.error("❌ Failed to join socket room");
 			});
 			hasJoined.current = true;
 		}
+
+		// 2) Register listeners without blocking on hasJoined
+		socket.on("playerJoined", (player: Player) => {
+			// Deduplicate: only dispatch if that player.id isn’t already in state.room
+			if (!state.room?.players.find((p) => p.id === player.id)) {
+				dispatch({ type: "ADD_PLAYER", player });
+			}
+		});
 
 		// 3) Listen for "roomData" → update context
 		socket.on("roomData", (room: Room) => {
@@ -57,6 +65,7 @@ export default function JoinLobbyClient({
 			socket.off("songAdded");
 			socket.off("songRemoved");
 			socket.off("gameStarted");
+			socket.off("playerJoined");
 		};
 	}, [socket, dispatch, initialRoom, currentUserName, router]);
 
