@@ -39,11 +39,17 @@ export async function getRoom(code: string) {
 	return room;
 }
 
-export async function addSong(code: string, song: { url: string; submitter: string }) {
+export async function addSong(code: string, song: { url: string; submitter: string; title: string }) {
 	const room = await prisma.room.findUnique({ where: { code } });
 	if (!room) throw new Error("Room not found");
+
 	return await prisma.song.create({
-		data: { url: song.url, submitter: song.submitter, roomId: room.id },
+		data: {
+			url: song.url,
+			submitter: song.submitter,
+			title: song.title,
+			roomId: room.id,
+		},
 	});
 }
 
