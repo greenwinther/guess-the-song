@@ -13,8 +13,8 @@ import ReactPlayer from "react-player";
 export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
 	const router = useRouter();
-	const { state, dispatch } = useGame();
 	const hasJoined = useRef(false);
+	const { state, dispatch } = useGame();
 	const [previewUrl, setPreviewUrl] = useState<string>("");
 	const [revealedId, setRevealedId] = useState<number | null>(null);
 
@@ -30,9 +30,12 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			hasJoined.current = true;
 		}
 
-		// when new players arrive
+		// 3) Register listeners without blocking on hasJoined
 		socket.on("playerJoined", (player: Player) => {
-			dispatch({ type: "ADD_PLAYER", player });
+			// Deduplicate: only dispatch if that player.id isn’t already in state.room
+			if (!state.room?.players.find((p) => p.id === player.id)) {
+				dispatch({ type: "ADD_PLAYER", player });
+			}
 		});
 
 		// when someone adds a song
@@ -46,9 +49,9 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 		});
 
 		return () => {
-			socket.off("playerJoined");
 			socket.off("songAdded");
 			socket.off("songRemoved");
+			socket.off("playerJoined");
 		};
 	}, [socket, dispatch, initialRoom]);
 
