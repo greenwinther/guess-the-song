@@ -42,6 +42,10 @@ function reducer(state: State, action: Action): State {
 			return { ...initialState, room: action.room };
 		case "ADD_PLAYER":
 			if (!state.room) return state;
+			// don’t add if we already have this player.id
+			if (state.room.players.some((p) => p.id === action.player.id)) {
+				return state;
+			}
 			return {
 				...state,
 				room: {
