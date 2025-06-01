@@ -20,6 +20,7 @@ model Song {
   id         Int    @id @default(autoincrement())
   url        String
   submitter  String
+  title      String?
   roomId     Int
   room       Room   @relation(fields: [roomId], references: [id])
 }
