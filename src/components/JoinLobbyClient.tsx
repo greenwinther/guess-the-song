@@ -47,7 +47,6 @@ export default function JoinLobbyClient({
 		// Listen for the gameStarted broadcast
 		socket.on("gameStarted", (room: Room) => {
 			// Update context with full Room
-			dispatch({ type: "SET_ROOM", room });
 			dispatch({ type: "START_GAME" });
 			// Navigate to the game page
 			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
