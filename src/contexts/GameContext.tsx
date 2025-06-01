@@ -8,16 +8,22 @@ import { createContext, useContext, useReducer, ReactNode } from "react";
 export type Clip = {
 	songId: number;
 	clipUrl: string;
-	submitters: string[];
 };
 
-export type State = {
+type State = {
 	room: Room | null;
+	gameStarted: boolean;
 	currentClip: Clip | null;
-	// for each songId, what ranking the player chose
 	guesses: Record<number, string[]>;
-	// after host calls showResults
 	scores: Record<string, number> | null;
+};
+
+const initialState: State = {
+	room: null,
+	gameStarted: false,
+	currentClip: null,
+	guesses: {},
+	scores: null,
 };
 
 type Action =
@@ -25,16 +31,10 @@ type Action =
 	| { type: "ADD_PLAYER"; player: Player }
 	| { type: "ADD_SONG"; song: Song }
 	| { type: "REMOVE_SONG"; songId: number }
+	| { type: "START_GAME" }
 	| { type: "PLAY_SONG"; payload: Clip }
 	| { type: "SET_GUESS"; payload: { songId: number; order: string[] } }
 	| { type: "GAME_OVER"; payload: { scores: Record<string, number> } };
-
-const initialState: State = {
-	room: null,
-	currentClip: null,
-	guesses: {},
-	scores: null,
-};
 
 function reducer(state: State, action: Action): State {
 	switch (action.type) {
@@ -67,6 +67,8 @@ function reducer(state: State, action: Action): State {
 					songs: state.room.songs.filter((s) => s.id !== action.songId),
 				},
 			};
+		case "START_GAME":
+			return { ...state, gameStarted: true };
 		case "PLAY_SONG":
 			return {
 				...state,
