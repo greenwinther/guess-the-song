@@ -1,10 +1,10 @@
 "use client";
 // src/components/HostGameClient.tsx
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
-import { Player, Song } from "@/types/room";
+import { Room, Song } from "@/types/room";
 import ReactPlayer from "react-player";
 import Button from "./ui/Button";
 
@@ -14,68 +14,55 @@ export default function HostGameClient({ code }: { code: string }) {
 	const [currentSong, setCurrentSong] = useState<Song | null>(null);
 	const [showSubmitter, setShowSubmitter] = useState(false);
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
-	const hasAutoStarted = useRef(false);
 
-	// subscribe to round events (if still used)
+	// 1) On game start, seed context
 	useEffect(() => {
-		const onPlaySong = ({
-			songId,
-			clipUrl,
-			submitters,
-		}: {
-			songId: number;
-			clipUrl: string;
-			submitters: string[];
-		}) => {
-			// tell context to show a new clip
-			dispatch({
-				type: "PLAY_SONG",
-				payload: { songId, clipUrl, submitters },
-			});
-			// find the full Song object so we can render title/url
+		const onGameStarted = (room: Room) => {
+			dispatch({ type: "SET_ROOM", room });
+			dispatch({ type: "START_GAME" });
+		};
+		socket.on("gameStarted", onGameStarted);
+		return () => {
+			socket.off("gameStarted", onGameStarted);
+		};
+	}, [socket, dispatch]);
+
+	// 2) On each playSong, update clip locally and in context
+	useEffect(() => {
+		const onPlaySong = ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
+			// update context currentClip
+			dispatch({ type: "PLAY_SONG", payload: { songId, clipUrl } });
+			// reset reveal
+			setShowSubmitter(false);
+			// find full song object
 			const s = state.room?.songs.find((x) => x.id === songId) || null;
 			setCurrentSong(s);
-			setShowSubmitter(false);
 		};
-		const onPlayerJoined = (p: Player) => dispatch({ type: "ADD_PLAYER", player: p });
-		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
-			dispatch({ type: "GAME_OVER", payload: { scores } });
-		};
-
 		socket.on("playSong", onPlaySong);
-		socket.on("playerJoined", onPlayerJoined);
-		socket.on("gameOver", onGameOver);
-
 		return () => {
 			socket.off("playSong", onPlaySong);
-			socket.off("playerJoined", onPlayerJoined);
-			socket.off("gameOver", onGameOver);
 		};
 	}, [socket, dispatch, state.room]);
 
-	// 2) Let the host pick any song from the playlist
-	// emit playSong AND mark title revealed
+	// 3) Host triggers clip
 	const handlePlay = (song: Song) => {
 		socket.emit("playSong", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
 			if (!res.success) {
 				alert("Could not play that song: " + res.error);
 			} else {
-				// reveal this song's title in the playlist
 				setRevealedSongs((prev) => (prev.includes(song.id) ? prev : [...prev, song.id]));
 			}
 		});
 	};
 
-	// 3) When host is ready, show final results
+	// 4) When host is ready, show final results
 	const handleShowResults = () => {
 		socket.emit("showResults", { code }, (ok: boolean) => {
-			if (!ok) {
-				alert("Failed to show results");
-			}
+			if (!ok) alert("Failed to show results");
 		});
 	};
 
-	if (!state.room) {
+	if (!state.room || !state.gameStarted) {
 		return <p>Loading game…</p>;
 	}
 
