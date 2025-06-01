@@ -55,6 +55,7 @@ io.on("connection", (socket) => {
 				const song = await addSong(data.code, {
 					url: data.url,
 					submitter: data.submitter,
+					title: data.title,
 				});
 				const withTitle = { ...song, title: data.title };
 
