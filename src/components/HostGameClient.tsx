@@ -11,10 +11,16 @@ import Button from "./ui/Button";
 export default function HostGameClient({ code }: { code: string }) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
+	// Holds the currently playing Song (or null if none)
 	const [currentSong, setCurrentSong] = useState<Song | null>(null);
+	// Whether to reveal the current clip’s submitter name
 	const [showSubmitter, setShowSubmitter] = useState(false);
+	// Keeps track of which song IDs have been revealed (for the playlist buttons)
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
+	// Keeps track of which player have been revealed (for the ranking list)
 	const [revealedRanking, setRevealedRanking] = useState<number[]>([]);
+	// NEW: which players have submitted
+	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
 	const hasJoined = useRef(false);
 
 	// 1) On game start, seed context
@@ -62,7 +68,18 @@ export default function HostGameClient({ code }: { code: string }) {
 		};
 	}, [socket, dispatch, state.room]);
 
-	// 4) Listen for "gameOver" so Host can render the leaderboard
+	// 4) Listen for "playerSubmitted" (NEW). Whenever a player submits, add their name here.
+	useEffect(() => {
+		const onPlayerSubmitted = ({ playerName }: { playerName: string }) => {
+			setSubmittedPlayers((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
+		};
+		socket.on("playerSubmitted", onPlayerSubmitted);
+		return () => {
+			socket.off("playerSubmitted", onPlayerSubmitted);
+		};
+	}, [socket]);
+
+	// 5) Listen for "gameOver" so Host can render the leaderboard
 	useEffect(() => {
 		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
 			dispatch({ type: "GAME_OVER", payload: { scores } });
@@ -73,7 +90,7 @@ export default function HostGameClient({ code }: { code: string }) {
 		};
 	}, [socket, dispatch]);
 
-	// 3) Host triggers clip
+	// 6) Host clicks a song → emit "playSong"
 	const handlePlay = (song: Song) => {
 		socket.emit("playSong", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
 			if (!res.success) {
@@ -84,13 +101,14 @@ export default function HostGameClient({ code }: { code: string }) {
 		});
 	};
 
-	// 4) When host is ready, show final results
+	// 7) Host clicks "Show Results" → emit "showResults"
 	const handleShowResults = () => {
 		socket.emit("showResults", { code }, (ok: boolean) => {
 			if (!ok) alert("Failed to show results");
 		});
 	};
 
+	// If we haven’t joined a room or the game hasn’t started yet:
 	if (!state.room || !state.gameStarted) {
 		return <p>Loading game…</p>;
 	}
@@ -113,7 +131,7 @@ export default function HostGameClient({ code }: { code: string }) {
 			}}
 		>
 			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
-				{/* Left Sidebar */}
+				{/** ========== LEFT SIDEBAR ========== **/}
 				<aside className="w-full lg:w-1/4 p-8 border-r border-border flex flex-col items-center">
 					<h1 className="text-3xl font-bold text-text mb-4">
 						Guess <span className="text-secondary underline decoration-highlight">the</span> Song
@@ -123,16 +141,23 @@ export default function HostGameClient({ code }: { code: string }) {
 						<p className="text-4xl font-mono font-bold text-secondary">{state.room.code}</p>
 					</div>
 					<ul className="space-y-2 w-full">
-						{state.room.players.map((p) => (
-							<li key={p.id} className="flex items-center space-x-2 text-text">
-								<span className="w-3 h-3 rounded-full bg-primary" />
-								<span>{p.name}</span>
-							</li>
-						))}
+						{state.room.players.map((p) => {
+							const didSubmit = submittedPlayers.includes(p.name);
+							return (
+								<li key={p.id} className="flex items-center space-x-2 text-text">
+									<span
+										className={`w-3 h-3 rounded-full ${
+											didSubmit ? "bg-green-500" : "bg-primary"
+										}`}
+									/>
+									<span>{p.name}</span>
+								</li>
+							);
+						})}
 					</ul>
 				</aside>
 
-				{/* Center Panel */}
+				{/** ========== CENTER PANEL ========== **/}
 				<main className="flex-1 p-6 flex flex-col items-center">
 					{state.scores ? (
 						// -------- Top-3 Leaderboard (Game Over) --------
