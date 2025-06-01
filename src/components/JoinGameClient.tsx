@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { Player, Room, Song } from "@/types/room";
-import Button from "./ui/Button";
 import { shuffleArray } from "@/utils/shuffelArray";
+import { getYouTubeID } from "@/lib/youtube";
+import Button from "./ui/Button";
 
 interface Props {
 	code: string;
@@ -29,13 +30,17 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	// flag to skip that first replay
 	const hasSeenFirstPlay = useRef(false);
 
+	// 4) Holds the current background‐thumbnail URL (or null → use room.backgroundUrl)
+	const [bgThumbnail, setBgThumbnail] = useState<string | null>(null);
+
 	useEffect(() => {
 		// Handler: gameStarted → seed context & reset reveals
 		const onGameStarted = (room: Room) => {
 			dispatch({ type: "SET_ROOM", room });
 			dispatch({ type: "START_GAME" });
-			hasSeenFirstPlay.current = false;
 			setRevealedSongs([]);
+			hasSeenFirstPlay.current = false;
+			setBgThumbnail(null);
 		};
 
 		// Handler: roomData → seed context + build shuffled submitter order
@@ -60,8 +65,19 @@ export default function JoinGameClient({ code, playerName }: Props) {
 				hasSeenFirstPlay.current = true;
 				return;
 			}
+			// 1) Let context know which clip is playing
 			dispatch({ type: "PLAY_SONG", payload: { songId, clipUrl } });
+
+			// 2) Reveal this song ID in the playlist
 			setRevealedSongs((prev) => (prev.includes(songId) ? prev : [...prev, songId]));
+
+			// 3) Extract YouTube ID and set background thumbnail
+			const vidId = getYouTubeID(clipUrl);
+			if (vidId) {
+				setBgThumbnail(`https://img.youtube.com/vi/${vidId}/maxresdefault.jpg`);
+			} else {
+				setBgThumbnail(null);
+			}
 		};
 
 		// Handler: gameOver → store final scores
@@ -129,7 +145,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			<div
 				className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center"
 				style={{
-					backgroundImage: `url(${state.room?.backgroundUrl ?? ""})`,
+					backgroundImage: bgThumbnail ? `url(${bgThumbnail})` : `url(${state.room.backgroundUrl})`,
 					backgroundBlendMode: "overlay",
 				}}
 			>
@@ -208,7 +224,10 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	return (
 		<div
 			className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center"
-			style={{ backgroundImage: `url(${state.room!.backgroundUrl})`, backgroundBlendMode: "overlay" }}
+			style={{
+				backgroundImage: bgThumbnail ? `url(${bgThumbnail})` : `url(${state.room!.backgroundUrl})`,
+				backgroundBlendMode: "overlay",
+			}}
 		>
 			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
 				{/* Left Sidebar: Room code & players */}

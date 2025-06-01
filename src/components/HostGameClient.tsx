@@ -7,6 +7,7 @@ import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
 import ReactPlayer from "react-player";
 import Button from "./ui/Button";
+import { getYouTubeID } from "@/lib/youtube";
 
 export default function HostGameClient({ code }: { code: string }) {
 	const socket = useSocket();
@@ -21,6 +22,9 @@ export default function HostGameClient({ code }: { code: string }) {
 	const [revealedRanking, setRevealedRanking] = useState<number[]>([]);
 	// NEW: which players have submitted
 	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
+	// NEW: background‐image URL (room.backgroundUrl OR current thumbnail)
+	const [bgThumbnail, setBgThumbnail] = useState<string | null>(null);
+
 	const hasJoined = useRef(false);
 
 	// 1) On game start, seed context
@@ -28,6 +32,7 @@ export default function HostGameClient({ code }: { code: string }) {
 		const onGameStarted = (room: Room) => {
 			dispatch({ type: "SET_ROOM", room });
 			dispatch({ type: "START_GAME" });
+			setBgThumbnail(null);
 		};
 		socket.on("gameStarted", onGameStarted);
 		return () => {
@@ -62,7 +67,16 @@ export default function HostGameClient({ code }: { code: string }) {
 			// find full song object
 			const s = state.room?.songs.find((x) => x.id === songId) || null;
 			setCurrentSong(s);
+
+			// 3d) pull the YouTube ID out of clipUrl and build a thumbnail URL
+			const vidId = getYouTubeID(clipUrl);
+			if (vidId) {
+				setBgThumbnail(`https://img.youtube.com/vi/${vidId}/maxresdefault.jpg`);
+			} else {
+				setBgThumbnail(null);
+			}
 		};
+
 		socket.on("playSong", onPlaySong);
 		return () => {
 			socket.off("playSong", onPlaySong);
@@ -127,7 +141,8 @@ export default function HostGameClient({ code }: { code: string }) {
         bg-no-repeat bg-cover bg-center
       "
 			style={{
-				backgroundImage: `url(${state.room.backgroundUrl})`,
+				// Use the thumbnail if set; otherwise fall back to the room’s background
+				backgroundImage: bgThumbnail ? `url(${bgThumbnail})` : `url(${state.room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
 			}}
 		>
