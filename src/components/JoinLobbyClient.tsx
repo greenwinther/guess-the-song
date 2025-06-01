@@ -4,7 +4,7 @@
 import { useEffect, useRef } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
-import { Player, Room } from "@/types/room";
+import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 
 export default function JoinLobbyClient({
@@ -20,10 +20,10 @@ export default function JoinLobbyClient({
 	const hasJoined = useRef(false);
 
 	useEffect(() => {
-		// seed the entire room (players + songs) in one go
+		// Seed the entire room (players + songs) in one go
 		dispatch({ type: "SET_ROOM", room: initialRoom });
 
-		// 2. Join socket.io room exactly once
+		// Join socket.io room exactly once
 		if (!hasJoined.current) {
 			socket.emit("joinRoom", { code: initialRoom.code, name: currentUserName }, (ok: boolean) => {
 				if (!ok) console.error("❌ Failed to join socket room");
@@ -31,20 +31,33 @@ export default function JoinLobbyClient({
 			hasJoined.current = true;
 		}
 
-		// 2) Listen for new players
-		socket.on("playerJoined", (player: Player) => {
-			console.log("👤 [client] playerJoined received:", player);
-			dispatch({ type: "ADD_PLAYER", player });
+		// 3) Listen for "roomData" → update context
+		socket.on("roomData", (room: Room) => {
+			dispatch({ type: "SET_ROOM", room });
 		});
 
-		// 3) Listen for the host's "startGame" broadcast
-		socket.on("playSong", () => {
-			router.push(`/join/${initialRoom.code}/game?name=${encodeURIComponent(currentUserName)}`);
+		// 4) Also listen for songAdded/songRemoved so that any new songs also update context
+		socket.on("songAdded", (song: Song) => {
+			dispatch({ type: "ADD_SONG", song });
+		});
+		socket.on("songRemoved", ({ songId }) => {
+			dispatch({ type: "REMOVE_SONG", songId });
+		});
+
+		// Listen for the gameStarted broadcast
+		socket.on("gameStarted", (room: Room) => {
+			// Update context with full Room
+			dispatch({ type: "SET_ROOM", room });
+			dispatch({ type: "START_GAME" });
+			// Navigate to the game page
+			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		});
 
 		return () => {
-			socket.off("playerJoined");
-			socket.off("playSong");
+			socket.off("roomData");
+			socket.off("songAdded");
+			socket.off("songRemoved");
+			socket.off("gameStarted");
 		};
 	}, [socket, dispatch, initialRoom, currentUserName, router]);
 
@@ -74,7 +87,7 @@ export default function JoinLobbyClient({
 				<section>
 					<h2 className="text-2xl font-semibold text-text-muted mb-4">Players in Lobby</h2>
 					<ul className="space-y-2 list-none">
-						{state.room?.players.map((p, i) => (
+						{state.room.players.map((p, i) => (
 							<li key={i} className="flex items-center space-x-2 text-text">
 								<span className="w-3 h-3 rounded-full bg-primary" />
 								<span>{p.name}</span>
