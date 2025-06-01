@@ -94,12 +94,28 @@ io.on("connection", (socket) => {
 	// NEW: host clicks “Start Game” → broadcast full Room, once
 	socket.on("startGame", async (data: { code: string }, callback: (ok: boolean) => void) => {
 		try {
+			// 1) Fetch the room and its songs
 			const room = await getRoom(data.code);
-			// mark this room as “game started”
-			gamesInProgress[data.code] = true;
+			if (!room) return callback(false);
 
-			// broadcast to everyone (host + all players) that the game has begun
+			// 2) For each song in that room, create a RoundData entry
+			//    so that every songId is known up front, with the correctAnswer=submitter
+			for (const song of room.songs) {
+				// song.id is the unique ID
+				// song.submitter is the correct answer for that song
+				startRoundData(
+					data.code,
+					song.id,
+					song.submitter,
+					room.songs.map((s) => s.submitter)
+				);
+				// Note: we pass the full list of all submitters, but computeScores only cares about correctAnswer.
+			}
+
+			// 3) Broadcast “gameStarted” with the full room so clients can build their guess UI.
+			gamesInProgress[data.code] = true;
 			io.to(data.code).emit("gameStarted", room);
+
 			callback(true);
 		} catch (err: any) {
 			console.error("startGame error", err);
@@ -119,13 +135,6 @@ io.on("connection", (socket) => {
 				if (!song) {
 					return callback({ success: false, error: "Song not found." });
 				}
-
-				// 2) Grab the submitter list from the room
-				const room = await getRoom(data.code);
-				const submitters = room.songs.map((s) => s.submitter);
-
-				// 3) Persist the round (now passing all four arguments)
-				startRoundData(data.code, song.id, song.submitter, submitters);
 
 				// 4) Emit only the clip info (no more submitters payload here)
 				io.to(data.code).emit("playSong", {
@@ -213,6 +222,7 @@ io.on("connection", (socket) => {
 		try {
 			const finalScores: Record<string, number> = {};
 			const roundsForCode = activeRounds[data.code] || {};
+
 			for (const rd of Object.values(roundsForCode)) {
 				const perSong = computeScores(rd.orders, rd.correctAnswer);
 				for (const [player, pts] of Object.entries(perSong)) {
