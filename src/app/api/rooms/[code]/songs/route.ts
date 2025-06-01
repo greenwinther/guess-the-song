@@ -6,7 +6,7 @@ export async function POST(req: NextRequest, { params }: { params: { code: strin
 	try {
 		const { url, submitter } = await req.json();
 
-		const song = await addSong(params.code, { url, submitter });
+		const song = await addSong(params.code, { url, submitter, title: "" });
 		return NextResponse.json(song);
 	} catch (err: any) {
 		return NextResponse.json({ error: err.message }, { status: 400 });
