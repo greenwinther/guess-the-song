@@ -4,9 +4,9 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/contexts/GameContext";
 import { useSocket } from "@/contexts/SocketContext";
-import Button from "./ui/Button";
-import ReactPlayer from "react-player";
 import { Player, Room } from "@/types/room";
+import Button from "./ui/Button";
+import { shuffleArray } from "@/utils/shuffelArray";
 
 interface Props {
 	code: string;
@@ -20,14 +20,6 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	const { state, dispatch } = useGame();
 	const [order, setOrder] = useState<OrderItem[]>([]);
 	const [submitted, setSubmitted] = useState(false);
-
-	// Utility to shuffle an array
-	function shuffleArray<T>(arr: T[]): T[] {
-		return arr
-			.map((a) => [Math.random(), a] as [number, T])
-			.sort((a, b) => a[0] - b[0])
-			.map(([, v]) => v);
-	}
 
 	// 1) On game start, initialize the order of submitters
 	useEffect(() => {
@@ -43,15 +35,18 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		socket.on("roomData", (room: Room) => {
 			console.log("[JoinGameClient] roomData event", room);
 			dispatch({ type: "SET_ROOM", room });
-			// Immediately build submitter list from all songs
-			const items = room.songs.map((s) => ({ id: s.id, name: s.submitter }));
+
+			// Build a fresh, shuffled list of submitters
+			const items: OrderItem[] = room.songs.map((s) => ({
+				id: s.id,
+				name: s.submitter,
+			}));
 			setOrder(shuffleArray(items));
 		});
 
 		// 2) When game starts, set up submitter list
 		socket.on("gameStarted", (room: Room) => {
 			console.log("[JoinGameClient] gameStarted event", room);
-			dispatch({ type: "SET_ROOM", room });
 			dispatch({ type: "START_GAME" });
 		});
 
@@ -82,6 +77,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		if (!state.currentClip) return;
 		const guesses: Record<string, string[]> = {};
 		guesses[state.currentClip.songId.toString()] = order.map((o) => o.name);
+
 		socket.emit("submitAllOrders", { code, playerName, guesses }, (ok: boolean) => {
 			console.log("[JoinGameClient] submitAllOrders callback, ok=", ok);
 			if (!ok) alert("Failed to submit guesses");
