@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import Input from "./ui/Input";
 import Button from "./ui/Button";
 import { getYouTubeID } from "@/lib/youtube";
+import Image from "next/image";
 
 interface Props {
 	code: string;
@@ -134,7 +135,12 @@ export default function SongSubmitForm({ code, defaultSubmitter = "", onUrlChang
 							onClick={() => pick(v)}
 							className="p-2 hover:bg-card hover:bg-opacity-60 cursor-pointer flex items-center space-x-2"
 						>
-							<img src={v.snippet.thumbnails.default.url} width={40} />
+							<Image
+								src={v.snippet.thumbnails.default.url}
+								alt={`Thumbnail for ${v.snippet.title}`}
+								fill
+								className="object-cover rounded"
+							/>
 							<span className="text-text">{v.snippet.title}</span>
 						</li>
 					))}
