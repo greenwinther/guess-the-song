@@ -20,6 +20,11 @@ const httpServer = http.createServer((req, res) => {
 
 const io = new Server(httpServer, {
 	cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
+
+	// 1) Ping every 20 sec
+	pingInterval: 20_000,
+	// 2) If no pong within 5 sec, time‐out
+	pingTimeout: 5_000,
 });
 
 const gamesInProgress: Record<string, boolean> = {};
@@ -28,6 +33,7 @@ const finalScoresByRoom: Record<string, Record<string, number>> = {};
 io.on("connection", (socket) => {
 	console.log("↔️ socket connected", socket.id);
 
+	// ─── createRoom ─────────────────────────────────────────────────────
 	socket.on("createRoom", async (data, callback) => {
 		try {
 			const newRoom = await createRoom(data.theme, data.backgroundUrl || null);
@@ -45,6 +51,7 @@ io.on("connection", (socket) => {
 		}
 	});
 
+	// ─── addSong ─────────────────────────────────────────────────────────
 	socket.on(
 		"addSong",
 		async (
@@ -71,7 +78,7 @@ io.on("connection", (socket) => {
 		}
 	);
 
-	// 5) Remove a song
+	// ─── removeSong ──────────────────────────────────────────────────────
 	socket.on(
 		"removeSong",
 		async (
@@ -91,7 +98,7 @@ io.on("connection", (socket) => {
 		}
 	);
 
-	// NEW: host clicks “Start Game” → broadcast full Room, once
+	// ─── startGame ───────────────────────────────────────────────────────
 	socket.on("startGame", async (data: { code: string }, callback: (ok: boolean) => void) => {
 		try {
 			// 1) Fetch the room and its songs
@@ -123,6 +130,7 @@ io.on("connection", (socket) => {
 		}
 	});
 
+	// ─── playSong ────────────────────────────────────────────────────────
 	socket.on(
 		"playSong",
 		async (
@@ -150,12 +158,15 @@ io.on("connection", (socket) => {
 		}
 	);
 
-	// 3) joinRoom: give every new joiner the up-to-date Room
+	// ─── joinRoom ────────────────────────────────────────────────────────
 	socket.on("joinRoom", async (data: { code: string; name: string }, callback: (ok: boolean) => void) => {
 		try {
 			// …persist the newPlayer, join the socket…
 			const newPlayer = await joinRoom(data.code, data.name);
 			socket.join(data.code);
+
+			// Store room + playerName on socket.data so we know, on disconnect, who to remove
+			socket.data.roomMeta = { code: data.code, playerName: data.name };
 			io.to(data.code).emit("playerJoined", newPlayer);
 
 			// 1) Always send the freshest Room to this socket
@@ -170,7 +181,7 @@ io.on("connection", (socket) => {
 
 				// If there’s a clip live, replay it too
 				const currentSongId = Math.max(...Object.keys(roundsForCode).map(Number));
-				const rd = roundsForCode[currentSongId];
+				const roundData = roundsForCode[currentSongId];
 				const clip = await prisma.song.findUnique({ where: { id: currentSongId } });
 				if (clip) {
 					socket.emit("playSong", {
@@ -194,7 +205,7 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	// 4a) Collect every player’s guesses in one shot
+	// ─── submitAllOrders ─────────────────────────────────────────────────
 	socket.on(
 		"submitAllOrders",
 		async (
@@ -221,7 +232,7 @@ io.on("connection", (socket) => {
 		}
 	);
 
-	// 5) When the host is finally ready, score every round and send totals
+	// ─── showResults ─────────────────────────────────────────────────────
 	socket.on("showResults", (data: { code: string }, callback: (ok: boolean) => void) => {
 		try {
 			const finalScores: Record<string, number> = {};
@@ -246,8 +257,22 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	socket.on("disconnect", () => {
+	// ─── disconnect ──────────────────────────────────────────────────────
+	socket.on("disconnect", async () => {
 		console.log("↔️ socket disconnected", socket.id);
+
+		// If we had stored room+playerName in socket.data, remove them now:
+		const meta = socket.data.roomMeta as { code: string; playerName: string } | undefined;
+		if (meta) {
+			const { code, playerName } = meta;
+
+			try {
+				const updated = await getRoom(code);
+				io.to(code).emit("roomData", updated);
+			} catch (err) {
+				console.error("[disconnect] cleanup error", err);
+			}
+		}
 	});
 });
 
