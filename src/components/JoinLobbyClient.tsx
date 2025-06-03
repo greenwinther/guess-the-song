@@ -67,7 +67,7 @@ export default function JoinLobbyClient({
 			socket.off("gameStarted");
 			socket.off("playerJoined");
 		};
-	}, [socket, dispatch, initialRoom, currentUserName, router]);
+	}, [socket, dispatch, initialRoom, currentUserName, router, state.room?.players]);
 
 	// Render a loading state if for some reason the room isn't set yet
 	if (!state.room) {
