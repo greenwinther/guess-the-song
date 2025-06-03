@@ -81,7 +81,7 @@ yarn install
 ```
 
 3. Set up your environment variables
-   Create a .env.local file in the root (next to package.json) with the following (replace placeholders as needed):
+   Create a **.env.local** file in the root (next to **package.json**) with the following (replace placeholders as needed):
 
 ```bash
 NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
@@ -100,8 +100,8 @@ npm run dev
 yarn dev
 ```
 
--   The Next.js app will run at http://localhost:3000.
--   The Socket.io backend (for local dev) will run at http://localhost:4000 by default.
+-   The Next.js app will run at **http://localhost:3000**.
+-   The Socket.io backend (for local dev) will run at **http://localhost:4000** by default.
 
 5. Open your browser
    Navigate to http://localhost:3000 and either create a new room (as host) or join an existing room using the 4-letter code.
@@ -114,31 +114,31 @@ yarn dev
 | `PORT`                   | Port for the Next.js web server (if overriding)         | `3000`                |
 | `SOCKET_PORT`            | Port for the Socket.io server (if overriding)           | `4000`                |
 
-Note: All client-facing variables must begin with NEXT*PUBLIC* in Next.js.
+Note: All client-facing variables must begin with **NEXT\*PUBLIC** in Next.js.
 
 ## Available Scripts
 
 From the project root, run:
 
--   npm run dev / yarn dev
+-   **npm run dev** / **yarn dev**
     Starts both Next.js (port 3000) and the Socket.io server (port 4000) in development with Hot Module Replacement.
 
--   npm run build / yarn build
-    Builds the Next.js app for production. Outputs optimized JavaScript/HTML in .next.
+-   **npm run build** / **yarn build**
+    Builds the Next.js app for production. Outputs optimized JavaScript/HTML in **.next**.
 
--   npm run start / yarn start
+-   **npm run start** / **yarn start**
     Runs the production build of Next.js (after build) on process.env.PORT (defaults to 3000).
 
--   npm run lint / yarn lint
+-   **npm run lint** / **yarn lint**
     Lints TypeScript and JSX/TSX files using ESLint. Configured to follow project conventions.
 
--   npm run test / yarn test
+-   **npm run test** / **yarn test**
     Runs Jest unit tests and React component tests.
 
--   npm run test:watch / yarn test:watch
+-   **npm run test:watch** / **yarn test:watch**
     Runs tests in watch mode (re-runs on file changes).
 
--   npm run format / yarn format
+-   **npm run format** / **yarn format**
     Formats codebase using Prettier (configurable in .prettierrc).
 
 ## Folder Structure
@@ -190,8 +190,8 @@ guess-the-song
 ```
 
 Note: Depending on your deployment strategy, the Socket.io server may live inside
-src/pages/api/socket.ts (Next.js API Route) or a separate server/ folder.
-Adjust NEXT_PUBLIC_SOCKET_URL accordingly.
+**src/pages/api/socket.ts** (Next.js API Route) or a separate server/ folder.
+Adjust **NEXT_PUBLIC_SOCKET_URL** accordingly.
 
 ## How to Play
 
@@ -203,7 +203,7 @@ and one for players who join and submit guesses.
 1. Create a Room
 
 -   On the landing page, click “Create Room.”
--   Enter a 4-letter (or numeric) room code of your choice. This generates a new Room object on the server.
+-   Enter a 4-letter (or numeric) room code of your choice. This generates a new **Room** object on the server.
 
 2. Upload/Submit Songs
 
@@ -211,14 +211,14 @@ and one for players who join and submit guesses.
 -   For each song, the host enters:
     -   Title (e.g. “Blinding Lights”)
     -   Submitter Name (e.g. “Alice”)
-    -   YouTube Clip URL (a short clip link, e.g. https://www.youtube.com/watch?v=…)
+    -   YouTube Clip URL (a short clip link, e.g. **https://www.youtube.com/watch?v=…)**
 -   Upon adding all songs, click “Start Game”.
 
 3. Gameplay
 
 -   The server randomly determines the playlist order (host can optionally shuffle).
 -   For each track in turn:
-    1. Host clicks “Play Clip” → The server emits playSong to clients with { songId, clipUrl }.
+    1. Host clicks “Play Clip” → The server emits **playSong** to clients with **{ songId, clipUrl }**.
     2. The host's browser begins playback (e.g. embeds YouTube player).
     3. After the clip, the server marks that song as “revealed.”
     4. Host moves to the next track until all clips have played.
@@ -226,37 +226,37 @@ and one for players who join and submit guesses.
 4. Viewing Results
 
 -   Once all songs have been “played,” the host clicks “End Game.”
--   The server calculates each player’s score (number of correct guesses) and emits gameOver to all clients with { scores }.
+-   The server calculates each player’s score (number of correct guesses) and emits **gameOver** to all clients with **{ scores }**.
 
-# Player Flow
+## Player Flow
 
 1. Join a Room
 
 -   On the landing page, enter the same Room Code and your Player Name.
--   The server emits roomData containing the current Room object (list of songs, existing players).
+-   The server emits **roomData** containing the current **Room** object (list of songs, existing players).
 -   The host’s song list populates on your side, but titles remain hidden. You only see the submitter names.
 
 2. Drag-and-Drop Guessing
 
 -   As soon as the host starts the game, you see a list of “hidden” song slots with the shuffled submitter names.
 -   For each track index:
--                                       Drag the submitter names into the order you believe matches the playlist.
--                                       If there are N songs, you must arrange N names from position 1 to N.
+-                                             Drag the submitter names into the order you believe matches the playlist.
+-                                             If there are N songs, you must arrange N names from position 1 to N.
 -   You can reorder freely until Submit Order.
 
 3. Submit Your Order
 
 -   Once satisfied, click “Submit Order.”
--   The server stores your guess for each songId.
+-   The server stores your guess for each **songId**.
 -   The UI disables further dragging, and you see a “Waiting for game to end…” message.
 
 4. Reveal & Score
 
--   Every time the host plays a clip for songId, the client “reveals” that track’s title in the playlist sidebar.
--   At the end, when gameOver arrives:
--                                   Each list item in your guess order is compared against the correct submitter (drawn from Room.songs[i].submitter).
--                                   Correct guesses show a green “1”; incorrect show a red “0.”
--                                   Your total correct count displays at the top.
+-   Every time the host plays a clip for **songId**, the client “reveals” that track’s title in the playlist sidebar.
+-   At the end, when **gameOver** arrives:
+-                                         Each list item in your guess order is compared against the correct submitter (drawn from **Room.songs[i].submitter**).
+-                                         Correct guesses show a green “1”; incorrect show a red “0.”
+-                                         Your total correct count displays at the top.
 
 ## Running Tests
 
@@ -275,11 +275,11 @@ yarn test:watch
 ```
 
 -   Unit Tests
--                             Located under src/utils/__tests__/shuffleArray.test.ts, etc.
--                             Ensure shuffleArray does not mutate input and preserves content.
+-   Located under **src/utils/**tests**/shuffleArray.test.ts**, etc.
+-   Ensure **shuffleArray** does not mutate input and preserves content.
 -   Component Tests
--                             Under src/components/__tests__/JoinGameClient.test.tsx, SubmissionOrderList.test.tsx.
--                             Verify that drag-and-drop reorder logic works and that result items render “0”/“1” correctly.
+-   Under **src/components/**tests**/JoinGameClient.test.tsx**, **SubmissionOrderList.test.tsx**.
+-   Verify that drag-and-drop reorder logic works and that result items render “0”/“1” correctly.
 
 ## Contributing
 
@@ -307,18 +307,18 @@ git push origin feature/your-feature-name
 5. We’ll review and merge if everything checks out.
    Before submitting, please:
 
--   Run npm run lint (or yarn lint) and fix any ESLint errors.
--   Run npm run format (or yarn format) to ensure code is Prettier-formatted.
+-   Run **npm run lint** (or **yarn lint**) and fix any ESLint errors.
+-   Run **npm run format** (or **yarn format**) to ensure code is Prettier-formatted.
 -   Add unit tests or component tests for any new logic.
 
 ## Code Style
 
--   ESLint with TypeScript rules (.eslintrc.js):
--                       Enforces no unused vars, consistent imports, hooks rules, etc.
--   Prettier (.prettierrc):
--                       2-space indent, semicolons, trailing commas where valid in ES5.
--   TypeScript (tsconfig.json):
--                       strict mode enabled, skipLibCheck: true, forceConsistentCasingInFileNames: true.
+-   ESLint with TypeScript rules (**.eslintrc.js**):
+-   Enforces no unused vars, consistent imports, hooks rules, etc.
+-   Prettier (**.prettierrc**):
+-   2-space indent, semicolons, trailing commas where valid in ES5.
+-   TypeScript (**tsconfig.json**):
+-   **strict** mode enabled, **skipLibCheck: true**, **forceConsistentCasingInFileNames: true**.
     Please make sure your editors/IDEs are configured to auto-format on save and respect the project’s ESLint/Prettier rules.
 
 ## License
