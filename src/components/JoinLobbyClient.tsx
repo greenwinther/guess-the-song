@@ -33,10 +33,7 @@ export default function JoinLobbyClient({
 
 		// 2) Register listeners without blocking on hasJoined
 		socket.on("playerJoined", (player: Player) => {
-			// Deduplicate: only dispatch if that player.id isn’t already in state.room
-			if (!state.room?.players.find((p) => p.id === player.id)) {
-				dispatch({ type: "ADD_PLAYER", player });
-			}
+			dispatch({ type: "ADD_PLAYER", player });
 		});
 
 		// 3) Listen for "roomData" → update context
