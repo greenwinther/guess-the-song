@@ -138,8 +138,9 @@ export default function SongSubmitForm({ code, defaultSubmitter = "", onUrlChang
 							<Image
 								src={v.snippet.thumbnails.default.url}
 								alt={`Thumbnail for ${v.snippet.title}`}
-								fill
-								className="object-cover rounded"
+								width={40}
+								height={40}
+								className="object-cover rounded flex-shrink-0"
 							/>
 							<span className="text-text">{v.snippet.title}</span>
 						</li>

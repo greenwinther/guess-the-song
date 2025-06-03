@@ -53,7 +53,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			socket.off("songRemoved");
 			socket.off("playerJoined");
 		};
-	}, [socket, dispatch, initialRoom, state.room?.players]);
+	}, [socket, dispatch, initialRoom]);
 
 	if (!state.room) return <p>Loading lobby…</p>;
 
