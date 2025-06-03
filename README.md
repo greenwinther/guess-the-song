@@ -198,7 +198,7 @@ Adjust NEXT_PUBLIC_SOCKET_URL accordingly.
 There are two distinct flows: one for the host who creates the room and controls playback,
 and one for players who join and submit guesses.
 
-# Host Flow
+### Host Flow
 
 1. Create a Room
 
@@ -240,8 +240,8 @@ and one for players who join and submit guesses.
 
 -   As soon as the host starts the game, you see a list of “hidden” song slots with the shuffled submitter names.
 -   For each track index:
--                                     Drag the submitter names into the order you believe matches the playlist.
--                                     If there are N songs, you must arrange N names from position 1 to N.
+-                                       Drag the submitter names into the order you believe matches the playlist.
+-                                       If there are N songs, you must arrange N names from position 1 to N.
 -   You can reorder freely until Submit Order.
 
 3. Submit Your Order
@@ -254,9 +254,9 @@ and one for players who join and submit guesses.
 
 -   Every time the host plays a clip for songId, the client “reveals” that track’s title in the playlist sidebar.
 -   At the end, when gameOver arrives:
--                                 Each list item in your guess order is compared against the correct submitter (drawn from Room.songs[i].submitter).
--                                 Correct guesses show a green “1”; incorrect show a red “0.”
--                                 Your total correct count displays at the top.
+-                                   Each list item in your guess order is compared against the correct submitter (drawn from Room.songs[i].submitter).
+-                                   Correct guesses show a green “1”; incorrect show a red “0.”
+-                                   Your total correct count displays at the top.
 
 ## Running Tests
 
@@ -275,11 +275,11 @@ yarn test:watch
 ```
 
 -   Unit Tests
--                           Located under src/utils/__tests__/shuffleArray.test.ts, etc.
--                           Ensure shuffleArray does not mutate input and preserves content.
+-                             Located under src/utils/__tests__/shuffleArray.test.ts, etc.
+-                             Ensure shuffleArray does not mutate input and preserves content.
 -   Component Tests
--                           Under src/components/__tests__/JoinGameClient.test.tsx, SubmissionOrderList.test.tsx.
--                           Verify that drag-and-drop reorder logic works and that result items render “0”/“1” correctly.
+-                             Under src/components/__tests__/JoinGameClient.test.tsx, SubmissionOrderList.test.tsx.
+-                             Verify that drag-and-drop reorder logic works and that result items render “0”/“1” correctly.
 
 ## Contributing
 
@@ -314,11 +314,11 @@ git push origin feature/your-feature-name
 ## Code Style
 
 -   ESLint with TypeScript rules (.eslintrc.js):
--                     Enforces no unused vars, consistent imports, hooks rules, etc.
+-                       Enforces no unused vars, consistent imports, hooks rules, etc.
 -   Prettier (.prettierrc):
--                     2-space indent, semicolons, trailing commas where valid in ES5.
+-                       2-space indent, semicolons, trailing commas where valid in ES5.
 -   TypeScript (tsconfig.json):
--                     strict mode enabled, skipLibCheck: true, forceConsistentCasingInFileNames: true.
+-                       strict mode enabled, skipLibCheck: true, forceConsistentCasingInFileNames: true.
     Please make sure your editors/IDEs are configured to auto-format on save and respect the project’s ESLint/Prettier rules.
 
 ## License
