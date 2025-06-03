@@ -1,4 +1,15 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+	reactStrictMode: true,
 
-module.exports = nextConfig
+	images: {
+		domains: [
+			"i.ytimg.com", // for YouTube thumbnails
+			// add any other external hosts here, e.g.:
+			// "example.com",
+		],
+	},
+};
+
+module.exports = nextConfig;
