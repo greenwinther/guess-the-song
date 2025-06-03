@@ -8,6 +8,7 @@ import { Player, Room, Song } from "@/types/room";
 import { shuffleArray } from "@/utils/shuffelArray";
 import { getYouTubeID } from "@/lib/youtube";
 import Button from "./ui/Button";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 interface Props {
 	code: string;
@@ -107,14 +108,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		};
 	}, [socket, code, playerName, dispatch]);
 
-	// Move an item up or down by offset (+1 or -1)
-	const move = (i: number, by: number) => {
-		const next = [...order];
-		const [m] = next.splice(i, 1);
-		next.splice(i + by, 0, m);
-		setOrder(next);
-	};
-
+	// ─── SUBMIT ALL ───────────────────────────
 	const handleSubmitAll = () => {
 		console.log("[JoinGameClient] handleSubmit, currentClip=", state.currentClip, "order=", order);
 		if (!state.room) return;
@@ -132,7 +126,24 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		});
 	};
 
-	// ---------------- Rendering “Results” Mode ----------------
+	// ─── DRAG & DROP HANDLER ─────────────────
+	const onDragEnd = (result: DropResult) => {
+		const { destination, source } = result;
+
+		// If dropped outside the list or in the same spot, do nothing
+		if (!destination || destination.index === source.index) {
+			return;
+		}
+
+		// Create a new array with the item moved
+		const updated = Array.from(order);
+		const [movedItem] = updated.splice(source.index, 1);
+		updated.splice(destination.index, 0, movedItem);
+
+		setOrder(updated);
+	};
+
+	// ─── RESULTS MODE ─────────────────────────
 	if (state.scores && state.room && state.currentClip) {
 		// Build an array of correct submitters in playlist order
 		const correctList: string[] = state.room.songs.map((s) => s.submitter);
@@ -221,6 +232,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		);
 	}
 
+	// ─── GUESS MODE ───────────────────────────
 	return (
 		<div
 			className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center"
@@ -250,37 +262,44 @@ export default function JoinGameClient({ code, playerName }: Props) {
 				<main className="flex-1 p-6 flex flex-col items-center">
 					<h1 className="text-2xl font-semibold text-text mb-4">Guess the Submitter</h1>
 
-					{/* Ordering UI */}
+					{/* ── DragDropContext + Droppable + Draggable (unchanged logic) ── */}
 					<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
-						<ul className="space-y-4 mb-6">
-							{order.map((item, idx) => (
-								<li
-									key={item.id}
-									className="flex items-center justify-between bg-card rounded-lg p-3"
-								>
-									<span className="font-medium">{idx + 1}.</span>
-									<span className="flex-1 mx-4">{item.name}</span>
-									<div className="space-x-2">
-										<Button
-											size="sm"
-											variant="secondary"
-											onClick={() => move(idx, -1)}
-											disabled={idx === 0 || submitted}
-										>
-											↑
-										</Button>
-										<Button
-											size="sm"
-											variant="secondary"
-											onClick={() => move(idx, 1)}
-											disabled={idx === order.length - 1 || submitted}
-										>
-											↓
-										</Button>
-									</div>
-								</li>
-							))}
-						</ul>
+						<DragDropContext onDragEnd={onDragEnd}>
+							<Droppable droppableId="guess-order-list">
+								{(provided) => (
+									<ul
+										ref={provided.innerRef}
+										{...provided.droppableProps}
+										className="space-y-4 mb-6"
+									>
+										{order.map((item, idx) => (
+											<Draggable
+												key={item.id.toString()}
+												draggableId={item.id.toString()}
+												index={idx}
+												isDragDisabled={submitted}
+											>
+												{(draggableProvided, snapshot) => (
+													<li
+														ref={draggableProvided.innerRef}
+														{...draggableProvided.draggableProps}
+														{...draggableProvided.dragHandleProps}
+														className={`flex items-center justify-between bg-card rounded-lg p-3 ${
+															snapshot.isDragging ? "opacity-80" : "opacity-100"
+														}`}
+													>
+														<span className="font-medium">{idx + 1}.</span>
+														<span className="flex-1 mx-4">{item.name}</span>
+													</li>
+												)}
+											</Draggable>
+										))}
+
+										{provided.placeholder}
+									</ul>
+								)}
+							</Droppable>
+						</DragDropContext>
 					</div>
 
 					{/* Submit button */}
