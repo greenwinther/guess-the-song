@@ -233,8 +233,8 @@ and one for players who join and submit guesses.
 1. Join a Room
 
 -   On the landing page, enter the same Room Code and your Player Name.
--         The server emits **roomData** containing the current **Room** object (list of songs, existing players).
--         The host’s song list populates on your side, but titles remain hidden. You only see the submitter names.
+    -   The server emits **roomData** containing the current **Room** object (list of songs, existing players).
+    -   The host’s song list populates on your side, but titles remain hidden. You only see the submitter names.
 
 2. Drag-and-Drop Guessing
 
@@ -254,9 +254,9 @@ and one for players who join and submit guesses.
 
 -   Every time the host plays a clip for **songId**, the client “reveals” that track’s title in the playlist sidebar.
 -   At the end, when **gameOver** arrives:
--         Each list item in your guess order is compared against the correct submitter (drawn from **Room.songs[i].submitter**).
--         Correct guesses show a green “1”; incorrect show a red “0.”
--         Your total correct count displays at the top.
+    -   Each list item in your guess order is compared against the correct submitter (drawn from **Room.songs[i].submitter**).
+    -   Correct guesses show a green “1”; incorrect show a red “0.”
+    -   Your total correct count displays at the top.
 
 ## Running Tests
 
