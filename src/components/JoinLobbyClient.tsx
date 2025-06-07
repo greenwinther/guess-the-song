@@ -22,10 +22,13 @@ export default function JoinLobbyClient({
 
 	// keep the room code in a ref so our reconnect handler can access it
 	const roomCodeRef = useRef(initialRoom.code);
+	const playerNameRef = useRef(currentUserName);
 
 	useEffect(() => {
 		// Seed the entire room (players + songs) in one go
-		dispatch({ type: "SET_ROOM", room: initialRoom });
+		if (!state.room) {
+			dispatch({ type: "SET_ROOM", room: initialRoom });
+		}
 
 		// 1) Join socket.io room exactly once
 		if (!hasJoined.current) {
@@ -37,6 +40,7 @@ export default function JoinLobbyClient({
 
 		// 2) Register listeners without blocking on hasJoined
 		socket.on("playerJoined", (player: Player) => {
+			console.log("🟢 playerJoined received:", player.name);
 			dispatch({ type: "ADD_PLAYER", player });
 		});
 
@@ -70,6 +74,13 @@ export default function JoinLobbyClient({
 		};
 	}, [socket, dispatch, initialRoom, currentUserName, router, state.room?.players]);
 
+	useEffect(() => {
+		console.log(
+			"👀 player count changed",
+			state.room?.players.map((p) => p.name)
+		);
+	}, [state.room?.players]);
+
 	// ─── CONNECTION / RECONNECT EFFECT ─────────────────────────────
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
@@ -80,10 +91,14 @@ export default function JoinLobbyClient({
 		const onReconnect = (attempt?: number) => {
 			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
 			setSocketError(null);
-			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, (ok: boolean) => {
-				// you can ignore the result on reconnect
-				console.log("re-join ack:", ok);
-			});
+			socket.emit(
+				"joinRoom",
+				{ code: roomCodeRef.current, name: playerNameRef.current },
+				(ok: boolean) => {
+					// you can ignore the result on reconnect
+					console.log("re-join ack:", ok);
+				}
+			);
 		};
 
 		// 1) socket-level events
@@ -139,8 +154,8 @@ export default function JoinLobbyClient({
 				<section>
 					<h2 className="text-2xl font-semibold text-text-muted mb-4">Players in Lobby</h2>
 					<ul className="space-y-2 list-none">
-						{state.room.players.map((p, i) => (
-							<li key={i} className="flex items-center space-x-2 text-text">
+						{state.room.players.map((p) => (
+							<li key={p.id} className="flex items-center space-x-2 text-text">
 								<span className="w-3 h-3 rounded-full bg-primary" />
 								<span>{p.name}</span>
 							</li>
