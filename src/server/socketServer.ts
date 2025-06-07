@@ -18,6 +18,11 @@ const httpServer = http.createServer((req, res) => {
 	}
 });
 
+// 1) Log any HTTP‐level server errors (e.g. EADDRINUSE, etc.)
+httpServer.on("error", (err) => {
+	console.error("🚨 HTTP server error:", err);
+});
+
 const io = new Server(httpServer, {
 	cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
 
@@ -30,8 +35,23 @@ const io = new Server(httpServer, {
 const gamesInProgress: Record<string, boolean> = {};
 const finalScoresByRoom: Record<string, Record<string, number>> = {};
 
+// 2) Log any Engine.IO connection‐level errors
+io.engine.on("connection_error", (err) => {
+	console.error("🚨 Engine.IO connection error:", err);
+});
+
+// 3) Log any top‐level Socket.IO errors on the namespace
+io.of("/").on("connect_error", (err) => {
+	console.error("🚨 Socket.IO connect_error:", err);
+});
+
 io.on("connection", (socket) => {
 	console.log("↔️ socket connected", socket.id);
+
+	// 4) Per‐socket error handler
+	socket.on("error", (err) => {
+		console.error(`🚨 Socket ${socket.id} error:`, err);
+	});
 
 	// ─── createRoom ─────────────────────────────────────────────────────
 	socket.on("createRoom", async (data, callback) => {
@@ -159,7 +179,7 @@ io.on("connection", (socket) => {
 	);
 
 	// ─── joinRoom ────────────────────────────────────────────────────────
-	socket.on("joinRoom", async (data: { code: string; name: string }, callback: (ok: boolean) => void) => {
+	socket.on("joinRoom", async (data: { code: string; name: string }, callback?: (ok: boolean) => void) => {
 		try {
 			// …persist the newPlayer, join the socket…
 			const newPlayer = await joinRoom(data.code, data.name);
@@ -198,10 +218,11 @@ io.on("connection", (socket) => {
 				});
 			}
 
-			callback(true);
+			if (typeof callback === "function") callback(true);
 		} catch (err: any) {
 			console.error("🔔 joinRoom error:", err);
-			callback(false);
+
+			if (typeof callback === "function") callback(false);
 		}
 	});
 
@@ -258,8 +279,9 @@ io.on("connection", (socket) => {
 	});
 
 	// ─── disconnect ──────────────────────────────────────────────────────
-	socket.on("disconnect", async () => {
+	socket.on("disconnect", async (reason) => {
 		console.log("↔️ socket disconnected", socket.id);
+		console.log(`↔️ socket ${socket.id} disconnected:`, reason);
 
 		// If we had stored room+playerName in socket.data, remove them now:
 		const meta = socket.data.roomMeta as { code: string; playerName: string } | undefined;
