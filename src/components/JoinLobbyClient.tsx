@@ -1,7 +1,7 @@
 "use client";
 // src/components/JoinLobbyClient.tsx
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
@@ -18,6 +18,10 @@ export default function JoinLobbyClient({
 	const router = useRouter();
 	const { state, dispatch } = useGame();
 	const hasJoined = useRef(false);
+	const [socketError, setSocketError] = useState<string | null>(null);
+
+	// keep the room code in a ref so our reconnect handler can access it
+	const roomCodeRef = useRef(initialRoom.code);
 
 	useEffect(() => {
 		// Seed the entire room (players + songs) in one go
@@ -66,6 +70,44 @@ export default function JoinLobbyClient({
 		};
 	}, [socket, dispatch, initialRoom, currentUserName, router, state.room?.players]);
 
+	// ─── CONNECTION / RECONNECT EFFECT ─────────────────────────────
+	useEffect(() => {
+		const onDisconnect = (reason: any) => {
+			console.warn("⚠️ socket disconnected:", reason);
+			setSocketError("Connection lost. Reconnecting…");
+		};
+
+		const onReconnect = (attempt?: number) => {
+			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
+			setSocketError(null);
+			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, (ok: boolean) => {
+				// you can ignore the result on reconnect
+				console.log("re-join ack:", ok);
+			});
+		};
+
+		// 1) socket-level events
+		socket.on("disconnect", onDisconnect);
+		socket.on("connect", () => onReconnect());
+		socket.on("reconnect", onReconnect);
+
+		// 2) manager-level events (under the hood)
+		const mgr = (socket as any).io;
+		mgr.on("connect", () => onReconnect());
+		mgr.on("reconnect", onReconnect);
+
+		return () => {
+			// teardown socket listeners
+			socket.off("disconnect", onDisconnect);
+			socket.off("connect", () => onReconnect());
+			socket.off("reconnect", onReconnect);
+
+			// teardown manager listeners
+			mgr.off("connect", () => onReconnect());
+			mgr.off("reconnect", onReconnect);
+		};
+	}, [socket]);
+
 	// Render a loading state if for some reason the room isn't set yet
 	if (!state.room) {
 		return (
@@ -88,6 +130,11 @@ export default function JoinLobbyClient({
 				backgroundBlendMode: "overlay",
 			}}
 		>
+			{socketError && (
+				<div className="fixed top-0 left-0 w-full bg-yellow-300 text-yellow-900 text-center py-2 z-50">
+					{socketError}
+				</div>
+			)}
 			<div className="max-w-4xl mx-auto bg-card bg-opacity-20 border border-border rounded-2xl backdrop-blur-xl p-8">
 				<section>
 					<h2 className="text-2xl font-semibold text-text-muted mb-4">Players in Lobby</h2>

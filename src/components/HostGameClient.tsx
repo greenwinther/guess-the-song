@@ -25,6 +25,11 @@ export default function HostGameClient({ code }: { code: string }) {
 	// NEW: background‐image URL (room.backgroundUrl OR current thumbnail)
 	const [bgThumbnail, setBgThumbnail] = useState<string | null>(null);
 
+	const [socketError, setSocketError] = useState<string | null>(null);
+
+	// keep the room code in a ref so our reconnect handler can access it
+	const roomCodeRef = useRef(code);
+
 	const hasJoined = useRef(false);
 
 	// 1) On game start, seed context
@@ -53,6 +58,44 @@ export default function HostGameClient({ code }: { code: string }) {
 			socket.off("playerJoined");
 		};
 	}, [socket, dispatch, state.room]);
+
+	// ─── CONNECTION / RECONNECT EFFECT ─────────────────────────────
+	useEffect(() => {
+		const onDisconnect = (reason: any) => {
+			console.warn("⚠️ socket disconnected:", reason);
+			setSocketError("Connection lost. Reconnecting…");
+		};
+
+		const onReconnect = (attempt?: number) => {
+			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
+			setSocketError(null);
+			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, (ok: boolean) => {
+				// you can ignore the result on reconnect
+				console.log("re-join ack:", ok);
+			});
+		};
+
+		// 1) socket-level events
+		socket.on("disconnect", onDisconnect);
+		socket.on("connect", () => onReconnect());
+		socket.on("reconnect", onReconnect);
+
+		// 2) manager-level events (under the hood)
+		const mgr = (socket as any).io;
+		mgr.on("connect", () => onReconnect());
+		mgr.on("reconnect", onReconnect);
+
+		return () => {
+			// teardown socket listeners
+			socket.off("disconnect", onDisconnect);
+			socket.off("connect", () => onReconnect());
+			socket.off("reconnect", onReconnect);
+
+			// teardown manager listeners
+			mgr.off("connect", () => onReconnect());
+			mgr.off("reconnect", onReconnect);
+		};
+	}, [socket]);
 
 	// 3) On each playSong, update clip locally and in context
 	useEffect(() => {
@@ -143,6 +186,11 @@ export default function HostGameClient({ code }: { code: string }) {
 				backgroundBlendMode: "overlay",
 			}}
 		>
+			{socketError && (
+				<div className="fixed top-0 left-0 w-full bg-yellow-300 text-yellow-900 text-center py-2 z-50">
+					{socketError}
+				</div>
+			)}
 			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
 				{/** ========== LEFT SIDEBAR ========== **/}
 				<aside className="w-full lg:w-1/4 p-8 border-r border-border flex flex-col items-center">
