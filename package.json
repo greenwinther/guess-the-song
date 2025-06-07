@@ -5,11 +5,11 @@
   "scripts": {
     "dev:next": "next dev",
     "socket": "tsx src/server/socketServer.ts",
-    "dev": "concurrently \"next dev\" \"npm run socket\"",
+    "dev": "concurrently \"npm:dev:next\" \"npm:socket\"",
     "server": "node server.js",
     "test:e2e": "playwright test",
     "build": "next build",
-    "start": "next start",
+    "start": "concurrently \"npm:socket\" \"next start\"",
     "lint": "next lint"
   },
   "dependencies": {
