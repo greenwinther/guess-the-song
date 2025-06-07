@@ -187,10 +187,13 @@ io.on("connection", (socket) => {
 
 			// Store room + playerName on socket.data so we know, on disconnect, who to remove
 			socket.data.roomMeta = { code: data.code, playerName: data.name };
+			console.log("📣 Broadcasting playerJoined to room", data.code, newPlayer.name);
 			io.to(data.code).emit("playerJoined", newPlayer);
 
 			// 1) Always send the freshest Room to this socket
 			const room = await getRoom(data.code);
+			console.log("📣 playerJoined", newPlayer.name, "→", data.code);
+			io.to(data.code).emit("playerJoined", newPlayer);
 			socket.emit("roomData", room);
 
 			// 2) If a round is already active, immediately tell them the game has started
