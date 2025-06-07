@@ -17,7 +17,12 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	const { state, dispatch } = useGame();
 	const [previewUrl, setPreviewUrl] = useState<string>("");
 	const [revealedId, setRevealedId] = useState<number | null>(null);
+	const [socketError, setSocketError] = useState<string | null>(null);
 
+	// keep the room code in a ref so our reconnect handler can access it
+	const roomCodeRef = useRef(initialRoom.code);
+
+	// ─── seed + game logic ─────────────────────────────────────────
 	useEffect(() => {
 		// seed the entire room (players + songs) in one go
 		dispatch({ type: "SET_ROOM", room: initialRoom });
@@ -52,6 +57,44 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 		};
 	}, [socket, dispatch, initialRoom]);
 
+	// ─── CONNECTION / RECONNECT EFFECT ─────────────────────────────
+	useEffect(() => {
+		const onDisconnect = (reason: any) => {
+			console.warn("⚠️ socket disconnected:", reason);
+			setSocketError("Connection lost. Reconnecting…");
+		};
+
+		const onReconnect = (attempt?: number) => {
+			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
+			setSocketError(null);
+			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, (ok: boolean) => {
+				// you can ignore the result on reconnect
+				console.log("re-join ack:", ok);
+			});
+		};
+
+		// 1) socket-level events
+		socket.on("disconnect", onDisconnect);
+		socket.on("connect", () => onReconnect());
+		socket.on("reconnect", onReconnect);
+
+		// 2) manager-level events (under the hood)
+		const mgr = (socket as any).io;
+		mgr.on("connect", () => onReconnect());
+		mgr.on("reconnect", onReconnect);
+
+		return () => {
+			// teardown socket listeners
+			socket.off("disconnect", onDisconnect);
+			socket.off("connect", () => onReconnect());
+			socket.off("reconnect", onReconnect);
+
+			// teardown manager listeners
+			mgr.off("connect", () => onReconnect());
+			mgr.off("reconnect", onReconnect);
+		};
+	}, [socket]);
+
 	if (!state.room) return <p>Loading lobby…</p>;
 
 	const startGame = () => {
@@ -77,6 +120,11 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				backgroundBlendMode: "overlay",
 			}}
 		>
+			{socketError && (
+				<div className="fixed top-0 left-0 w-full bg-yellow-300 text-yellow-900 text-center py-2 z-50">
+					{socketError}
+				</div>
+			)}
 			<div
 				className="
           w-[90vw] max-w-screen-xl
