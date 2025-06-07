@@ -15,7 +15,6 @@
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "@prisma/client": "^6.8.2",
-    "cloudinary": "^2.6.1",
     "clsx": "^2.1.1",
     "create-server": "^1.0.2",
     "express": "^5.1.0",
@@ -28,7 +27,6 @@
     "react-player": "^2.16.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "streamifier": "^0.1.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
