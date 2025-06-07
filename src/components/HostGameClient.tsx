@@ -168,11 +168,6 @@ export default function HostGameClient({ code }: { code: string }) {
 		return <p>Loading game…</p>;
 	}
 
-	// Build a sorted ranking of [playerName, points], or empty array if no scores yet
-	const ranking: [string, number][] = state.scores
-		? (Object.entries(state.scores) as [string, number][]).sort(([, a], [, b]) => b - a)
-		: [];
-
 	return (
 		<div
 			className="
@@ -225,33 +220,56 @@ export default function HostGameClient({ code }: { code: string }) {
 						<>
 							<h2 className="text-2xl font-semibold text-text mb-4">Final Results</h2>
 							<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
-								{ranking.slice(0, 3).map(([name, pts]: [string, number], idx: number) => {
-									const isRevealed = revealedRanking.includes(idx);
-									return (
-										<div
-											key={name}
-											className="flex justify-between py-2 border-b border-border last:border-b-0 cursor-pointer"
-											onClick={() => {
-												if (!isRevealed) {
-													setRevealedRanking((prev) => [...prev, idx]);
-												}
-											}}
-										>
-											{isRevealed ? (
-												<>
-													<span className="text-text">
-														#{idx + 1} {name}
-													</span>
-													<span className="text-text font-medium">{pts} pts</span>
-												</>
-											) : (
-												<span className="text-text italic">
-													#{idx + 1} Click to reveal
-												</span>
-											)}
-										</div>
+								{(() => {
+									if (!state.scores) return null;
+
+									const ranking: [string, number][] = Object.entries(state.scores).sort(
+										([, a], [, b]) => b - a
 									);
-								})}
+
+									// Step 1: Group players by score
+									const grouped: { score: number; names: string[] }[] = [];
+									for (const [name, score] of ranking) {
+										const existing = grouped.find((g) => g.score === score);
+										if (existing) {
+											existing.names.push(name);
+										} else {
+											grouped.push({ score, names: [name] });
+										}
+									}
+
+									// Step 2: Render grouped leaderboard with rank numbers
+									return grouped.slice(0, 3).map((group, idx) => {
+										const isRevealed = revealedRanking.includes(idx);
+
+										return (
+											<div
+												key={group.score}
+												className="flex justify-between py-2 border-b border-border last:border-b-0 cursor-pointer"
+												onClick={() => {
+													if (!isRevealed) {
+														setRevealedRanking((prev) => [...prev, idx]);
+													}
+												}}
+											>
+												{isRevealed ? (
+													<>
+														<span className="text-text">
+															#{idx + 1} {group.names.join(", ")}
+														</span>
+														<span className="text-text font-medium">
+															{group.score} pts
+														</span>
+													</>
+												) : (
+													<span className="text-text italic">
+														#{idx + 1} Click to reveal
+													</span>
+												)}
+											</div>
+										);
+									});
+								})()}
 							</div>
 						</>
 					) : (
