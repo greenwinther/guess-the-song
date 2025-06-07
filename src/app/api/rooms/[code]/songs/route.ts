@@ -2,10 +2,7 @@
 import { NextResponse } from "next/server";
 import { addSong } from "@/lib/rooms";
 
-export async function POST(
-	request: Request,
-	context: any /** ← use “any” here to skip Next’s strict ParamCheck */
-) {
+export async function POST(request: Request, context: any) {
 	try {
 		const { url, submitter } = await request.json();
 		const song = await addSong(context.params.code, {
