@@ -42,15 +42,16 @@ function reducer(state: State, action: Action): State {
 			return { ...initialState, room: action.room };
 		case "ADD_PLAYER":
 			if (!state.room) return state;
-			// don’t add if we already have this player.id
-			if (state.room.players.some((p) => p.id === action.player.id)) {
-				return state;
-			}
+
+			// Prevent duplicates
+			const alreadyExists = state.room.players.some((p) => p.id === action.player.id);
+			if (alreadyExists) return state;
+
 			return {
 				...state,
 				room: {
 					...state.room,
-					players: [...state.room.players, action.player],
+					players: [...state.room.players, action.player], // ✅ new array
 				},
 			};
 		case "ADD_SONG":
