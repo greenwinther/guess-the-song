@@ -20,11 +20,11 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	const socket = useSocket();
 	const { state, dispatch } = useGame();
 
-	// 1) For shuffling submitters
+	// 1 For shuffling submitters
 	const [order, setOrder] = useState<OrderItem[]>([]);
 	const [submitted, setSubmitted] = useState(false);
 
-	// 2) Track which songs have been “revealed” by the host
+	// 2 Track which songs have been “revealed” by the host
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 
 	const [socketError, setSocketError] = useState<string | null>(null);
@@ -34,8 +34,9 @@ export default function JoinGameClient({ code, playerName }: Props) {
 
 	// flag to skip that first replay
 	const hasSeenFirstPlay = useRef(false);
+	const playerNameRef = useRef(playerName);
 
-	// 4) Holds the current background‐thumbnail URL (or null → use room.backgroundUrl)
+	// 4 Holds the current background‐thumbnail URL (or null → use room.backgroundUrl)
 	const [bgThumbnail, setBgThumbnail] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -122,10 +123,14 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		const onReconnect = (attempt?: number) => {
 			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
 			setSocketError(null);
-			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, (ok: boolean) => {
-				// you can ignore the result on reconnect
-				console.log("re-join ack:", ok);
-			});
+			socket.emit(
+				"joinRoom",
+				{ code: roomCodeRef.current, name: playerNameRef.current },
+				(ok: boolean) => {
+					// you can ignore the result on reconnect
+					console.log("re-join ack:", ok);
+				}
+			);
 		};
 
 		// 1) socket-level events
