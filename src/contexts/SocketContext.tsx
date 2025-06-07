@@ -9,10 +9,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 	const [socket, setSocket] = useState<Socket | null>(null);
 
 	useEffect(() => {
-		const s = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000");
-		setSocket(s);
+		const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
+			transports: ["websocket"],
+			reconnectionDelay: 200, // start retry after 200ms
+			reconnectionDelayMax: 1000,
+			reconnectionAttempts: Infinity,
+		});
+		setSocket(socket);
 		return () => {
-			s.disconnect();
+			socket.disconnect();
 		};
 	}, []);
 
