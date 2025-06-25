@@ -1,6 +1,6 @@
 "use client";
 
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
@@ -17,7 +17,15 @@ interface SubmissionOrderListProps {
 }
 
 export default function SubmissionOrderList({ order, submitted, onDragEnd }: SubmissionOrderListProps) {
-	const sensors = useSensors(useSensor(PointerSensor));
+	const sensors = useSensors(
+		useSensor(PointerSensor),
+		useSensor(TouchSensor, {
+			activationConstraint: {
+				delay: 150,
+				tolerance: 5,
+			},
+		})
+	);
 
 	const handleDragEnd = (event: any) => {
 		const { active, over } = event;
