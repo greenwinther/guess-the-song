@@ -19,16 +19,15 @@ interface SubmissionOrderListProps {
 }
 
 export default function SubmissionOrderList({ order, submitted, onDragEnd }: SubmissionOrderListProps) {
-	const sensors = useSensors(
-		isMobile
-			? useSensor(TouchSensor, {
-					activationConstraint: {
-						delay: 100,
-						tolerance: 10,
-					},
-			  })
-			: useSensor(PointerSensor)
-	);
+	const touch = useSensor(TouchSensor, {
+		activationConstraint: {
+			delay: 100,
+			tolerance: 10,
+		},
+	});
+	const pointer = useSensor(PointerSensor);
+
+	const sensors = useSensors(isMobile ? touch : pointer);
 
 	const handleDragEnd = (event: any) => {
 		const { active, over } = event;
