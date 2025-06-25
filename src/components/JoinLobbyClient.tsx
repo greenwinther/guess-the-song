@@ -16,7 +16,7 @@ export default function JoinLobbyClient({
 }) {
 	const socket = useSocket();
 	const router = useRouter();
-	const { state, dispatch } = useGame();
+	const { room, setRoom, addPlayer, addSong, removeSong, gameStarted, setGameStarted } = useGame();
 	const hasJoined = useRef(false);
 	const [socketError, setSocketError] = useState<string | null>(null);
 
@@ -25,12 +25,10 @@ export default function JoinLobbyClient({
 	const playerNameRef = useRef(currentUserName);
 
 	useEffect(() => {
-		// Seed the entire room (players + songs) in one go
-		if (!state.room) {
-			dispatch({ type: "SET_ROOM", room: initialRoom });
+		if (!room) {
+			setRoom(initialRoom);
 		}
 
-		// 1) Join socket.io room exactly once
 		if (!hasJoined.current) {
 			socket.emit("joinRoom", { code: initialRoom.code, name: currentUserName }, (ok: boolean) => {
 				if (!ok) console.error("❌ Failed to join socket room");
@@ -38,30 +36,25 @@ export default function JoinLobbyClient({
 			hasJoined.current = true;
 		}
 
-		// 2) Register listeners without blocking on hasJoined
 		socket.on("playerJoined", (player: Player) => {
 			console.log("🟢 playerJoined received:", player.name);
-			dispatch({ type: "ADD_PLAYER", player });
+			addPlayer(player);
 		});
 
-		// 3) Listen for "roomData" → update context
 		socket.on("roomData", (room: Room) => {
-			dispatch({ type: "SET_ROOM", room });
+			setRoom(room);
 		});
 
-		// 4) Also listen for songAdded/songRemoved so that any new songs also update context
 		socket.on("songAdded", (song: Song) => {
-			dispatch({ type: "ADD_SONG", song });
-		});
-		socket.on("songRemoved", ({ songId }) => {
-			dispatch({ type: "REMOVE_SONG", songId });
+			addSong(song);
 		});
 
-		// Listen for the gameStarted broadcast
+		socket.on("songRemoved", ({ songId }) => {
+			removeSong(songId);
+		});
+
 		socket.on("gameStarted", (room: Room) => {
-			// Update context with full Room
-			dispatch({ type: "START_GAME" });
-			// Navigate to the game page
+			setGameStarted(true);
 			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		});
 
@@ -72,16 +65,15 @@ export default function JoinLobbyClient({
 			socket.off("gameStarted");
 			socket.off("playerJoined");
 		};
-	}, [socket, dispatch, initialRoom, currentUserName, router, state.room?.players]);
+	}, [socket, initialRoom, currentUserName, router, room]);
 
 	useEffect(() => {
 		console.log(
 			"👀 player count changed",
-			state.room?.players.map((p) => p.name)
+			room?.players.map((p) => p.name)
 		);
-	}, [state.room?.players]);
+	}, [room?.players]);
 
-	// ─── CONNECTION / RECONNECT EFFECT ─────────────────────────────
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
 			console.warn("⚠️ socket disconnected:", reason);
@@ -95,36 +87,30 @@ export default function JoinLobbyClient({
 				"joinRoom",
 				{ code: roomCodeRef.current, name: playerNameRef.current },
 				(ok: boolean) => {
-					// you can ignore the result on reconnect
 					console.log("re-join ack:", ok);
 				}
 			);
 		};
 
-		// 1) socket-level events
 		socket.on("disconnect", onDisconnect);
 		socket.on("connect", () => onReconnect());
 		socket.on("reconnect", onReconnect);
 
-		// 2) manager-level events (under the hood)
 		const mgr = (socket as any).io;
 		mgr.on("connect", () => onReconnect());
 		mgr.on("reconnect", onReconnect);
 
 		return () => {
-			// teardown socket listeners
 			socket.off("disconnect", onDisconnect);
 			socket.off("connect", () => onReconnect());
 			socket.off("reconnect", onReconnect);
-
-			// teardown manager listeners
 			mgr.off("connect", () => onReconnect());
 			mgr.off("reconnect", onReconnect);
 		};
 	}, [socket]);
 
 	// Render a loading state if for some reason the room isn't set yet
-	if (!state.room) {
+	if (!room) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
 				<p className="text-lg">Loading lobby…</p>
@@ -141,7 +127,7 @@ export default function JoinLobbyClient({
         flex items-center justify-center
       "
 			style={{
-				backgroundImage: `url(${state.room.backgroundUrl})`,
+				backgroundImage: `url(${room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
 			}}
 		>
@@ -154,7 +140,7 @@ export default function JoinLobbyClient({
 				<section>
 					<h2 className="text-2xl font-semibold text-text-muted mb-4">Players in Lobby</h2>
 					<ul className="space-y-2 list-none">
-						{state.room.players.map((p) => (
+						{room.players.map((p) => (
 							<li key={p.id} className="flex items-center space-x-2 text-text">
 								<span className="w-3 h-3 rounded-full bg-primary" />
 								<span>{p.name}</span>
