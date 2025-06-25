@@ -4,6 +4,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, TouchS
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import { GripVertical } from "lucide-react";
 
 export interface OrderItem {
 	id: number;
@@ -42,7 +43,7 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 	};
 
 	return (
-		<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
+		<div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-xl w-full max-w-md">
 			<DndContext
 				sensors={sensors}
 				collisionDetection={closestCenter}
@@ -89,14 +90,23 @@ function SortableItem({
 		<li
 			ref={setNodeRef}
 			style={style}
-			{...attributes}
-			{...listeners}
 			className={`flex items-center justify-between bg-card rounded-lg p-3 ${
 				isDragging ? "opacity-80" : "opacity-100"
 			}`}
 		>
-			<span className="font-medium">{index + 1}.</span>
-			<span className="flex-1 mx-4">{name}</span>
+			<span className="font-medium text-sm sm:text-base">{index + 1}.</span>
+			<span className="flex-1 mx-2 sm:mx-4 text-sm sm:text-base truncate">{name}</span>
+
+			{/* Drag handle only */}
+			<button
+				{...listeners}
+				{...attributes}
+				disabled={disabled}
+				className="cursor-grab active:cursor-grabbing"
+				aria-label="Drag handle"
+			>
+				<GripVertical className="w-5 h-5 text-muted-foreground" />
+			</button>
 		</li>
 	);
 }
