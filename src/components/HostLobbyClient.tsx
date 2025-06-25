@@ -14,20 +14,17 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	const socket = useSocket();
 	const router = useRouter();
 	const hasJoined = useRef(false);
-	const { state, dispatch } = useGame();
+	const { room, setRoom, addPlayer, addSong, removeSong, setGameStarted } = useGame();
+
 	const [previewUrl, setPreviewUrl] = useState<string>("");
 	const [revealedId, setRevealedId] = useState<number | null>(null);
 	const [socketError, setSocketError] = useState<string | null>(null);
 
-	// keep the room code in a ref so our reconnect handler can access it
 	const roomCodeRef = useRef(initialRoom.code);
 
-	// ─── seed + game logic ─────────────────────────────────────────
 	useEffect(() => {
-		// seed the entire room (players + songs) in one go
-		dispatch({ type: "SET_ROOM", room: initialRoom });
+		setRoom(initialRoom);
 
-		// only join the socket once
 		if (!hasJoined.current) {
 			socket.emit("joinRoom", { code: initialRoom.code, name: "Host" }, (ok: boolean) => {
 				if (!ok) console.error("❌ Failed to join socket room");
@@ -35,29 +32,17 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			hasJoined.current = true;
 		}
 
-		// 3) Register listeners without blocking on hasJoined
-		socket.on("playerJoined", (player: Player) => {
-			dispatch({ type: "ADD_PLAYER", player });
-		});
-
-		// when someone adds a song
-		socket.on("songAdded", (song: Song) => {
-			dispatch({ type: "ADD_SONG", song });
-		});
-
-		// when someone (host) removes a song
-		socket.on("songRemoved", ({ songId }: { songId: number }) => {
-			dispatch({ type: "REMOVE_SONG", songId });
-		});
+		socket.on("playerJoined", (player: Player) => addPlayer(player));
+		socket.on("songAdded", (song: Song) => addSong(song));
+		socket.on("songRemoved", ({ songId }: { songId: number }) => removeSong(songId));
 
 		return () => {
 			socket.off("songAdded");
 			socket.off("songRemoved");
 			socket.off("playerJoined");
 		};
-	}, [socket, dispatch, initialRoom]);
+	}, [socket, setRoom, addPlayer, addSong, removeSong, initialRoom]);
 
-	// ─── CONNECTION / RECONNECT EFFECT ─────────────────────────────
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
 			console.warn("⚠️ socket disconnected:", reason);
@@ -68,42 +53,34 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
 			setSocketError(null);
 			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, (ok: boolean) => {
-				// you can ignore the result on reconnect
 				console.log("re-join ack:", ok);
 			});
 		};
 
-		// 1) socket-level events
 		socket.on("disconnect", onDisconnect);
 		socket.on("connect", () => onReconnect());
 		socket.on("reconnect", onReconnect);
 
-		// 2) manager-level events (under the hood)
 		const mgr = (socket as any).io;
 		mgr.on("connect", () => onReconnect());
 		mgr.on("reconnect", onReconnect);
 
 		return () => {
-			// teardown socket listeners
 			socket.off("disconnect", onDisconnect);
 			socket.off("connect", () => onReconnect());
 			socket.off("reconnect", onReconnect);
-
-			// teardown manager listeners
 			mgr.off("connect", () => onReconnect());
-			mgr.off("reconnect", onReconnect);
+			mgr.off("reconnect", () => onReconnect);
 		};
 	}, [socket]);
 
-	if (!state.room) return <p>Loading lobby…</p>;
+	if (!room) return <p>Loading lobby…</p>;
 
 	const startGame = () => {
-		socket.emit("startGame", { code: state.room!.code }, (ok: boolean) => {
-			if (!ok) {
-				return alert("Could not start game");
-			}
-			router.push(`/host/${state.room!.code}/game`);
-			dispatch({ type: "START_GAME" });
+		socket.emit("startGame", { code: room.code }, (ok: boolean) => {
+			if (!ok) return alert("Could not start game");
+			router.push(`/host/${room.code}/game`);
+			setGameStarted(true);
 		});
 	};
 
@@ -116,7 +93,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
         flex items-center justify-center
       "
 			style={{
-				backgroundImage: `url(${state.room.backgroundUrl})`,
+				backgroundImage: `url(${room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
 			}}
 		>
@@ -141,11 +118,11 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 					</h1>
 					<div className="bg-card bg-opacity-50 border border-border rounded-lg p-4 text-center mb-6 w-full">
 						<p className="text-text-muted text-sm">Room code</p>
-						<p className="text-4xl font-mono font-bold text-secondary">{state.room.code}</p>
+						<p className="text-4xl font-mono font-bold text-secondary">{room.code}</p>
 					</div>
 					<p className="text-text-muted mb-4">Waiting for players…</p>
 					<ul className="space-y-2 w-full">
-						{state.room.players.map((p) => (
+						{room.players.map((p) => (
 							<li key={p.id} className="flex items-center space-x-2 text-text">
 								<span className="w-3 h-3 rounded-full bg-primary" />
 								<span>{p.name}</span>
@@ -159,7 +136,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 					<div>
 						<h2 className="text-3xl font-semibold text-text mb-6">Song Setup</h2>
 						{/* pass our setter down so the form can tell us current URL */}
-						<SongSubmitForm code={state.room.code} onUrlChange={setPreviewUrl} />
+						<SongSubmitForm code={room.code} onUrlChange={setPreviewUrl} />
 
 						{/* Always-shown preview player, taller and spaced further down */}
 						<div className="w-full rounded-lg overflow-hidden border border-border mt-12 mb-6 h-96">
@@ -184,7 +161,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				<aside className="flex-1 p-6 border-l border-border flex flex-col h-full">
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 					<div className="bg-card bg-opacity-50 border border-border rounded-lg divide-y divide-border overflow-auto mt-6">
-						{state.room.songs.map((s, i) => {
+						{room.songs.map((s, i) => {
 							const isRevealed = revealedId === s.id;
 							return (
 								<div
@@ -215,7 +192,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 												e.stopPropagation(); // don’t re-toggle when removing
 												socket.emit(
 													"removeSong",
-													{ code: state.room!.code, songId: s.id },
+													{ code: room!.code, songId: s.id },
 													(res: { success: boolean; error?: string }) => {
 														if (!res.success)
 															return alert(
