@@ -5,6 +5,7 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 import { Menu } from "lucide-react";
+import { isMobile } from "react-device-detect";
 
 export interface OrderItem {
 	id: number;
@@ -19,13 +20,14 @@ interface SubmissionOrderListProps {
 
 export default function SubmissionOrderList({ order, submitted, onDragEnd }: SubmissionOrderListProps) {
 	const sensors = useSensors(
-		useSensor(PointerSensor),
-		useSensor(TouchSensor, {
-			activationConstraint: {
-				delay: 100,
-				tolerance: 5,
-			},
-		})
+		isMobile
+			? useSensor(TouchSensor, {
+					activationConstraint: {
+						delay: 100,
+						tolerance: 10,
+					},
+			  })
+			: useSensor(PointerSensor)
 	);
 
 	const handleDragEnd = (event: any) => {
@@ -92,8 +94,8 @@ function SortableItem({
 			style={style}
 			{...attributes}
 			{...listeners}
-			className={`flex items-center justify-between bg-card rounded-lg p-3 ${
-				isDragging ? "opacity-80" : "opacity-100"
+			className={`flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] transition-transform duration-150 ${
+				isDragging ? "scale-[1.02] opacity-80" : "scale-100 opacity-100"
 			}`}
 		>
 			{/* Drag indicator */}

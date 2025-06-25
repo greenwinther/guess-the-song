@@ -28,6 +28,7 @@
     "next": "^15.3.2",
     "prisma": "^6.8.2",
     "react": "^18",
+    "react-device-detect": "^2.2.3",
     "react-dom": "^18",
     "react-hot-toast": "^2.5.2",
     "react-player": "^2.16.0",
