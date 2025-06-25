@@ -20,6 +20,9 @@ export const joinRoomHandler = (io: Server, socket: Socket) => {
 			io.to(data.code).emit("playerJoined", newPlayer);
 			socket.emit("roomData", room);
 
+			const revealed = revealedSongsByRoom[code] || [];
+			socket.emit("revealedSongs", revealed);
+
 			// 2) If a round is already active, immediately tell them the game has started
 			const roundsForCode = activeRounds[data.code];
 			if (roundsForCode && Object.keys(roundsForCode).length > 0) {

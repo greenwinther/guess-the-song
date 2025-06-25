@@ -16,7 +16,7 @@ export default function JoinLobbyClient({
 }) {
 	const socket = useSocket();
 	const router = useRouter();
-	const { room, setRoom, addPlayer, addSong, removeSong, gameStarted, setGameStarted } = useGame();
+	const { room, setRoom, addPlayer, addSong, removeSong, setGameStarted } = useGame();
 	const hasJoined = useRef(false);
 	const [socketError, setSocketError] = useState<string | null>(null);
 
@@ -65,7 +65,18 @@ export default function JoinLobbyClient({
 			socket.off("gameStarted");
 			socket.off("playerJoined");
 		};
-	}, [socket, initialRoom, currentUserName, router, room]);
+	}, [
+		socket,
+		initialRoom,
+		currentUserName,
+		router,
+		room,
+		setRoom,
+		addPlayer,
+		addSong,
+		removeSong,
+		setGameStarted,
+	]);
 
 	useEffect(() => {
 		console.log(

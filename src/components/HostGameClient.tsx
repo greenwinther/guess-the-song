@@ -48,7 +48,7 @@ export default function HostGameClient({ code }: { code: string }) {
 		return () => {
 			socket.off("gameStarted", onGameStarted);
 		};
-	}, [socket, setRoom, setGameStarted]);
+	}, [socket, setRoom, setGameStarted, setBgThumbnail]);
 
 	useEffect(() => {
 		hasJoined.current = true;
@@ -99,7 +99,7 @@ export default function HostGameClient({ code }: { code: string }) {
 		return () => {
 			socket.off("playSong", onPlaySong);
 		};
-	}, [socket, setCurrentClip, room]);
+	}, [socket, setCurrentClip, room, setBgThumbnail, setCurrentSong]);
 
 	useEffect(() => {
 		const onPlayerSubmitted = ({ playerName }: { playerName: string }) => {
@@ -109,7 +109,7 @@ export default function HostGameClient({ code }: { code: string }) {
 		return () => {
 			socket.off("playerSubmitted", onPlayerSubmitted);
 		};
-	}, [socket]);
+	}, [socket, setSubmittedPlayers]);
 
 	useEffect(() => {
 		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {

@@ -87,7 +87,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			socket.off("playSong", onPlaySong);
 			socket.off("gameOver", onGameOver);
 		};
-	}, [socket, code, playerName]);
+	}, [socket, code, playerName, setRoom, setCurrentClip, setBgThumbnail, setScores, setGameStarted]);
 
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
@@ -127,7 +127,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		return () => {
 			socket.off("revealedSongs");
 		};
-	}, [socket]);
+	}, [socket, setRevealedSongs]);
 
 	const handleSubmitAll = () => {
 		if (!room) return;
