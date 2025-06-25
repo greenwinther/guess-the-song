@@ -2,7 +2,7 @@
 import { activeRounds } from "@/lib/game";
 import { getRoom, joinRoom } from "@/lib/rooms";
 import { Server, Socket } from "socket.io";
-import { finalScoresByRoom } from "./sharedState";
+import { finalScoresByRoom, revealedSongsByRoom } from "./sharedState";
 
 export const joinRoomHandler = (io: Server, socket: Socket) => {
 	socket.on("joinRoom", async (data: { code: string; name: string }, callback?: (ok: boolean) => void) => {
@@ -20,7 +20,7 @@ export const joinRoomHandler = (io: Server, socket: Socket) => {
 			io.to(data.code).emit("playerJoined", newPlayer);
 			socket.emit("roomData", room);
 
-			const revealed = revealedSongsByRoom[code] || [];
+			const revealed = revealedSongsByRoom[data.code] || [];
 			socket.emit("revealedSongs", revealed);
 
 			// 2) If a round is already active, immediately tell them the game has started
