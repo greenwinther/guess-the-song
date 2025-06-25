@@ -153,3 +153,5 @@ const SortableItem = React.forwardRef<
 		</li>
 	);
 });
+
+SortableItem.displayName = "SortableItem";
