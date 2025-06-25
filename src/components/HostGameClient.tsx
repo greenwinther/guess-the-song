@@ -3,127 +3,104 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
 import ReactPlayer from "react-player";
 import Button from "./ui/Button";
 import { getYouTubeID } from "@/lib/youtube";
+import { useGame } from "../contexts/GameContext";
 
 export default function HostGameClient({ code }: { code: string }) {
 	const socket = useSocket();
-	const { state, dispatch } = useGame();
-	// Holds the currently playing Song (or null if none)
-	const [currentSong, setCurrentSong] = useState<Song | null>(null);
-	// Whether to reveal the current clip’s submitter name
-	const [showSubmitter, setShowSubmitter] = useState(false);
-	// Keeps track of which song IDs have been revealed (for the playlist buttons)
-	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
-	// Keeps track of which player have been revealed (for the ranking list)
-	const [revealedRanking, setRevealedRanking] = useState<number[]>([]);
-	// NEW: which players have submitted
-	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
-	// NEW: background‐image URL (room.backgroundUrl OR current thumbnail)
-	const [bgThumbnail, setBgThumbnail] = useState<string | null>(null);
+	const {
+		room,
+		setRoom,
+		gameStarted,
+		setGameStarted,
+		setCurrentClip,
+		scores,
+		setScores,
+		revealedSongs,
+		setRevealedSongs,
+		addPlayer,
+		currentSong,
+		setCurrentSong,
+		submittedPlayers,
+		setSubmittedPlayers,
+		bgThumbnail,
+		setBgThumbnail,
+	} = useGame();
 
+	const [showSubmitter, setShowSubmitter] = useState(false);
+	const [revealedRanking, setRevealedRanking] = useState<number[]>([]);
 	const [socketError, setSocketError] = useState<string | null>(null);
 
-	// keep the room code in a ref so our reconnect handler can access it
 	const roomCodeRef = useRef(code);
-
 	const hasJoined = useRef(false);
 
-	// 1) On game start, seed context
 	useEffect(() => {
-		const onGameStarted = (room: Room) => {
-			dispatch({ type: "SET_ROOM", room });
-			dispatch({ type: "START_GAME" });
+		const onGameStarted = (roomData: Room) => {
+			setRoom(roomData);
+			setGameStarted(true);
 			setBgThumbnail(null);
 		};
 		socket.on("gameStarted", onGameStarted);
+
 		return () => {
 			socket.off("gameStarted", onGameStarted);
 		};
-	}, [socket, dispatch]);
+	}, [socket, setRoom, setGameStarted]);
 
-	// 2) Listen for new players joining (so host sees updated player list)
 	useEffect(() => {
-		hasJoined.current = true; // Mark as joined
-
-		// 2) Register listeners without blocking on hasJoined
-		socket.on("playerJoined", (player: Player) => {
-			dispatch({ type: "ADD_PLAYER", player });
-		});
-
+		hasJoined.current = true;
+		socket.on("playerJoined", (player: Player) => addPlayer(player));
 		return () => {
 			socket.off("playerJoined");
 		};
-	}, [socket, dispatch, state.room]);
+	}, [socket, addPlayer]);
 
-	// ─── CONNECTION / RECONNECT EFFECT ─────────────────────────────
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
 			console.warn("⚠️ socket disconnected:", reason);
 			setSocketError("Connection lost. Reconnecting…");
 		};
-
 		const onReconnect = (attempt?: number) => {
 			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
 			setSocketError(null);
-			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, (ok: boolean) => {
-				// you can ignore the result on reconnect
-				console.log("re-join ack:", ok);
-			});
+			socket.emit("joinRoom", { code: roomCodeRef.current, name: "Host" }, () => {});
 		};
 
-		// 1) socket-level events
 		socket.on("disconnect", onDisconnect);
 		socket.on("connect", () => onReconnect());
 		socket.on("reconnect", onReconnect);
 
-		// 2) manager-level events (under the hood)
 		const mgr = (socket as any).io;
 		mgr.on("connect", () => onReconnect());
 		mgr.on("reconnect", onReconnect);
 
 		return () => {
-			// teardown socket listeners
 			socket.off("disconnect", onDisconnect);
 			socket.off("connect", () => onReconnect());
 			socket.off("reconnect", onReconnect);
-
-			// teardown manager listeners
 			mgr.off("connect", () => onReconnect());
 			mgr.off("reconnect", onReconnect);
 		};
 	}, [socket]);
 
-	// 3) On each playSong, update clip locally and in context
 	useEffect(() => {
 		const onPlaySong = ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
-			// update context currentClip
-			dispatch({ type: "PLAY_SONG", payload: { songId, clipUrl } });
-			// reset reveal
+			setCurrentClip({ songId, clipUrl });
 			setShowSubmitter(false);
-			// find full song object
-			const s = state.room?.songs.find((x) => x.id === songId) || null;
+			const s = room?.songs.find((x) => x.id === songId) || null;
 			setCurrentSong(s);
-
-			// 3d) pull the YouTube ID out of clipUrl and build a thumbnail URL
 			const vidId = getYouTubeID(clipUrl);
-			if (vidId) {
-				setBgThumbnail(`https://img.youtube.com/vi/${vidId}/maxresdefault.jpg`);
-			} else {
-				setBgThumbnail(null);
-			}
+			setBgThumbnail(vidId ? `https://img.youtube.com/vi/${vidId}/maxresdefault.jpg` : null);
 		};
-
 		socket.on("playSong", onPlaySong);
 		return () => {
 			socket.off("playSong", onPlaySong);
 		};
-	}, [socket, dispatch, state.room]);
+	}, [socket, setCurrentClip, room]);
 
-	// 4) Listen for "playerSubmitted" (NEW). Whenever a player submits, add their name here.
 	useEffect(() => {
 		const onPlayerSubmitted = ({ playerName }: { playerName: string }) => {
 			setSubmittedPlayers((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
@@ -134,39 +111,35 @@ export default function HostGameClient({ code }: { code: string }) {
 		};
 	}, [socket]);
 
-	// 5) Listen for "gameOver" so Host can render the leaderboard
 	useEffect(() => {
 		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
-			dispatch({ type: "GAME_OVER", payload: { scores } });
+			setScores(scores);
 		};
 		socket.on("gameOver", onGameOver);
 		return () => {
 			socket.off("gameOver", onGameOver);
 		};
-	}, [socket, dispatch]);
+	}, [socket, setScores]);
 
-	// 6) Host clicks a song → emit "playSong"
 	const handlePlay = (song: Song) => {
-		socket.emit("playSong", { code, songId: song.id }, (res: { success: boolean; error?: string }) => {
-			if (!res.success) {
-				alert("Could not play that song: " + res.error);
-			} else {
-				setRevealedSongs((prev) => (prev.includes(song.id) ? prev : [...prev, song.id]));
+		socket.emit("playSong", { code, songId: song.id }, (res: { success: boolean }) => {
+			if (!revealedSongs.includes(song.id)) {
+				const updated = [...revealedSongs, song.id];
+				setRevealedSongs(updated);
+
+				// ✅ Broadcast to others
+				socket.emit("revealedSongs", { code, revealed: updated });
 			}
 		});
 	};
 
-	// 7) Host clicks "Show Results" → emit "showResults"
 	const handleShowResults = () => {
 		socket.emit("showResults", { code }, (ok: boolean) => {
 			if (!ok) alert("Failed to show results");
 		});
 	};
 
-	// If we haven’t joined a room or the game hasn’t started yet:
-	if (!state.room || !state.gameStarted) {
-		return <p>Loading game…</p>;
-	}
+	if (!room || !gameStarted) return <p>Loading game…</p>;
 
 	return (
 		<div
@@ -177,7 +150,7 @@ export default function HostGameClient({ code }: { code: string }) {
       "
 			style={{
 				// Use the thumbnail if set; otherwise fall back to the room’s background
-				backgroundImage: bgThumbnail ? `url(${bgThumbnail})` : `url(${state.room.backgroundUrl})`,
+				backgroundImage: bgThumbnail ? `url(${bgThumbnail})` : `url(${room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
 			}}
 		>
@@ -194,10 +167,10 @@ export default function HostGameClient({ code }: { code: string }) {
 					</h1>
 					<div className="bg-card bg-opacity-50 border border-border rounded-lg p-4 text-center mb-6">
 						<p className="text-text-muted text-sm">Room code</p>
-						<p className="text-4xl font-mono font-bold text-secondary">{state.room.code}</p>
+						<p className="text-4xl font-mono font-bold text-secondary">{room.code}</p>
 					</div>
 					<ul className="space-y-2 w-full">
-						{state.room.players.map((p) => {
+						{room.players.map((p) => {
 							const didSubmit = submittedPlayers.includes(p.name);
 							return (
 								<li key={p.id} className="flex items-center space-x-2 text-text">
@@ -215,15 +188,15 @@ export default function HostGameClient({ code }: { code: string }) {
 
 				{/** ========== CENTER PANEL ========== **/}
 				<main className="flex-1 p-6 flex flex-col items-center">
-					{state.scores ? (
+					{scores ? (
 						// -------- Top-3 Leaderboard (Game Over) --------
 						<>
 							<h2 className="text-2xl font-semibold text-text mb-4">Final Results</h2>
 							<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
 								{(() => {
-									if (!state.scores) return null;
+									if (!scores) return null;
 
-									const ranking: [string, number][] = Object.entries(state.scores).sort(
+									const ranking: [string, number][] = Object.entries(scores).sort(
 										([, a], [, b]) => b - a
 									);
 
@@ -311,7 +284,7 @@ export default function HostGameClient({ code }: { code: string }) {
 				<aside className="w-1/4 p-6 border-l border-border flex flex-col">
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 					<div className="space-y-3 flex-1 overflow-y-auto">
-						{state.room.songs.map((s) => (
+						{room.songs.map((s) => (
 							<Button
 								key={s.id}
 								variant={currentSong?.id === s.id ? "primary" : "secondary"}
