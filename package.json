@@ -10,7 +10,8 @@
     "test:e2e": "playwright test",
     "build:server": "tsc --project tsconfig.build.json",
     "start:server": "node dist/server/socketServer.js",
-    "build": "next build && npm run build:server",
+    "prisma:generate": "prisma generate",
+    "build": "prisma generate && next build && npm run build:server",
     "start": "concurrently \"npm run start:server\" \"next start\"",
     "lint": "next lint"
   },
