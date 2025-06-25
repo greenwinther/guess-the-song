@@ -1,7 +1,10 @@
-import { revealedSongsByRoom } from "./sharedState";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
-export const playSongHandler = (io, socket) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.playSongHandler = void 0;
+const sharedState_1 = require("./sharedState");
+const client_1 = require("@prisma/client");
+const prisma = new client_1.PrismaClient();
+const playSongHandler = (io, socket) => {
     socket.on("playSong", async (data, callback) => {
         try {
             // 1) Look up the clip
@@ -15,14 +18,14 @@ export const playSongHandler = (io, socket) => {
                 clipUrl: song.url,
             });
             // 3) Update revealed songs in memory
-            if (!revealedSongsByRoom[data.code]) {
-                revealedSongsByRoom[data.code] = [];
+            if (!sharedState_1.revealedSongsByRoom[data.code]) {
+                sharedState_1.revealedSongsByRoom[data.code] = [];
             }
-            if (!revealedSongsByRoom[data.code].includes(data.songId)) {
-                revealedSongsByRoom[data.code].push(data.songId);
+            if (!sharedState_1.revealedSongsByRoom[data.code].includes(data.songId)) {
+                sharedState_1.revealedSongsByRoom[data.code].push(data.songId);
             }
             // ✅ 4) Emit updated revealedSongs to sync with all clients
-            io.to(data.code).emit("revealedSongs", revealedSongsByRoom[data.code]);
+            io.to(data.code).emit("revealedSongs", sharedState_1.revealedSongsByRoom[data.code]);
             callback({ success: true });
         }
         catch (err) {
@@ -31,3 +34,4 @@ export const playSongHandler = (io, socket) => {
         }
     });
 };
+exports.playSongHandler = playSongHandler;

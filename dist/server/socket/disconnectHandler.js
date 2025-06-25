@@ -1,5 +1,8 @@
-import { getRoom } from "@/lib/rooms";
-export const disconnectHandler = (io, socket) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.disconnectHandler = void 0;
+const rooms_1 = require("@/lib/rooms");
+const disconnectHandler = (io, socket) => {
     socket.on("disconnect", async (reason) => {
         console.log("↔️ socket disconnected", socket.id);
         console.log(`↔️ socket ${socket.id} disconnected:`, reason);
@@ -8,7 +11,7 @@ export const disconnectHandler = (io, socket) => {
         if (meta) {
             const { code, playerName } = meta;
             try {
-                const updated = await getRoom(code);
+                const updated = await (0, rooms_1.getRoom)(code);
                 io.to(code).emit("roomData", updated);
             }
             catch (err) {
@@ -17,3 +20,4 @@ export const disconnectHandler = (io, socket) => {
         }
     });
 };
+exports.disconnectHandler = disconnectHandler;

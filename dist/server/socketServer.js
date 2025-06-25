@@ -1,8 +1,13 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 // src/server/socketServer.ts
-import http from "http";
-import { Server } from "socket.io";
-import { registerSocketHandlers } from "./socket";
-const httpServer = http.createServer((req, res) => {
+const http_1 = __importDefault(require("http"));
+const socket_io_1 = require("socket.io");
+const socket_1 = require("./socket");
+const httpServer = http_1.default.createServer((req, res) => {
     if (req.url === "/" && req.method === "GET") {
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("Socket server is running");
@@ -16,7 +21,7 @@ const httpServer = http.createServer((req, res) => {
 httpServer.on("error", (err) => {
     console.error("🚨 HTTP server error:", err);
 });
-const io = new Server(httpServer, {
+const io = new socket_io_1.Server(httpServer, {
     cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
     // 1) Ping every 20 sec
     pingInterval: 20000,
@@ -37,7 +42,7 @@ io.on("connection", (socket) => {
     socket.on("error", (err) => {
         console.error(`🚨 Socket ${socket.id} error:`, err);
     });
-    registerSocketHandlers(io, socket);
+    (0, socket_1.registerSocketHandlers)(io, socket);
 });
 const PORT = parseInt(process.env.PORT || "4000", 10);
 httpServer.listen(PORT, () => {

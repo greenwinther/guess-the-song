@@ -1,9 +1,12 @@
-import { storeOrder } from "@/lib/game";
-export const submitAllOrdersHandler = (io, socket) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.submitAllOrdersHandler = void 0;
+const game_1 = require("@/lib/game");
+const submitAllOrdersHandler = (io, socket) => {
     socket.on("submitAllOrders", async (data, callback) => {
         try {
             for (const [sid, order] of Object.entries(data.guesses)) {
-                storeOrder(data.code, parseInt(sid, 10), data.playerName, order);
+                (0, game_1.storeOrder)(data.code, parseInt(sid, 10), data.playerName, order);
             }
             // === ADD THIS: broadcast that this player has submitted ===
             io.to(data.code).emit("playerSubmitted", { playerName: data.playerName });
@@ -15,3 +18,4 @@ export const submitAllOrdersHandler = (io, socket) => {
         }
     });
 };
+exports.submitAllOrdersHandler = submitAllOrdersHandler;

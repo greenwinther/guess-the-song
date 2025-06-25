@@ -1,14 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createRoom = createRoom;
+exports.joinRoom = joinRoom;
+exports.getRoom = getRoom;
+exports.addSong = addSong;
+exports.removeSong = removeSong;
 // src/lib/rooms.ts
-import { PrismaClient } from "@prisma/client";
-import { nanoid } from "nanoid";
-const prisma = new PrismaClient();
-export async function createRoom(theme, backgroundUrl) {
-    const code = nanoid(6).toUpperCase();
+const client_1 = require("@prisma/client");
+const nanoid_1 = require("nanoid");
+const prisma = new client_1.PrismaClient();
+async function createRoom(theme, backgroundUrl) {
+    const code = (0, nanoid_1.nanoid)(6).toUpperCase();
     return await prisma.room.create({
         data: { code, theme, backgroundUrl },
     });
 }
-export async function joinRoom(code, name) {
+async function joinRoom(code, name) {
     const room = await prisma.room.findUnique({
         where: { code },
         include: { players: true },
@@ -25,7 +32,7 @@ export async function joinRoom(code, name) {
     });
 }
 // And update getRoom to include players
-export async function getRoom(code) {
+async function getRoom(code) {
     const room = await prisma.room.findUnique({
         where: { code },
         include: { songs: true, players: true },
@@ -34,7 +41,7 @@ export async function getRoom(code) {
         throw new Error("Room not found");
     return room;
 }
-export async function addSong(code, song) {
+async function addSong(code, song) {
     const room = await prisma.room.findUnique({ where: { code } });
     if (!room)
         throw new Error("Room not found");
@@ -47,7 +54,7 @@ export async function addSong(code, song) {
         },
     });
 }
-export async function removeSong(code, songId) {
+async function removeSong(code, songId) {
     // Optionally verify the song belongs to the room first…
     await prisma.song.delete({
         where: { id: songId },

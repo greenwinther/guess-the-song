@@ -1,8 +1,11 @@
-import { addSong } from "@/lib/rooms";
-export const addSongHandler = (io, socket) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.addSongHandler = void 0;
+const rooms_1 = require("@/lib/rooms");
+const addSongHandler = (io, socket) => {
     socket.on("addSong", async (data, callback) => {
         try {
-            const song = await addSong(data.code, {
+            const song = await (0, rooms_1.addSong)(data.code, {
                 url: data.url,
                 submitter: data.submitter,
                 title: data.title,
@@ -19,3 +22,4 @@ export const addSongHandler = (io, socket) => {
         }
     });
 };
+exports.addSongHandler = addSongHandler;
