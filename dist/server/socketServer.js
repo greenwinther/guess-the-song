@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
     });
     (0, socket_1.registerSocketHandlers)(io, socket);
 });
-const PORT = parseInt(process.env.PORT || "4000", 10);
+const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
 httpServer.listen(PORT, () => {
     console.log(`🚀 Socket.IO server listening on port ${PORT}`);
 });
