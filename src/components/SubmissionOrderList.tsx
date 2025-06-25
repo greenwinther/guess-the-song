@@ -15,8 +15,9 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { Menu } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { isMobile } from "react-device-detect";
+import React from "react";
 
 export interface OrderItem {
 	id: number;
@@ -31,6 +32,15 @@ interface SubmissionOrderListProps {
 
 export default function SubmissionOrderList({ order, submitted, onDragEnd }: SubmissionOrderListProps) {
 	const [activeId, setActiveId] = useState<number | null>(null);
+	const activeItemRef = useRef<HTMLLIElement | null>(null);
+	const [overlayStyle, setOverlayStyle] = useState<React.CSSProperties>({});
+
+	// Reset ref after drag ends
+	useEffect(() => {
+		if (activeId === null) {
+			activeItemRef.current = null;
+		}
+	}, [activeId]);
 
 	const pointer = useSensor(PointerSensor);
 	const touch = useSensor(TouchSensor, {
@@ -43,6 +53,14 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 
 	const handleDragStart = (event: DragStartEvent) => {
 		setActiveId(Number(event.active.id));
+
+		if (activeItemRef.current) {
+			const rect = activeItemRef.current.getBoundingClientRect();
+			setOverlayStyle({
+				width: rect.width,
+				height: rect.height,
+			});
+		}
 	};
 
 	const handleDragEnd = (event: DragEndEvent) => {
@@ -78,17 +96,21 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 								name={item.name}
 								index={idx}
 								disabled={submitted}
+								ref={activeId === item.id ? activeItemRef : null}
 							/>
 						))}
 					</ul>
 				</SortableContext>
 
-				<DragOverlay>
+				<DragOverlay dropAnimation={null}>
 					{activeId != null ? (
-						<li className="flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] shadow-lg scale-[1.05] opacity-90">
+						<li
+							style={overlayStyle}
+							className="flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] shadow-lg scale-[1.05] opacity-90"
+						>
 							<Menu className="w-5 h-5 text-muted-foreground mr-3" aria-hidden />
 							<span className="font-medium text-sm sm:text-base">
-								{order.find((i) => i.id === activeId)?.name ?? ""}
+								{order.find((i) => i.id === activeId)?.name ?? "Dragging..."}
 							</span>
 						</li>
 					) : null}
@@ -98,17 +120,10 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 	);
 }
 
-function SortableItem({
-	id,
-	name,
-	index,
-	disabled,
-}: {
-	id: number;
-	name: string;
-	index: number;
-	disabled: boolean;
-}) {
+const SortableItem = React.forwardRef<
+	HTMLLIElement,
+	{ id: number; name: string; index: number; disabled: boolean }
+>(({ id, name, index, disabled }, ref) => {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
 	const style = {
@@ -116,13 +131,19 @@ function SortableItem({
 		transition,
 	};
 
+	const combinedRef = (node: HTMLLIElement) => {
+		setNodeRef(node);
+		if (ref && typeof ref === "function") ref(node);
+		else if (ref && typeof ref === "object") ref.current = node;
+	};
+
 	return (
 		<li
-			ref={setNodeRef}
+			ref={combinedRef}
 			style={style}
 			{...attributes}
 			{...listeners}
-			className={`flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] transition-transform duration-150 ${
+			className={`flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] transition-transform duration-150 cursor-grab active:cursor-grabbing ${
 				isDragging ? "scale-[1.02] opacity-80" : "scale-100 opacity-100"
 			}`}
 		>
@@ -131,4 +152,4 @@ function SortableItem({
 			<span className="flex-1 mx-2 sm:mx-4 text-sm sm:text-base truncate">{name}</span>
 		</li>
 	);
-}
+});
