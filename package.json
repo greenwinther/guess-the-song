@@ -8,8 +8,10 @@
     "dev": "concurrently \"npm:dev:next\" \"npm:socket\"",
     "server": "node server.js",
     "test:e2e": "playwright test",
-    "build": "next build",
-    "start": "concurrently \"npm:socket\" \"next start\"",
+    "build:server": "tsc --project tsconfig.build.json",
+    "start:server": "node dist/server/socketServer.js",
+    "build": "next build && npm run build:server",
+    "start": "concurrently \"npm run start:server\" \"next start\"",
     "lint": "next lint"
   },
   "dependencies": {
