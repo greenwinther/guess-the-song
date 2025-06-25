@@ -1,10 +1,21 @@
 "use client";
 
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from "@dnd-kit/core";
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import {
+	DndContext,
+	closestCenter,
+	PointerSensor,
+	TouchSensor,
+	useSensor,
+	useSensors,
+	DragStartEvent,
+	DragEndEvent,
+	DragOverlay,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import { CSS } from "@dnd-kit/utilities";
 import { Menu } from "lucide-react";
+import { useState } from "react";
 import { isMobile } from "react-device-detect";
 
 export interface OrderItem {
@@ -19,18 +30,24 @@ interface SubmissionOrderListProps {
 }
 
 export default function SubmissionOrderList({ order, submitted, onDragEnd }: SubmissionOrderListProps) {
+	const [activeId, setActiveId] = useState<number | null>(null);
+
 	const pointer = useSensor(PointerSensor);
 	const touch = useSensor(TouchSensor, {
 		activationConstraint: {
-			delay: 150,
-			tolerance: 8,
+			delay: 0,
+			tolerance: 3,
 		},
 	});
-
 	const sensors = useSensors(isMobile ? touch : pointer);
 
-	const handleDragEnd = (event: any) => {
+	const handleDragStart = (event: DragStartEvent) => {
+		setActiveId(Number(event.active.id));
+	};
+
+	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
+		setActiveId(null);
 
 		if (!over || active.id === over.id) return;
 
@@ -48,6 +65,7 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 			<DndContext
 				sensors={sensors}
 				collisionDetection={closestCenter}
+				onDragStart={handleDragStart}
 				onDragEnd={handleDragEnd}
 				modifiers={[restrictToVerticalAxis, restrictToParentElement]}
 			>
@@ -64,6 +82,17 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 						))}
 					</ul>
 				</SortableContext>
+
+				<DragOverlay>
+					{activeId != null ? (
+						<li className="flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] shadow-lg scale-[1.05] opacity-90">
+							<Menu className="w-5 h-5 text-muted-foreground mr-3" aria-hidden />
+							<span className="font-medium text-sm sm:text-base">
+								{order.find((i) => i.id === activeId)?.name ?? ""}
+							</span>
+						</li>
+					) : null}
+				</DragOverlay>
 			</DndContext>
 		</div>
 	);
@@ -97,13 +126,8 @@ function SortableItem({
 				isDragging ? "scale-[1.02] opacity-80" : "scale-100 opacity-100"
 			}`}
 		>
-			{/* Drag indicator */}
 			<Menu className="w-5 h-5 text-muted-foreground mr-3" aria-hidden />
-
-			{/* Index */}
 			<span className="font-medium text-sm sm:text-base">{index + 1}.</span>
-
-			{/* Name */}
 			<span className="flex-1 mx-2 sm:mx-4 text-sm sm:text-base truncate">{name}</span>
 		</li>
 	);
