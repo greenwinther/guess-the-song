@@ -1,23 +1,10 @@
 "use client";
 
-import {
-	DndContext,
-	closestCenter,
-	PointerSensor,
-	TouchSensor,
-	useSensor,
-	useSensors,
-	DragStartEvent,
-	DragEndEvent,
-	DragOverlay,
-} from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Menu } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { isMobile } from "react-device-detect";
-import React from "react";
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import { useEffect, useState } from "react";
 
 export interface OrderItem {
 	id: number;
@@ -32,38 +19,31 @@ interface SubmissionOrderListProps {
 
 export default function SubmissionOrderList({ order, submitted, onDragEnd }: SubmissionOrderListProps) {
 	const [activeId, setActiveId] = useState<number | null>(null);
-	const activeItemRef = useRef<HTMLLIElement | null>(null);
-	const [overlayStyle, setOverlayStyle] = useState<React.CSSProperties>({});
+	const sensors = useSensors(
+		useSensor(PointerSensor),
+		useSensor(TouchSensor, {
+			activationConstraint: {
+				delay: 0,
+				tolerance: 3,
+			},
+		})
+	);
 
-	// Reset ref after drag ends
 	useEffect(() => {
-		if (activeId === null) {
-			activeItemRef.current = null;
+		const disableScroll = (e: TouchEvent) => e.preventDefault();
+		if (activeId !== null) {
+			document.body.addEventListener("touchmove", disableScroll, { passive: false });
 		}
+		return () => {
+			document.body.removeEventListener("touchmove", disableScroll);
+		};
 	}, [activeId]);
 
-	const pointer = useSensor(PointerSensor);
-	const touch = useSensor(TouchSensor, {
-		activationConstraint: {
-			delay: 0,
-			tolerance: 3,
-		},
-	});
-	const sensors = useSensors(isMobile ? touch : pointer);
-
-	const handleDragStart = (event: DragStartEvent) => {
+	const handleDragStart = (event: any) => {
 		setActiveId(Number(event.active.id));
-
-		if (activeItemRef.current) {
-			const rect = activeItemRef.current.getBoundingClientRect();
-			setOverlayStyle({
-				width: rect.width,
-				height: rect.height,
-			});
-		}
 	};
 
-	const handleDragEnd = (event: DragEndEvent) => {
+	const handleDragEnd = (event: any) => {
 		const { active, over } = event;
 		setActiveId(null);
 
@@ -79,7 +59,7 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 	};
 
 	return (
-		<div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-xl w-full max-w-md">
+		<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
 			<DndContext
 				sensors={sensors}
 				collisionDetection={closestCenter}
@@ -96,34 +76,26 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 								name={item.name}
 								index={idx}
 								disabled={submitted}
-								ref={activeId === item.id ? activeItemRef : null}
 							/>
 						))}
 					</ul>
 				</SortableContext>
-
-				<DragOverlay dropAnimation={null}>
-					{activeId != null ? (
-						<li
-							style={overlayStyle}
-							className="flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] shadow-lg scale-[1.05] opacity-90"
-						>
-							<Menu className="w-5 h-5 text-muted-foreground mr-3" aria-hidden />
-							<span className="font-medium text-sm sm:text-base">
-								{order.find((i) => i.id === activeId)?.name ?? "Dragging..."}
-							</span>
-						</li>
-					) : null}
-				</DragOverlay>
 			</DndContext>
 		</div>
 	);
 }
 
-const SortableItem = React.forwardRef<
-	HTMLLIElement,
-	{ id: number; name: string; index: number; disabled: boolean }
->(({ id, name, index, disabled }, ref) => {
+function SortableItem({
+	id,
+	name,
+	index,
+	disabled,
+}: {
+	id: number;
+	name: string;
+	index: number;
+	disabled: boolean;
+}) {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
 	const style = {
@@ -131,27 +103,18 @@ const SortableItem = React.forwardRef<
 		transition,
 	};
 
-	const combinedRef = (node: HTMLLIElement) => {
-		setNodeRef(node);
-		if (ref && typeof ref === "function") ref(node);
-		else if (ref && typeof ref === "object") ref.current = node;
-	};
-
 	return (
 		<li
-			ref={combinedRef}
+			ref={setNodeRef}
 			style={style}
 			{...attributes}
 			{...listeners}
-			className={`flex items-center justify-between bg-card rounded-lg p-4 sm:p-3 min-h-[44px] transition-transform duration-150 cursor-grab active:cursor-grabbing ${
-				isDragging ? "scale-[1.02] opacity-80" : "scale-100 opacity-100"
+			className={`flex items-center justify-between bg-card rounded-lg p-3 ${
+				isDragging ? "opacity-80" : "opacity-100"
 			}`}
 		>
-			<Menu className="w-5 h-5 text-muted-foreground mr-3" aria-hidden />
-			<span className="font-medium text-sm sm:text-base">{index + 1}.</span>
-			<span className="flex-1 mx-2 sm:mx-4 text-sm sm:text-base truncate">{name}</span>
+			<span className="font-medium">{index + 1}.</span>
+			<span className="flex-1 mx-4">{name}</span>
 		</li>
 	);
-});
-
-SortableItem.displayName = "SortableItem";
+}
