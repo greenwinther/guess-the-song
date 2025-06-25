@@ -1,5 +1,5 @@
 // // src/server/socket/removeSongHandler.ts
-import { removeSong } from "@/lib/rooms";
+import { removeSong } from "../../lib/rooms";
 import { Server, Socket } from "socket.io";
 
 export const removeSongHandler = (io: Server, socket: Socket) => {

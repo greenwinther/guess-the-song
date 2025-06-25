@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createRoomHandler = void 0;
-const rooms_1 = require("@/lib/rooms");
+const rooms_1 = require("../../lib/rooms");
 const createRoomHandler = (io, socket) => {
     socket.on("createRoom", async (data, callback) => {
         try {

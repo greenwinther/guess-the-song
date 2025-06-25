@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.disconnectHandler = void 0;
-const rooms_1 = require("@/lib/rooms");
+const rooms_1 = require("../../lib/rooms");
 const disconnectHandler = (io, socket) => {
     socket.on("disconnect", async (reason) => {
         console.log("↔️ socket disconnected", socket.id);

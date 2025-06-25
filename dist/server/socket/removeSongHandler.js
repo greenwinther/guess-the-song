@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeSongHandler = void 0;
 // // src/server/socket/removeSongHandler.ts
-const rooms_1 = require("@/lib/rooms");
+const rooms_1 = require("../../lib/rooms");
 const removeSongHandler = (io, socket) => {
     socket.on("removeSong", async (data, callback) => {
         try {

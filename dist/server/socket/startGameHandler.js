@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.startGameHandler = void 0;
 // // src/server/socket/startGameHandler.ts
-const game_1 = require("@/lib/game");
-const rooms_1 = require("@/lib/rooms");
+const game_1 = require("../../lib/game");
+const rooms_1 = require("../../lib/rooms");
 const sharedState_1 = require("./sharedState");
 const startGameHandler = (io, socket) => {
     socket.on("startGame", async (data, callback) => {

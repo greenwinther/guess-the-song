@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.joinRoomHandler = void 0;
 // src/server/socket/joinRoomHandler.ts
-const game_1 = require("@/lib/game");
-const rooms_1 = require("@/lib/rooms");
+const game_1 = require("../../lib/game");
+const rooms_1 = require("../../lib/rooms");
 const sharedState_1 = require("./sharedState");
 const joinRoomHandler = (io, socket) => {
     socket.on("joinRoom", async (data, callback) => {

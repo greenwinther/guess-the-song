@@ -1,7 +1,7 @@
 // src/server/socket/addSongHandler.ts
-import { Song } from "@/types/room";
+import { Song } from "../../types/room";
 import { Server, Socket } from "socket.io";
-import { addSong } from "@/lib/rooms";
+import { addSong } from "../../lib/rooms";
 
 export const addSongHandler = (io: Server, socket: Socket) => {
 	socket.on(

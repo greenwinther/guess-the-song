@@ -1,6 +1,6 @@
 // src/server/socket/joinRoomHandler.ts
-import { activeRounds } from "@/lib/game";
-import { getRoom, joinRoom } from "@/lib/rooms";
+import { activeRounds } from "../../lib/game";
+import { getRoom, joinRoom } from "../../lib/rooms";
 import { Server, Socket } from "socket.io";
 import { finalScoresByRoom, revealedSongsByRoom } from "./sharedState";
 

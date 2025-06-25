@@ -1,6 +1,6 @@
 // src/server/socket/disconnectHandler.ts
 import { Server, Socket } from "socket.io";
-import { getRoom } from "@/lib/rooms";
+import { getRoom } from "../../lib/rooms";
 
 export const disconnectHandler = (io: Server, socket: Socket) => {
 	socket.on("disconnect", async (reason) => {

@@ -1,6 +1,6 @@
 // // src/server/socket/startGameHandler.ts
-import { startRoundData } from "@/lib/game";
-import { getRoom } from "@/lib/rooms";
+import { startRoundData } from "../../lib/game";
+import { getRoom } from "../../lib/rooms";
 import { Server, Socket } from "socket.io";
 import { gamesInProgress } from "./sharedState";
 

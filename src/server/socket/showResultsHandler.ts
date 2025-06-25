@@ -1,5 +1,5 @@
 // // src/server/socket/showResultHandler.ts
-import { activeRounds, computeScores } from "@/lib/game";
+import { activeRounds, computeScores } from "../../lib/game";
 import { Server, Socket } from "socket.io";
 import { finalScoresByRoom } from "./sharedState";
 

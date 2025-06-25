@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addSongHandler = void 0;
-const rooms_1 = require("@/lib/rooms");
+const rooms_1 = require("../../lib/rooms");
 const addSongHandler = (io, socket) => {
     socket.on("addSong", async (data, callback) => {
         try {

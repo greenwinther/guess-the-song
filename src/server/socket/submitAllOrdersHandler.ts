@@ -1,6 +1,6 @@
 // src/server/socket/submitAllOrdersHandler.ts
 import { Server, Socket } from "socket.io";
-import { storeOrder } from "@/lib/game";
+import { storeOrder } from "../../lib/game";
 
 export const submitAllOrdersHandler = (io: Server, socket: Socket) => {
 	socket.on(

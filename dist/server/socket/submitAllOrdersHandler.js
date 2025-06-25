@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.submitAllOrdersHandler = void 0;
-const game_1 = require("@/lib/game");
+const game_1 = require("../../lib/game");
 const submitAllOrdersHandler = (io, socket) => {
     socket.on("submitAllOrders", async (data, callback) => {
         try {
