@@ -1,5 +1,4 @@
 // src/lib/rooms.ts
-
 import { PrismaClient } from "@prisma/client";
 import { nanoid } from "nanoid";
 
