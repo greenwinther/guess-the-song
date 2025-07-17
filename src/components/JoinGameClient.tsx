@@ -34,6 +34,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	const [order, setOrder] = useState<OrderItem[]>([]);
 	const [submitted, setSubmitted] = useState(false);
 	const [socketError, setSocketError] = useState<string | null>(null);
+	const [hasShuffled, setHasShuffled] = useState(false);
 
 	const roomCodeRef = useRef(code);
 	const playerNameRef = useRef(playerName);
@@ -44,12 +45,6 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			setRoom(room);
 			setGameStarted(true);
 			setBgThumbnail(null);
-		};
-
-		const onRoomData = (room: Room) => {
-			setRoom(room);
-			const submitterList: OrderItem[] = room.songs.map((s) => ({ id: s.id, name: s.submitter }));
-			setOrder(shuffleArray(submitterList));
 		};
 
 		const onPlayerJoined = (player: Player) => {
@@ -71,7 +66,6 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		};
 
 		socket.on("gameStarted", onGameStarted);
-		socket.on("roomData", onRoomData);
 		socket.on("playerJoined", onPlayerJoined);
 		socket.on("playSong", onPlaySong);
 		socket.on("gameOver", onGameOver);
@@ -82,12 +76,25 @@ export default function JoinGameClient({ code, playerName }: Props) {
 
 		return () => {
 			socket.off("gameStarted", onGameStarted);
-			socket.off("roomData", onRoomData);
 			socket.off("playerJoined", onPlayerJoined);
 			socket.off("playSong", onPlaySong);
 			socket.off("gameOver", onGameOver);
 		};
 	}, [socket, code, playerName, setRoom, setCurrentClip, setBgThumbnail, setScores, setGameStarted]);
+
+	useEffect(() => {
+		if (!room) return;
+
+		// If we haven't shuffled yet, shuffle the order of submitters
+		if (!hasShuffled && !submitted) {
+			const submitterList: OrderItem[] = room.songs.map((s) => ({
+				id: s.id,
+				name: s.submitter,
+			}));
+			setOrder(shuffleArray(submitterList));
+			setHasShuffled(true);
+		}
+	}, [room, submitted, hasShuffled]);
 
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
