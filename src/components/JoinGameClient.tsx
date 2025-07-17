@@ -261,12 +261,17 @@ export default function JoinGameClient({ code, playerName }: Props) {
 					<aside className="w-full lg:w-1/4 p-6 border-l border-border flex flex-col">
 						<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 						<div className="space-y-2 flex-1 overflow-y-auto">
-							{room?.songs.map((s: Song) => (
+							{room?.songs.map((s: Song, idx: number) => (
 								<div
 									key={s.id}
-									className="px-3 py-2 rounded-lg bg-card hover:bg-border text-text"
+									className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-card hover:bg-border text-text"
 								>
-									{revealedSongs.includes(s.id) ? s.title ?? s.url : "Click to reveal song"}
+									<span className="text-secondary font-mono">{idx + 1}.</span>
+									<span>
+										{revealedSongs.includes(s.id)
+											? s.title ?? s.url
+											: "Click to reveal song"}
+									</span>
 								</div>
 							))}
 						</div>
@@ -343,13 +348,15 @@ export default function JoinGameClient({ code, playerName }: Props) {
 				<aside className="w-full lg:w-1/4 p-6 border-l border-border flex flex-col">
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 					<div className="space-y-2 flex-1 overflow-y-auto">
-						{room?.songs.map((s: Song) => (
+						{room?.songs.map((s: Song, idx: number) => (
 							<div
 								key={s.id}
-								className="px-3 py-2 rounded-lg bg-card hover:bg-border text-text"
+								className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-card hover:bg-border text-text"
 							>
-								{/* If this songId has been revealed, show title; otherwise show a placeholder */}
-								{revealedSongs.includes(s.id) ? s.title ?? s.url : "Click to reveal song"}
+								<span className="text-secondary font-mono">{idx + 1}.</span>
+								<span>
+									{revealedSongs.includes(s.id) ? s.title ?? s.url : "Click to reveal song"}
+								</span>
 							</div>
 						))}
 					</div>

@@ -284,7 +284,7 @@ export default function HostGameClient({ code }: { code: string }) {
 				<aside className="w-1/4 p-6 border-l border-border flex flex-col">
 					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
 					<div className="space-y-3 flex-1 overflow-y-auto">
-						{room.songs.map((s) => (
+						{room.songs.map((s, idx) => (
 							<Button
 								key={s.id}
 								variant={currentSong?.id === s.id ? "primary" : "secondary"}
@@ -292,7 +292,14 @@ export default function HostGameClient({ code }: { code: string }) {
 								className="w-full justify-start"
 								onClick={() => handlePlay(s)}
 							>
-								{revealedSongs.includes(s.id) ? s.title ?? s.url : "Click to reveal song"}
+								<div className="flex items-center space-x-2 w-full text-left">
+									<span className="font-mono text-secondary">{idx + 1}.</span>
+									<span>
+										{revealedSongs.includes(s.id)
+											? s.title ?? s.url
+											: "Click to reveal song"}
+									</span>
+								</div>
 							</Button>
 						))}
 					</div>
