@@ -15,7 +15,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	variant?: ButtonVariant;
 };
 
-const baseStyles = "rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition";
+const baseStyles =
+	"rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-200 ease-in-out";
 
 const sizeStyles: Record<NonNullable<ButtonProps["size"]>, string> = {
 	sm: "px-3 py-1 text-sm",
@@ -37,7 +38,16 @@ export const Button: FC<ButtonProps> = ({
 	...props
 }) => {
 	return (
-		<button className={clsx(baseStyles, variantStyles[variant], sizeStyles[size], className)} {...props}>
+		<button
+			className={clsx(
+				baseStyles,
+				variantStyles[variant],
+				sizeStyles[size],
+				props.disabled && "opacity-50 cursor-not-allowed hover:opacity-50",
+				className
+			)}
+			{...props}
+		>
 			{children}
 		</button>
 	);

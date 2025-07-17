@@ -85,16 +85,27 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	useEffect(() => {
 		if (!room) return;
 
-		// If we haven't shuffled yet, shuffle the order of submitters
-		if (!hasShuffled && !submitted) {
-			const submitterList: OrderItem[] = room.songs.map((s) => ({
+		const submittedFromStorage = localStorage.getItem(`submitted-${code}`) === "true";
+		const savedOrder = localStorage.getItem(`order-${code}`);
+
+		if (submittedFromStorage) {
+			setSubmitted(true); // ✅ restore the submitted flag
+		}
+
+		if (savedOrder) {
+			setOrder(JSON.parse(savedOrder));
+		} else if (!submittedFromStorage) {
+			const submitterList = room.songs.map((s) => ({
 				id: s.id,
 				name: s.submitter,
 			}));
-			setOrder(shuffleArray(submitterList));
+			const shuffled = shuffleArray(submitterList);
+			setOrder(shuffled);
+			localStorage.setItem(`order-${code}`, JSON.stringify(shuffled));
+			localStorage.setItem(`shuffled-${code}`, "true");
 			setHasShuffled(true);
 		}
-	}, [room, submitted, hasShuffled]);
+	}, [room]);
 
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
@@ -143,6 +154,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			const guessed = order[idx]?.name || "";
 			guessesPayload[s.id.toString()] = [guessed];
 		});
+		localStorage.setItem(`submitted-${code}`, "true");
 		socket.emit("submitAllOrders", { code, playerName, guesses: guessesPayload }, (ok: boolean) => {
 			if (!ok) alert("Failed to submit guesses");
 			else setSubmitted(true);
@@ -152,6 +164,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	// ─── DRAG & DROP HANDLER ─────────────────
 	const handleReorder = (newOrder: OrderItem[]) => {
 		setOrder(newOrder);
+		localStorage.setItem(`order-${code}`, JSON.stringify(newOrder));
 	};
 
 	if (!room) {

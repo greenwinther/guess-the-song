@@ -44,6 +44,8 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 	};
 
 	const handleDragEnd = (event: any) => {
+		if (submitted) return; // 🚫 Don't allow reordering after submission
+
 		const { active, over } = event;
 		setActiveId(null);
 
@@ -107,11 +109,11 @@ function SortableItem({
 		<li
 			ref={setNodeRef}
 			style={style}
-			{...attributes}
-			{...listeners}
-			className={`flex items-center justify-between bg-card rounded-lg p-3 ${
-				isDragging ? "opacity-80" : "opacity-100"
-			}`}
+			{...(!disabled ? attributes : {})}
+			{...(!disabled ? listeners : {})}
+			className={`flex items-center justify-between rounded-lg p-3
+		bg-card ${isDragging ? "opacity-80" : "opacity-100"}
+		${disabled ? "opacity-60 cursor-not-allowed select-none" : "cursor-grab"}`}
 		>
 			<span className="font-medium">{index + 1}.</span>
 			<span className="flex-1 mx-4">{name}</span>
