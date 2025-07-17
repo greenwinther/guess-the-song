@@ -9,6 +9,7 @@ import { shuffleArray } from "@/utils/shuffelArray";
 import { getYouTubeID } from "@/lib/youtube";
 import Button from "./ui/Button";
 import SubmissionOrderList, { OrderItem } from "./SubmissionOrderList";
+import PlayerList from "./PlayerList";
 
 interface Props {
 	code: string;
@@ -29,6 +30,8 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		revealedSongs,
 		setRevealedSongs,
 		setGameStarted,
+		submittedPlayers,
+		setSubmittedPlayers,
 	} = useGame();
 
 	const [order, setOrder] = useState<OrderItem[]>([]);
@@ -81,6 +84,22 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			socket.off("gameOver", onGameOver);
 		};
 	}, [socket, code, playerName, setRoom, setCurrentClip, setBgThumbnail, setScores, setGameStarted]);
+
+	useEffect(() => {
+		socket.on("playerLeft", (playerId: number) => {
+			setRoom((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					players: prev.players.filter((p) => p.id !== playerId),
+				};
+			});
+		});
+
+		return () => {
+			socket.off("playerLeft");
+		};
+	}, [socket, setRoom]);
 
 	useEffect(() => {
 		if (!room) return;
@@ -211,14 +230,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 								<p className="text-4xl font-mono font-bold text-secondary">Loading…</p>
 							)}
 						</div>
-						<ul className="space-y-2">
-							{room?.players.map((p: Player) => (
-								<li key={p.id} className="flex items-center space-x-2 text-text">
-									<span className="w-3 h-3 rounded-full bg-primary" />
-									<span>{p.name}</span>
-								</li>
-							))}
-						</ul>
+						<PlayerList players={room.players} submittedPlayers={submittedPlayers} />
 					</aside>
 
 					{/* Center Panel: Show 1/0 correctness + total score */}
@@ -310,14 +322,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 							<p className="text-4xl font-mono font-bold text-secondary">Loading…</p>
 						)}
 					</div>
-					<ul className="space-y-2">
-						{room!.players.map((p: Player) => (
-							<li key={p.id} className="flex items-center space-x-2 text-text">
-								<span className="w-3 h-3 rounded-full bg-primary" />
-								<span>{p.name}</span>
-							</li>
-						))}
-					</ul>
+					<PlayerList players={room.players} submittedPlayers={submittedPlayers} />
 				</aside>
 
 				{/* Main Panel: Guess list */}

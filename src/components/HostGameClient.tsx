@@ -8,6 +8,7 @@ import ReactPlayer from "react-player";
 import Button from "./ui/Button";
 import { getYouTubeID } from "@/lib/youtube";
 import { useGame } from "../contexts/GameContext";
+import PlayerList from "./PlayerList";
 
 export default function HostGameClient({ code }: { code: string }) {
 	const socket = useSocket();
@@ -33,6 +34,7 @@ export default function HostGameClient({ code }: { code: string }) {
 	const [showSubmitter, setShowSubmitter] = useState(false);
 	const [revealedRanking, setRevealedRanking] = useState<number[]>([]);
 	const [socketError, setSocketError] = useState<string | null>(null);
+	const [playerLeftMessage, setPlayerLeftMessage] = useState<string | null>(null);
 
 	const roomCodeRef = useRef(code);
 	const hasJoined = useRef(false);
@@ -50,13 +52,37 @@ export default function HostGameClient({ code }: { code: string }) {
 		};
 	}, [socket, setRoom, setGameStarted, setBgThumbnail]);
 
+	// Handle player joining
 	useEffect(() => {
-		hasJoined.current = true;
 		socket.on("playerJoined", (player: Player) => addPlayer(player));
 		return () => {
 			socket.off("playerJoined");
 		};
 	}, [socket, addPlayer]);
+
+	// Handle player leaving
+	useEffect(() => {
+		socket.on("playerLeft", (playerId: number) => {
+			setRoom((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					players: prev.players.filter((p) => p.id !== playerId),
+				};
+			});
+
+			const leftPlayer = room?.players.find((p) => p.id === playerId);
+			if (leftPlayer) {
+				console.log(`💬 ${leftPlayer.name} left the game`);
+				setPlayerLeftMessage(`${leftPlayer.name} left the game`);
+				setTimeout(() => setPlayerLeftMessage(null), 4000);
+			}
+		});
+
+		return () => {
+			socket.off("playerLeft");
+		};
+	}, [socket, room, setRoom]);
 
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
@@ -169,25 +195,21 @@ export default function HostGameClient({ code }: { code: string }) {
 						<p className="text-text-muted text-sm">Room code</p>
 						<p className="text-4xl font-mono font-bold text-secondary">{room.code}</p>
 					</div>
-					<ul className="space-y-2 w-full">
-						{room.players.map((p) => {
-							const didSubmit = submittedPlayers.includes(p.name);
-							return (
-								<li key={p.id} className="flex items-center space-x-2 text-text">
-									<span
-										className={`w-3 h-3 rounded-full ${
-											didSubmit ? "bg-green-500" : "bg-primary"
-										}`}
-									/>
-									<span>{p.name}</span>
-								</li>
-							);
-						})}
-					</ul>
+					<PlayerList
+						players={room.players}
+						submittedPlayers={submittedPlayers}
+						className="w-full"
+					/>
 				</aside>
 
 				{/** ========== CENTER PANEL ========== **/}
 				<main className="flex-1 p-6 flex flex-col items-center">
+					{playerLeftMessage && (
+						<div className="fixed top-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-2 rounded shadow transition-opacity duration-300 opacity-100">
+							{playerLeftMessage}
+						</div>
+					)}
+
 					{scores ? (
 						// -------- Top-3 Leaderboard (Game Over) --------
 						<>

@@ -13,6 +13,7 @@ export interface HostCardProps {
 	onBackgroundChange: (url: string) => void;
 	onCreate: (e: FormEvent) => void;
 	className?: string;
+	disabled?: boolean;
 }
 
 export const HostCard: FC<HostCardProps> = ({

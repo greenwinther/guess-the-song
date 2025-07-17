@@ -15,35 +15,53 @@ export default function HomePage() {
 	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
 	const [name, setName] = useState<string>("");
 	const [roomCode, setRoomCode] = useState<string>("");
+	const [joining, setJoining] = useState(false);
+	const [creating, setCreating] = useState(false);
 
 	// Create lobby: send theme + background URL directly
 	const handleCreate = async (e: FormEvent) => {
 		e.preventDefault();
-		const res = await fetch("/api/rooms", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				theme,
-				backgroundUrl: backgroundUrl.trim() ? backgroundUrl : null,
-			}),
-		});
-		if (!res.ok) {
-			const err = await res.json();
-			return alert(err.error || "Could not create room");
+		setCreating(true);
+
+		try {
+			const res = await fetch("/api/rooms", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					theme,
+					backgroundUrl: backgroundUrl.trim() ? backgroundUrl : null,
+				}),
+			});
+
+			if (!res.ok) {
+				const err = await res.json();
+				alert(err.error || "Could not create room");
+				setCreating(false); // ❌ creation failed → reset here
+				return;
+			}
+
+			const { code } = await res.json();
+			router.push(`/host/${code}`); // ✅ success → we navigate away, no need to reset
+		} catch (err) {
+			console.error("Lobby creation failed", err);
+			alert("Something went wrong while creating the room");
+			setCreating(false); // ❌ network or unexpected error → reset here
 		}
-		const { code } = await res.json();
-		router.push(`/host/${code}`);
 	};
 
 	// Join lobby: as before
 	const handleJoin = (e: FormEvent) => {
 		e.preventDefault();
-		if (!name.trim() || !roomCode.trim()) return;
+		if (!name.trim() || !roomCode.trim() || joining) return;
+
+		setJoining(true);
+
 		socket.emit("joinRoom", { code: roomCode, name }, (ok: boolean) => {
 			if (ok) {
 				router.push(`/join/${roomCode}?name=${encodeURIComponent(name)}`);
 			} else {
 				alert("Failed to join—check the room code and try again.");
+				setJoining(false); // re-enable if failed
 			}
 		});
 	};
@@ -78,6 +96,7 @@ export default function HomePage() {
 						backgroundUrl={backgroundUrl}
 						onBackgroundChange={setBackgroundUrl}
 						onCreate={handleCreate}
+						disabled={creating}
 						className="space-y-4"
 					/>
 				</div>
@@ -88,6 +107,7 @@ export default function HomePage() {
 						code={roomCode}
 						onRoomCodeChange={setRoomCode}
 						onJoin={handleJoin}
+						disabled={joining}
 						className="space-y-4"
 					/>
 				</div>

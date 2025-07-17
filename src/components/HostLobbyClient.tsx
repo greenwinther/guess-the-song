@@ -9,16 +9,27 @@ import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import Button from "./ui/Button";
 import ReactPlayer from "react-player";
+import PlayerList from "./PlayerList";
 
 export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const socket = useSocket();
 	const router = useRouter();
 	const hasJoined = useRef(false);
-	const { room, setRoom, addPlayer, addSong, removeSong, setGameStarted } = useGame();
+	const {
+		room,
+		setRoom,
+		addPlayer,
+		addSong,
+		removeSong,
+		setGameStarted,
+		submittedPlayers,
+		setSubmittedPlayers,
+	} = useGame();
 
 	const [previewUrl, setPreviewUrl] = useState<string>("");
 	const [revealedId, setRevealedId] = useState<number | null>(null);
 	const [socketError, setSocketError] = useState<string | null>(null);
+	const [playerLeftMessage, setPlayerLeftMessage] = useState<string | null>(null);
 
 	const roomCodeRef = useRef(initialRoom.code);
 
@@ -74,6 +85,30 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 		};
 	}, [socket]);
 
+	// Handle player leaving
+	useEffect(() => {
+		socket.on("playerLeft", (playerId: number) => {
+			setRoom((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					players: prev.players.filter((p) => p.id !== playerId),
+				};
+			});
+
+			const leftPlayer = room?.players.find((p) => p.id === playerId);
+			if (leftPlayer) {
+				console.log(`💬 ${leftPlayer.name} left the game`);
+				setPlayerLeftMessage(`${leftPlayer.name} left the game`);
+				setTimeout(() => setPlayerLeftMessage(null), 4000);
+			}
+		});
+
+		return () => {
+			socket.off("playerLeft");
+		};
+	}, [socket, room, setRoom]);
+
 	if (!room) return <p>Loading lobby…</p>;
 
 	const startGame = () => {
@@ -121,18 +156,20 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 						<p className="text-4xl font-mono font-bold text-secondary">{room.code}</p>
 					</div>
 					<p className="text-text-muted mb-4">Waiting for players…</p>
-					<ul className="space-y-2 w-full">
-						{room.players.map((p) => (
-							<li key={p.id} className="flex items-center space-x-2 text-text">
-								<span className="w-3 h-3 rounded-full bg-primary" />
-								<span>{p.name}</span>
-							</li>
-						))}
-					</ul>
+					<PlayerList
+						players={room.players}
+						submittedPlayers={submittedPlayers}
+						className="w-full"
+					/>
 				</aside>
 
 				{/* Center panel */}
 				<main className="flex-2 p-8 flex flex-col justify-between h-full">
+					{playerLeftMessage && (
+						<div className="fixed top-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-2 rounded shadow transition-opacity duration-300 opacity-100">
+							{playerLeftMessage}
+						</div>
+					)}
 					<div>
 						<h2 className="text-3xl font-semibold text-text mb-6">Song Setup</h2>
 						{/* pass our setter down so the form can tell us current URL */}

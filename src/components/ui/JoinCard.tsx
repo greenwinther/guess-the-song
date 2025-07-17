@@ -12,6 +12,7 @@ interface JoinCardProps {
 	onRoomCodeChange: (val: string) => void;
 	onJoin: (e: React.FormEvent) => void;
 	className?: string;
+	disabled?: boolean;
 }
 
 export default function JoinCard({

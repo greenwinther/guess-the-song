@@ -6,6 +6,7 @@ import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/GameContext";
 import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
+import PlayerList from "./PlayerList";
 
 export default function JoinLobbyClient({
 	initialRoom,
@@ -16,7 +17,16 @@ export default function JoinLobbyClient({
 }) {
 	const socket = useSocket();
 	const router = useRouter();
-	const { room, setRoom, addPlayer, addSong, removeSong, setGameStarted } = useGame();
+	const {
+		room,
+		setRoom,
+		addPlayer,
+		addSong,
+		removeSong,
+		setGameStarted,
+		submittedPlayers,
+		setSubmittedPlayers,
+	} = useGame();
 	const hasJoined = useRef(false);
 	const [socketError, setSocketError] = useState<string | null>(null);
 
@@ -53,37 +63,29 @@ export default function JoinLobbyClient({
 			removeSong(songId);
 		});
 
-		socket.on("gameStarted", (room: Room) => {
-			setGameStarted(true);
-			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
-		});
-
 		return () => {
 			socket.off("roomData");
 			socket.off("songAdded");
 			socket.off("songRemoved");
-			socket.off("gameStarted");
 			socket.off("playerJoined");
 		};
-	}, [
-		socket,
-		initialRoom,
-		currentUserName,
-		router,
-		room,
-		setRoom,
-		addPlayer,
-		addSong,
-		removeSong,
-		setGameStarted,
-	]);
+	}, [socket, initialRoom, currentUserName, router, room, setRoom, addPlayer, addSong, removeSong]);
 
 	useEffect(() => {
-		console.log(
-			"👀 player count changed",
-			room?.players.map((p) => p.name)
-		);
-	}, [room?.players]);
+		socket.on("playerLeft", (playerId: number) => {
+			setRoom((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					players: prev.players.filter((p) => p.id !== playerId),
+				};
+			});
+		});
+
+		return () => {
+			socket.off("playerLeft");
+		};
+	}, [socket, setRoom]);
 
 	useEffect(() => {
 		const onDisconnect = (reason: any) => {
@@ -120,6 +122,20 @@ export default function JoinLobbyClient({
 		};
 	}, [socket]);
 
+	useEffect(() => {
+		const onGameStarted = (room: Room) => {
+			console.log("🎮 Game started event received!", room);
+			setGameStarted(true);
+			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
+		};
+
+		socket.on("gameStarted", onGameStarted);
+
+		return () => {
+			socket.off("gameStarted", onGameStarted);
+		};
+	}, [socket, router, currentUserName, setGameStarted]);
+
 	// Render a loading state if for some reason the room isn't set yet
 	if (!room) {
 		return (
@@ -150,14 +166,7 @@ export default function JoinLobbyClient({
 			<div className="max-w-4xl mx-auto bg-card bg-opacity-20 border border-border rounded-2xl backdrop-blur-xl p-8">
 				<section>
 					<h2 className="text-2xl font-semibold text-text-muted mb-4">Players in Lobby</h2>
-					<ul className="space-y-2 list-none">
-						{room.players.map((p) => (
-							<li key={p.id} className="flex items-center space-x-2 text-text">
-								<span className="w-3 h-3 rounded-full bg-primary" />
-								<span>{p.name}</span>
-							</li>
-						))}
-					</ul>
+					<PlayerList players={room.players} submittedPlayers={submittedPlayers} />
 				</section>
 			</div>
 		</div>
