@@ -15,7 +15,7 @@ export type Song = {
 export type Room = {
 	id: number;
 	code: string;
-	theme: string;
+	theme?: string;
 	backgroundUrl?: string | null;
 	players: Player[];
 	songs: Song[];
