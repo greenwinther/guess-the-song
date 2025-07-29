@@ -2,7 +2,7 @@
 // src/components/JoinGameClient.tsx
 
 import { useEffect, useRef, useState } from "react";
-import { useGame } from "@/contexts/GameContext";
+import { useGame } from "@/contexts/gameContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { Player, Room, Song } from "@/types/room";
 import { shuffleArray } from "@/utils/shuffelArray";
