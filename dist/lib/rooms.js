@@ -6,17 +6,27 @@ exports.getRoom = getRoom;
 exports.addSong = addSong;
 exports.removeSong = removeSong;
 // src/lib/rooms.ts
-const client_1 = require("@prisma/client");
 const nanoid_1 = require("nanoid");
-const prisma = new client_1.PrismaClient();
-async function createRoom(theme, backgroundUrl) {
+const prisma_1 = require("./prisma");
+async function createRoom(theme, backgroundUrl, hostName) {
     const code = (0, nanoid_1.nanoid)(6).toUpperCase();
-    return await prisma.room.create({
-        data: { code, theme, backgroundUrl },
+    return await prisma_1.prisma.room.create({
+        data: {
+            code,
+            theme,
+            backgroundUrl,
+            players: {
+                create: {
+                    name: hostName,
+                    isHost: true, // Mark the first player as the host
+                },
+            },
+        },
+        include: { players: true },
     });
 }
 async function joinRoom(code, name) {
-    const room = await prisma.room.findUnique({
+    const room = await prisma_1.prisma.room.findUnique({
         where: { code },
         include: { players: true },
     });
@@ -27,13 +37,13 @@ async function joinRoom(code, name) {
     if (existing)
         return existing;
     // Otherwise create a new one and return it
-    return await prisma.player.create({
+    return await prisma_1.prisma.player.create({
         data: { name, roomId: room.id },
     });
 }
 // And update getRoom to include players
 async function getRoom(code) {
-    const room = await prisma.room.findUnique({
+    const room = await prisma_1.prisma.room.findUnique({
         where: { code },
         include: { songs: true, players: true },
     });
@@ -42,10 +52,10 @@ async function getRoom(code) {
     return room;
 }
 async function addSong(code, song) {
-    const room = await prisma.room.findUnique({ where: { code } });
+    const room = await prisma_1.prisma.room.findUnique({ where: { code } });
     if (!room)
         throw new Error("Room not found");
-    return await prisma.song.create({
+    return await prisma_1.prisma.song.create({
         data: {
             url: song.url,
             submitter: song.submitter,
@@ -56,7 +66,7 @@ async function addSong(code, song) {
 }
 async function removeSong(code, songId) {
     // Optionally verify the song belongs to the room first…
-    await prisma.song.delete({
+    await prisma_1.prisma.song.delete({
         where: { id: songId },
     });
     // Return the deleted ID so we can broadcast it

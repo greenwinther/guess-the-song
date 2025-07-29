@@ -2,13 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.playSongHandler = void 0;
 const sharedState_1 = require("./sharedState");
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("@/lib/prisma");
 const playSongHandler = (io, socket) => {
     socket.on("playSong", async (data, callback) => {
         try {
             // 1) Look up the clip
-            const song = await prisma.song.findUnique({ where: { id: data.songId } });
+            const song = await prisma_1.prisma.song.findUnique({ where: { id: data.songId } });
             if (!song) {
                 return callback({ success: false, error: "Song not found." });
             }

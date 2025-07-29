@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.disconnectHandler = void 0;
 const rooms_1 = require("../../lib/rooms");
+const prisma_1 = require("@/lib/prisma");
 const disconnectHandler = (io, socket) => {
     socket.on("disconnect", async (reason) => {
         console.log("↔️ socket disconnected", socket.id);
@@ -19,7 +20,9 @@ const disconnectHandler = (io, socket) => {
                     return;
                 console.log(`🚨 Player "${leftPlayer.name}" (id: ${leftPlayer.id}) left room ${code}`);
                 // Remove from room
-                updated.players = updated.players.filter((p) => p.name !== playerName);
+                await prisma_1.prisma.player.delete({
+                    where: { id: leftPlayer.id },
+                });
                 // Notify other clients
                 io.to(code).emit("playerLeft", leftPlayer.id);
                 io.to(code).emit("roomData", updated);
