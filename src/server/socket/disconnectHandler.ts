@@ -1,6 +1,7 @@
 // src/server/socket/disconnectHandler.ts
 import { Server, Socket } from "socket.io";
 import { getRoom } from "../../lib/rooms";
+import { prisma } from "@/lib/prisma";
 
 export const disconnectHandler = (io: Server, socket: Socket) => {
 	socket.on("disconnect", async (reason) => {
@@ -22,7 +23,9 @@ export const disconnectHandler = (io: Server, socket: Socket) => {
 				console.log(`🚨 Player "${leftPlayer.name}" (id: ${leftPlayer.id}) left room ${code}`);
 
 				// Remove from room
-				updated.players = updated.players.filter((p) => p.name !== playerName);
+				await prisma.player.delete({
+					where: { id: leftPlayer.id },
+				});
 
 				// Notify other clients
 				io.to(code).emit("playerLeft", leftPlayer.id);
