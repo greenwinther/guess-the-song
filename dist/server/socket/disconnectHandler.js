@@ -6,12 +6,22 @@ const disconnectHandler = (io, socket) => {
     socket.on("disconnect", async (reason) => {
         console.log("↔️ socket disconnected", socket.id);
         console.log(`↔️ socket ${socket.id} disconnected:`, reason);
-        // If we had stored room+playerName in socket.data, remove them now:
         const meta = socket.data.roomMeta;
         if (meta) {
             const { code, playerName } = meta;
             try {
                 const updated = await (0, rooms_1.getRoom)(code);
+                if (!updated)
+                    return;
+                // Find the player before removing them
+                const leftPlayer = updated.players.find((p) => p.name === playerName);
+                if (!leftPlayer)
+                    return;
+                console.log(`🚨 Player "${leftPlayer.name}" (id: ${leftPlayer.id}) left room ${code}`);
+                // Remove from room
+                updated.players = updated.players.filter((p) => p.name !== playerName);
+                // Notify other clients
+                io.to(code).emit("playerLeft", leftPlayer.id);
                 io.to(code).emit("roomData", updated);
             }
             catch (err) {
