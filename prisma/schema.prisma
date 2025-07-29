@@ -10,7 +10,7 @@ generator client {
 model Room {
   id            Int      @id @default(autoincrement())
   code          String   @unique
-  theme         String
+  theme         String?
   backgroundUrl String?
   songs         Song[]
   players       Player[]
@@ -28,6 +28,7 @@ model Song {
 model Player {
   id      Int    @id @default(autoincrement())
   name    String
+  isHost  Boolean @default(false)
   roomId  Int
   room    Room   @relation(fields: [roomId], references: [id])
 }
