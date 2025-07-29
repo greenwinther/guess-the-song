@@ -2,10 +2,21 @@
 import { nanoid } from "nanoid";
 import { prisma } from "./prisma";
 
-export async function createRoom(theme: string, backgroundUrl: string | null) {
+export async function createRoom(theme: string, backgroundUrl: string | null, hostName: string) {
 	const code = nanoid(6).toUpperCase();
 	return await prisma.room.create({
-		data: { code, theme, backgroundUrl },
+		data: {
+			code,
+			theme,
+			backgroundUrl,
+			players: {
+				create: {
+					name: hostName,
+					isHost: true, // Mark the first player as the host
+				},
+			},
+		},
+		include: { players: true },
 	});
 }
 

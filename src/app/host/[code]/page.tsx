@@ -4,7 +4,6 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-
 import HostLobbyClient from "@/components/HostLobbyClient";
 import { Room } from "@/types/room";
 
