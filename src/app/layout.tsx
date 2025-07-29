@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 
-import { GameProvider } from "@/contexts/gameContext";
+import { GameProvider } from "@/contexts/tempContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 import "./globals.css";
 

@@ -7,7 +7,7 @@ import { Player, Room, Song } from "@/types/room";
 import ReactPlayer from "react-player";
 import Button from "./ui/Button";
 import { getYouTubeID } from "@/lib/youtube";
-import { useGame } from "../contexts/gameContext";
+import { useGame } from "../contexts/tempContext";
 import PlayerList from "./PlayerList";
 
 export default function HostGameClient({ code }: { code: string }) {

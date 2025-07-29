@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { useGame } from "@/contexts/gameContext";
+import { useGame } from "@/contexts/tempContext";
 import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import PlayerList from "./PlayerList";

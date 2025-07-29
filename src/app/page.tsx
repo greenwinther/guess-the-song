@@ -3,7 +3,7 @@
 
 import HostCard from "@/components/ui/HostCard";
 import JoinCard from "@/components/ui/JoinCard";
-import { useGame } from "@/contexts/gameContext";
+import { useGame } from "@/contexts/tempContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
