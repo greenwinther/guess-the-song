@@ -3,6 +3,7 @@
 
 import HostCard from "@/components/ui/HostCard";
 import JoinCard from "@/components/ui/JoinCard";
+import { useGame } from "@/contexts/gameContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -11,12 +12,13 @@ export default function HomePage() {
 	const router = useRouter();
 	const socket = useSocket();
 
-	const [theme, setTheme] = useState<string>("");
-	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
 	const [name, setName] = useState<string>("");
 	const [roomCode, setRoomCode] = useState<string>("");
 	const [joining, setJoining] = useState(false);
 	const [creating, setCreating] = useState(false);
+	const [mode, setMode] = useState<"host" | "player">("host");
+
+	const { theme, setTheme, backgroundUrl, setBackgroundUrl } = useGame();
 
 	// Create lobby: send theme + background URL directly
 	const handleCreate = async (e: FormEvent) => {
@@ -36,16 +38,16 @@ export default function HomePage() {
 			if (!res.ok) {
 				const err = await res.json();
 				alert(err.error || "Could not create room");
-				setCreating(false); // ❌ creation failed → reset here
+				setCreating(false);
 				return;
 			}
 
 			const { code } = await res.json();
-			router.push(`/host/${code}`); // ✅ success → we navigate away, no need to reset
+			router.push(`/host/${code}`);
 		} catch (err) {
 			console.error("Lobby creation failed", err);
 			alert("Something went wrong while creating the room");
-			setCreating(false); // ❌ network or unexpected error → reset here
+			setCreating(false);
 		}
 	};
 
@@ -61,7 +63,7 @@ export default function HomePage() {
 				router.push(`/join/${roomCode}?name=${encodeURIComponent(name)}`);
 			} else {
 				alert("Failed to join—check the room code and try again.");
-				setJoining(false); // re-enable if failed
+				setJoining(false);
 			}
 		});
 	};
@@ -82,14 +84,35 @@ export default function HomePage() {
 				Guess <span className="underline decoration-highlight">the</span> Song
 			</h1>
 
+			{/* Single card with toggle and conditional form */}
 			<div
 				className="
-          border border-border rounded-2xl p-8 
-          flex flex-col md:flex-row gap-8 
+          w-full max-w-xl border border-border rounded-2xl p-8 
           bg-card bg-opacity-20 backdrop-blur-xl
         "
 			>
-				<div className="flex-1">
+				{/* Toggle buttons */}
+				<div className="flex justify-center mb-6 space-x-4">
+					<button
+						onClick={() => setMode("host")}
+						className={`px-4 py-2 rounded-lg font-semibold transition ${
+							mode === "host" ? "bg-primary text-white" : "bg-card text-text-muted"
+						}`}
+					>
+						Host
+					</button>
+					<button
+						onClick={() => setMode("player")}
+						className={`px-4 py-2 rounded-lg font-semibold transition ${
+							mode === "player" ? "bg-primary text-white" : "bg-card text-text-muted"
+						}`}
+					>
+						Player
+					</button>
+				</div>
+
+				{/* Conditionally render based on mode */}
+				{mode === "host" ? (
 					<HostCard
 						theme={theme}
 						onThemeChange={setTheme}
@@ -99,8 +122,7 @@ export default function HomePage() {
 						disabled={creating}
 						className="space-y-4"
 					/>
-				</div>
-				<div className="flex-1">
+				) : (
 					<JoinCard
 						name={name}
 						onNameChange={setName}
@@ -110,7 +132,7 @@ export default function HomePage() {
 						disabled={joining}
 						className="space-y-4"
 					/>
-				</div>
+				)}
 			</div>
 		</main>
 	);

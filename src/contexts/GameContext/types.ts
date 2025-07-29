@@ -37,4 +37,10 @@ export type GameContextType = {
 	addPlayer: (player: Player) => void;
 	addSong: (song: Song) => void;
 	removeSong: (songId: number) => void;
+
+	theme: string;
+	setTheme: (theme: string) => void;
+
+	backgroundUrl: string;
+	setBackgroundUrl: (url: string) => void;
 };

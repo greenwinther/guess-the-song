@@ -13,6 +13,8 @@ export const useGameState = (): GameContextType => {
 	const [scores, setScores] = useState<Record<string, number> | null>(null);
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
+	const [theme, setTheme] = useState<string>("");
+	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
 
 	const addPlayer = useCallback((player: Player) => {
 		setRoom((prev) => {
@@ -58,5 +60,9 @@ export const useGameState = (): GameContextType => {
 		addPlayer,
 		addSong,
 		removeSong,
+		theme,
+		setTheme,
+		backgroundUrl,
+		setBackgroundUrl,
 	};
 };
