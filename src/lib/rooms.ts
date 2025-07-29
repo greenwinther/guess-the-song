@@ -1,8 +1,6 @@
 // src/lib/rooms.ts
-import { PrismaClient } from "@prisma/client";
 import { nanoid } from "nanoid";
-
-const prisma = new PrismaClient();
+import { prisma } from "./prisma";
 
 export async function createRoom(theme: string, backgroundUrl: string | null) {
 	const code = nanoid(6).toUpperCase();
