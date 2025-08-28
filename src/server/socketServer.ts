@@ -11,9 +11,10 @@ const httpServer = http.createServer((req, res) => {
 		return; // 👈 IMPORTANT
 	}
 
-	// Let Engine.IO/Socket.IO handle its own routes
+	// Debug: prove polling/WS requests reach the server
 	if (req.url?.startsWith("/socket.io")) {
-		return; // 👈 Do NOT send 404 here
+		console.log("📥 incoming socket.io request:", req.method, req.url);
+		return; // let Engine.IO handle it
 	}
 
 	// Everything else
@@ -41,6 +42,13 @@ const io = new Server(httpServer, {
 	pingInterval: 20_000,
 	// 2) If no pong within 5 sec, time‐out
 	pingTimeout: 5_000,
+});
+
+// Extra Engine.IO debug hooks
+io.engine.on("initial_headers", (_headers, req) => {
+	if (req.url?.includes("/socket.io")) {
+		console.log("🧩 initial_headers for", req.url);
+	}
 });
 
 // 2) Log any Engine.IO connection‐level errors
