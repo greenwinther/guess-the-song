@@ -4,19 +4,24 @@ import { Server } from "socket.io";
 import { registerSocketHandlers } from "./socket";
 
 const httpServer = http.createServer((req, res) => {
-	if (req.url === "/" && req.method === "GET") {
+	// Healthcheck
+	if (req.method === "GET" && req.url === "/") {
 		res.writeHead(200, { "Content-Type": "text/plain" });
 		res.end("Socket server is running");
-	} else {
-		res.writeHead(404);
-		res.end();
+		return; // 👈 IMPORTANT
 	}
+
+	// Let Engine.IO/Socket.IO handle its own routes
+	if (req.url?.startsWith("/socket.io")) {
+		return; // 👈 Do NOT send 404 here
+	}
+
+	// Everything else
+	res.writeHead(404);
+	res.end();
 });
 
-// 1) Log any HTTP‐level server errors (e.g. EADDRINUSE, etc.)
-httpServer.on("error", (err) => {
-	console.error("🚨 HTTP server error:", err);
-});
+httpServer.on("error", (err) => console.error("🚨 HTTP server error:", err));
 
 const allowedOrigins = [
 	"http://localhost:3000", // local dev
