@@ -4,16 +4,16 @@
   "private": true,
   "scripts": {
     "dev:next": "next dev",
-    "socket": "tsx src/server/socketServer.ts",
-    "dev": "concurrently \"npm:dev:next\" \"npm:socket\"",
-    "server": "node server.js",
-    "test:e2e": "playwright test",
-    "build:server": "tsc --project tsconfig.build.json",
-    "start:server": "node dist/server/socketServer.js",
+    "dev:socket": "tsx src/server/socketServer.ts",
+    "dev": "concurrently -k -n next,socket -c auto \"npm:dev:next\" \"npm:dev:socket\"",
     "prisma:generate": "prisma generate",
-    "build": "prisma generate && next build && npm run build:server",
-    "start": "concurrently \"npm run start:server\" \"next start\"",
-    "lint": "next lint"
+    "build:server": "tsc --project tsconfig.build.json",
+    "build": "npm run prisma:generate && next build && npm run build:server",
+    "build:railway": "npm run prisma:generate && npm run build:server",
+    "start:railway": "node dist/server/socketServer.js",
+    "start:next": "next start",
+    "lint": "next lint",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
