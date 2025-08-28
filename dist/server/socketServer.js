@@ -9,19 +9,22 @@ const http_1 = __importDefault(require("http"));
 const socket_io_1 = require("socket.io");
 const socket_1 = require("./socket");
 const httpServer = http_1.default.createServer((req, res) => {
-    if (req.url === "/" && req.method === "GET") {
+    var _a;
+    // Healthcheck
+    if (req.method === "GET" && req.url === "/") {
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("Socket server is running");
+        return; // 👈 IMPORTANT
     }
-    else {
-        res.writeHead(404);
-        res.end();
+    // Let Engine.IO/Socket.IO handle its own routes
+    if ((_a = req.url) === null || _a === void 0 ? void 0 : _a.startsWith("/socket.io")) {
+        return; // 👈 Do NOT send 404 here
     }
+    // Everything else
+    res.writeHead(404);
+    res.end();
 });
-// 1) Log any HTTP‐level server errors (e.g. EADDRINUSE, etc.)
-httpServer.on("error", (err) => {
-    console.error("🚨 HTTP server error:", err);
-});
+httpServer.on("error", (err) => console.error("🚨 HTTP server error:", err));
 const allowedOrigins = [
     "http://localhost:3000", // local dev
     "https://guess-the-song-topaz-ten.vercel.app", // preview on Vercel
