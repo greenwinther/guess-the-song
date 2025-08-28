@@ -2,6 +2,7 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 // src/server/socketServer.ts
 const http_1 = __importDefault(require("http"));
@@ -21,8 +22,19 @@ const httpServer = http_1.default.createServer((req, res) => {
 httpServer.on("error", (err) => {
     console.error("🚨 HTTP server error:", err);
 });
+const allowedOrigins = [
+    "http://localhost:3000", // local dev
+    "https://guess-the-song-topaz-ten.vercel.app", // preview on Vercel
+    "https://guess-the-song.vercel.app", // production on Vercel
+];
 const io = new socket_io_1.Server(httpServer, {
-    cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
+    cors: {
+        origin: allowedOrigins,
+        methods: ["GET", "POST"],
+        credentials: false, // only set true if you actually use cookies/auth
+    },
+    transports: ["polling", "websocket"],
+    path: "/socket.io",
     // 1) Ping every 20 sec
     pingInterval: 20000,
     // 2) If no pong within 5 sec, time‐out
@@ -44,7 +56,7 @@ io.on("connection", (socket) => {
     });
     (0, socket_1.registerSocketHandlers)(io, socket);
 });
-const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
+const PORT = Number((_b = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : process.env.SOCKET_PORT) !== null && _b !== void 0 ? _b : 4000);
 httpServer.listen(PORT, () => {
     console.log(`🚀 Socket.IO server listening on port ${PORT}`);
 });
