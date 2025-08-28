@@ -1,6 +1,6 @@
 // src/server/socket/createRoomHandler.ts
 import { Server, Socket } from "socket.io";
-import { createRoom, getRoom } from "../../lib/rooms";
+import { createRoom } from "../../lib/rooms";
 
 export const createRoomHandler = (io: Server, socket: Socket) => {
 	socket.on("createRoom", async (data, callback) => {
