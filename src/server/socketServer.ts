@@ -18,9 +18,20 @@ httpServer.on("error", (err) => {
 	console.error("🚨 HTTP server error:", err);
 });
 
-const io = new Server(httpServer, {
-	cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
+const allowedOrigins = [
+	"http://localhost:3000", // local dev
+	"https://guess-the-song-topaz-ten.vercel.app", // preview on Vercel
+	"https://guess-the-song.vercel.app", // production on Vercel
+];
 
+const io = new Server(httpServer, {
+	cors: {
+		origin: allowedOrigins,
+		methods: ["GET", "POST"],
+		credentials: false, // only set true if you actually use cookies/auth
+	},
+	transports: ["polling", "websocket"],
+	path: "/socket.io",
 	// 1) Ping every 20 sec
 	pingInterval: 20_000,
 	// 2) If no pong within 5 sec, time‐out
@@ -47,7 +58,7 @@ io.on("connection", (socket) => {
 	registerSocketHandlers(io, socket);
 });
 
-const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
+const PORT = Number(process.env.PORT ?? process.env.SOCKET_PORT ?? 4000);
 httpServer.listen(PORT, () => {
 	console.log(`🚀 Socket.IO server listening on port ${PORT}`);
 });
