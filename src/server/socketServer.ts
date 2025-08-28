@@ -4,51 +4,27 @@ import { Server } from "socket.io";
 import { registerSocketHandlers } from "./socket";
 
 const httpServer = http.createServer((req, res) => {
-	// Healthcheck
-	if (req.method === "GET" && req.url === "/") {
+	if (req.url === "/" && req.method === "GET") {
 		res.writeHead(200, { "Content-Type": "text/plain" });
 		res.end("Socket server is running");
-		return; // 👈 IMPORTANT
+	} else {
+		res.writeHead(404);
+		res.end();
 	}
-
-	// Debug: prove polling/WS requests reach the server
-	if (req.url?.startsWith("/socket.io")) {
-		console.log("📥 incoming socket.io request:", req.method, req.url);
-		return; // let Engine.IO handle it
-	}
-
-	// Everything else
-	res.writeHead(404);
-	res.end();
 });
 
-httpServer.on("error", (err) => console.error("🚨 HTTP server error:", err));
-
-const allowedOrigins = [
-	"http://localhost:3000", // local dev
-	"https://guess-the-song-topaz-ten.vercel.app", // preview on Vercel
-	"https://guess-the-song.vercel.app", // production on Vercel
-];
+// 1) Log any HTTP‐level server errors (e.g. EADDRINUSE, etc.)
+httpServer.on("error", (err) => {
+	console.error("🚨 HTTP server error:", err);
+});
 
 const io = new Server(httpServer, {
-	cors: {
-		origin: allowedOrigins,
-		methods: ["GET", "POST"],
-		credentials: false, // only set true if you actually use cookies/auth
-	},
-	transports: ["polling", "websocket"],
-	path: "/socket.io",
+	cors: { origin: process.env.CLIENT_URL || "http://localhost:3000" },
+
 	// 1) Ping every 20 sec
 	pingInterval: 20_000,
 	// 2) If no pong within 5 sec, time‐out
 	pingTimeout: 5_000,
-});
-
-// Extra Engine.IO debug hooks
-io.engine.on("initial_headers", (_headers, req) => {
-	if (req.url?.includes("/socket.io")) {
-		console.log("🧩 initial_headers for", req.url);
-	}
 });
 
 // 2) Log any Engine.IO connection‐level errors
@@ -71,7 +47,7 @@ io.on("connection", (socket) => {
 	registerSocketHandlers(io, socket);
 });
 
-const PORT = Number(process.env.PORT ?? process.env.SOCKET_PORT ?? 4000);
+const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
 httpServer.listen(PORT, () => {
 	console.log(`🚀 Socket.IO server listening on port ${PORT}`);
 });
