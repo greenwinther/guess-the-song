@@ -70,7 +70,7 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 				modifiers={[restrictToVerticalAxis, restrictToParentElement]}
 			>
 				<SortableContext items={order.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-					<ul className="space-y-4 mb-6">
+					<ul className="space-y-4">
 						{order.map((item, idx) => (
 							<SortableItem
 								key={item.id}
