@@ -35,6 +35,7 @@ export default function HostGameClient({ code }: { code: string }) {
 	const [revealedRanking, setRevealedRanking] = useState<number[]>([]);
 	const [socketError, setSocketError] = useState<string | null>(null);
 	const [playerLeftMessage, setPlayerLeftMessage] = useState<string | null>(null);
+	const [isPlaying, setIsPlaying] = useState(false);
 
 	const roomCodeRef = useRef(code);
 	const hasJoined = useRef(false);
@@ -120,6 +121,7 @@ export default function HostGameClient({ code }: { code: string }) {
 			setCurrentSong(s);
 			const vidId = getYouTubeID(clipUrl);
 			setBgThumbnail(vidId ? `https://img.youtube.com/vi/${vidId}/maxresdefault.jpg` : null);
+			setIsPlaying(true); // 🔊 ensure autoplay when host changes track
 		};
 		socket.on("playSong", onPlaySong);
 		return () => {
@@ -159,6 +161,64 @@ export default function HostGameClient({ code }: { code: string }) {
 		});
 	};
 
+	// Derive current index from context state
+	const currentIndex = currentSong ? room?.songs.findIndex((s) => s.id === currentSong.id) ?? -1 : -1;
+	// How many songs we have and how many are played at least once
+	const totalSongs = room?.songs.length ?? 0;
+	const allPlayed = totalSongs > 0 && room!.songs.every((s) => revealedSongs.includes(s.id)); // show only after each song got played once
+
+	// Centralized play helper that reuses your socket flow + revealed sync
+	const playAtIndex = (idx: number) => {
+		if (!room?.songs[idx]) return;
+		const song = room.songs[idx];
+
+		socket.emit("playSong", { code, songId: song.id }, () => {
+			if (!revealedSongs.includes(song.id)) {
+				const updated = [...revealedSongs, song.id];
+				setRevealedSongs(updated);
+				socket.emit("revealedSongs", { code, revealed: updated });
+			}
+		});
+
+		setIsPlaying(true);
+	};
+
+	const handlePrev = () => {
+		if (currentIndex <= 0) return;
+		playAtIndex(currentIndex - 1);
+	};
+
+	const handleNext = () => {
+		if (currentIndex === -1) return;
+		if (currentIndex >= (room?.songs.length ?? 0) - 1) return;
+		playAtIndex(currentIndex + 1);
+	};
+
+	const handlePlayPause = () => {
+		if (!currentSong) {
+			// First-ever press: start from the first song
+			playAtIndex(0);
+			return;
+		}
+		setIsPlaying((p) => !p);
+	};
+
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			const tag = (e.target as HTMLElement)?.tagName;
+			if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+
+			if (e.code === "Space") {
+				e.preventDefault();
+				handlePlayPause();
+			}
+			if (e.code === "ArrowLeft") handlePrev();
+			if (e.code === "ArrowRight") handleNext();
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [currentIndex, room, isPlaying]);
+
 	const handleShowResults = () => {
 		socket.emit("showResults", { code }, (ok: boolean) => {
 			if (!ok) alert("Failed to show results");
@@ -170,10 +230,11 @@ export default function HostGameClient({ code }: { code: string }) {
 	return (
 		<div
 			className="
-        min-h-screen p-8 
-        bg-gradient-to-br from-bg to-secondary 
-        bg-no-repeat bg-cover bg-center
-      "
+			min-h-screen
+			p-4 sm:p-6 lg:p-8       
+			bg-gradient-to-br from-bg to-secondary
+			bg-no-repeat bg-cover bg-center
+			"
 			style={{
 				// Use the thumbnail if set; otherwise fall back to the room’s background
 				backgroundImage: bgThumbnail ? `url(${bgThumbnail})` : `url(${room.backgroundUrl})`,
@@ -185,27 +246,47 @@ export default function HostGameClient({ code }: { code: string }) {
 					{socketError}
 				</div>
 			)}
-			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
+			<div
+				className="
+				w-full max-w-none
+				bg-card/60 border border-border rounded-2xl backdrop-blur-xl
+				grid grid-cols-1 lg:grid-cols-12
+				overflow-hidden
+				"
+			>
 				{/** ========== LEFT SIDEBAR ========== **/}
-				<aside className="w-full lg:w-1/4 p-8 border-r border-border flex flex-col items-center">
-					<h1 className="text-3xl font-bold text-text mb-4">
-						Guess <span className="text-secondary underline decoration-highlight">the</span> Song
+				<aside
+					className="
+					order-1 lg:order-none
+					w-full lg:col-span-3
+					p-4 sm:p-6
+					border-b lg:border-b-0 lg:border-r border-border
+					flex flex-col items-center"
+				>
+					<h1
+						className="text-center text-3xl sm:text-4xl font-extrabold tracking-tight
+                     text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
+                     drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15] pb-6 sm:pb-8"
+					>
+						Guess the song
 					</h1>
-					<div className="bg-card bg-opacity-50 border border-border rounded-lg p-4 text-center mb-6">
-						<p className="text-text-muted text-sm">Room code</p>
-						<p className="text-4xl font-mono font-bold text-secondary">{room.code}</p>
+					<div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4 text-center mb-4 sm:mb-6 w-full">
+						<p className="text-text-muted text-xs sm:text-sm">Room code</p>
+						<p className="text-3xl sm:text-4xl font-mono font-bold text-secondary">{room.code}</p>
 					</div>
-					<PlayerList
-						players={room.players}
-						submittedPlayers={submittedPlayers}
-						className="w-full"
-					/>
+					<div className="w-full max-h-48 sm:max-h-64 lg:max-h-none overflow-y-auto">
+						<PlayerList
+							players={room.players}
+							submittedPlayers={submittedPlayers}
+							className="w-full"
+						/>
+					</div>
 				</aside>
 
 				{/** ========== CENTER PANEL ========== **/}
-				<main className="flex-1 p-6 flex flex-col items-center">
+				<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
 					{playerLeftMessage && (
-						<div className="fixed top-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-2 rounded shadow transition-opacity duration-300 opacity-100">
+						<div className="fixed top-2 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-2 rounded shadow">
 							{playerLeftMessage}
 						</div>
 					)}
@@ -213,8 +294,10 @@ export default function HostGameClient({ code }: { code: string }) {
 					{scores ? (
 						// -------- Top-3 Leaderboard (Game Over) --------
 						<>
-							<h2 className="text-2xl font-semibold text-text mb-4">Final Results</h2>
-							<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
+							<h2 className="text-xl sm:text-2xl font-semibold text-text mb-3 sm:mb-4">
+								Final Results
+							</h2>
+							<div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-xl w-full max-w-md">
 								{(() => {
 									if (!scores) return null;
 
@@ -271,7 +354,7 @@ export default function HostGameClient({ code }: { code: string }) {
 						// -------- In-Progress (ReactPlayer + “Show Results”) --------
 						<>
 							<h2
-								className="text-2xl font-semibold text-text cursor-pointer select-none"
+								className="text-lg sm:text-2xl font-semibold text-text cursor-pointer select-none"
 								onClick={() => setShowSubmitter(true)}
 							>
 								{showSubmitter && currentSong
@@ -279,33 +362,100 @@ export default function HostGameClient({ code }: { code: string }) {
 									: "Click to reveal submitter"}
 							</h2>
 
-							<div className="w-full rounded-lg overflow-hidden border border-border mt-6 mb-6 h-96">
-								{currentSong ? (
-									<ReactPlayer
-										url={currentSong.url}
-										controls
-										playing
-										width="100%"
-										height="100%"
-									/>
-								) : (
-									<div className="w-full h-full bg-[#000]" />
-								)}
+							<div className="w-full mt-4 mb-4 sm:mt-6 sm:mb-6">
+								<div className="rounded-lg overflow-hidden border border-border aspect-video">
+									{currentSong ? (
+										<ReactPlayer
+											url={currentSong.url}
+											controls
+											playing={isPlaying && !!currentSong}
+											width="100%"
+											height="100%"
+											// ReactPlayer also supports style={{ aspectRatio: '16/9' }} as a fallback
+										/>
+									) : (
+										<div className="w-full h-full grid place-items-center bg-black/80 text-text-muted">
+											<div className="text-center px-4">
+												<p className="text-base sm:text-lg">No song selected</p>
+												<p className="text-xs sm:text-sm opacity-80">
+													Press <span className="font-medium">Play</span> to start
+													with track 1
+												</p>
+											</div>
+										</div>
+									)}
+								</div>
 							</div>
 
-							<div className="flex gap-4">
-								<Button variant="secondary" size="md" onClick={handleShowResults}>
-									Show Results
+							{/* Playback controls */}
+							<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-2 sm:mt-3 w-full max-w-md mx-auto">
+								<Button
+									variant="secondary"
+									size="md"
+									onClick={handlePrev}
+									disabled={!currentSong || currentIndex <= 0}
+									className="w-full sm:flex-1 text-center"
+								>
+									◀ Previous
+								</Button>
+
+								<Button
+									variant="primary"
+									size="md"
+									onClick={handlePlayPause}
+									aria-keyshortcuts="Space"
+									aria-label="Play/Pause (Space)"
+									className="w-full sm:flex-1 text-center"
+								>
+									{isPlaying ? "Pause" : currentSong ? "Play" : "Play • Start Track 1"}
+								</Button>
+
+								<Button
+									variant="secondary"
+									size="md"
+									onClick={handleNext}
+									disabled={!currentSong || currentIndex === (room?.songs.length ?? 0) - 1}
+									className="w-full sm:flex-1 text-center"
+								>
+									Next ▶
 								</Button>
 							</div>
+
+							{/* Small indicator which displays how many songs have been played */}
+							{!allPlayed && (
+								<p className="mt-3 sm:mt-4 text-xs sm:text-sm text-text-muted">
+									Played{" "}
+									{
+										revealedSongs.filter((id) => room?.songs.some((s) => s.id === id))
+											.length
+									}
+									/{totalSongs}
+								</p>
+							)}
+							{/* Only show when all songs have been played at least once */}
+							{allPlayed && (
+								<div className="flex gap-4 mt-3 sm:mt-4">
+									<Button variant="secondary" size="md" onClick={handleShowResults}>
+										Show Results
+									</Button>
+								</div>
+							)}
 						</>
 					)}
 				</main>
 
 				{/* Right sidebar */}
-				<aside className="w-1/4 p-6 border-l border-border flex flex-col">
-					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
-					<div className="space-y-3 flex-1 overflow-y-auto">
+				<aside
+					className="
+					order-2 lg:order-none
+					w-full lg:col-span-3
+					p-4 sm:p-6
+					border-t lg:border-t-0 lg:border-l border-border
+					flex flex-col
+					"
+				>
+					<h2 className="text-lg sm:text-xl font-semibold text-text mb-3 sm:mb-4">Playlist</h2>
+					<div className="space-y-2 sm:space-y-3 flex-1 overflow-y-auto max-h-56 sm:max-h-72 lg:max-h-none">
 						{room.songs.map((s, idx) => (
 							<Button
 								key={s.id}
@@ -314,7 +464,7 @@ export default function HostGameClient({ code }: { code: string }) {
 								className="w-full justify-start"
 								onClick={() => handlePlay(s)}
 							>
-								<div className="flex items-center space-x-2 w-full text-left">
+								<div className="flex items-center gap-2 w-full text-left">
 									<span className="font-mono text-secondary">{idx + 1}.</span>
 									<span>
 										{revealedSongs.includes(s.id)

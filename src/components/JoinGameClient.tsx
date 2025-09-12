@@ -204,7 +204,12 @@ export default function JoinGameClient({ code, playerName }: Props) {
 
 		return (
 			<div
-				className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center"
+				className="
+				min-h-screen
+				p-4 sm:p-6 lg:p-8       
+				bg-gradient-to-br from-bg to-secondary
+				bg-no-repeat bg-cover bg-center
+				"
 				style={{
 					backgroundImage: bgThumbnail
 						? `url(${bgThumbnail})`
@@ -219,22 +224,58 @@ export default function JoinGameClient({ code, playerName }: Props) {
 						{socketError}
 					</div>
 				)}
-				<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
+
+				{/* Main card → responsive grid */}
+				<div
+					className="
+				w-full max-w-none
+				bg-card/60 border border-border rounded-2xl backdrop-blur-xl
+				grid grid-cols-1 lg:grid-cols-12
+				overflow-hidden
+				"
+				>
 					{/* Left Sidebar: Room code & players */}
-					<aside className="w-full lg:w-1/4 p-8 border-r border-border">
-						<div className="text-center mb-6">
-							<p className="text-text-muted text-sm">Room code</p>
+					<aside
+						className="
+        order-1 lg:order-none
+        w-full lg:col-span-3
+        p-4 sm:p-6
+        border-b lg:border-b-0 lg:border-r border-border
+        flex flex-col items-center
+      "
+					>
+						<h1
+							className="text-center text-3xl sm:text-4xl font-extrabold tracking-tight
+                     text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
+                     drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15] pb-6 sm:pb-8"
+						>
+							Guess the song
+						</h1>
+						<div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4 text-center mb-4 sm:mb-6 w-full">
+							<p className="text-text-muted text-xs sm:text-sm">Room code</p>
 							{room ? (
-								<p className="text-4xl font-mono font-bold text-secondary">{room.code}</p>
+								<p className="text-3xl sm:text-4xl font-mono font-bold text-secondary">
+									{room.code}
+								</p>
 							) : (
-								<p className="text-4xl font-mono font-bold text-secondary">Loading…</p>
+								<p className="text-3xl sm:text-4xl font-mono font-bold text-secondary">
+									Loading…
+								</p>
 							)}
 						</div>
-						<PlayerList players={room.players} submittedPlayers={submittedPlayers} />
+
+						{/* Scroll area on small screens */}
+						<div className="w-full max-h-56 sm:max-h-72 lg:max-h-none overflow-y-auto">
+							<PlayerList
+								players={room.players}
+								submittedPlayers={submittedPlayers}
+								className="w-full"
+							/>
+						</div>
 					</aside>
 
 					{/* Center Panel: Show 1/0 correctness + total score */}
-					<main className="flex-1 p-6 flex flex-col items-center">
+					<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
 						<h1 className="text-2xl font-semibold text-text mb-4">Results</h1>
 
 						<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
@@ -270,8 +311,16 @@ export default function JoinGameClient({ code, playerName }: Props) {
 					</main>
 
 					{/* Right Sidebar: Playlist (still show titles or “Hidden”) */}
-					<aside className="w-full lg:w-1/4 p-6 border-l border-border flex flex-col">
-						<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
+					<aside
+						className="
+        order-2 lg:order-none
+        w-full lg:col-span-3
+        p-4 sm:p-6
+        border-t lg:border-t-0 lg:border-l border-border
+        flex flex-col
+      "
+					>
+						<h2 className="text-lg sm:text-xl font-semibold text-text mb-3 sm:mb-4">Playlist</h2>
 						<div className="space-y-2 flex-1 overflow-y-auto">
 							{room?.songs.map((s: Song, idx: number) => (
 								<div
@@ -296,7 +345,12 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	// ─── GUESS MODE ───────────────────────────
 	return (
 		<div
-			className="min-h-screen p-8 bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center"
+			className="
+			min-h-screen
+			p-4 sm:p-6 lg:p-8       
+			bg-gradient-to-br from-bg to-secondary
+			bg-no-repeat bg-cover bg-center
+			"
 			style={{
 				backgroundImage: bgThumbnail
 					? `url(${bgThumbnail})`
@@ -311,23 +365,59 @@ export default function JoinGameClient({ code, playerName }: Props) {
 					{socketError}
 				</div>
 			)}
-			<div className="max-w-7xl mx-auto bg-card bg-opacity-60 border border-border rounded-2xl backdrop-blur-xl flex flex-col lg:flex-row overflow-hidden">
+			{/* Main card → responsive grid */}
+			<div
+				className="
+				w-full max-w-none
+				bg-card/60 border border-border rounded-2xl backdrop-blur-xl
+				grid grid-cols-1 lg:grid-cols-12 
+				overflow-hidden
+				"
+			>
 				{/* Left Sidebar: Room code & players */}
-				<aside className="w-full lg:w-1/4 p-8 border-r border-border">
-					<div className="text-center mb-6">
-						<p className="text-text-muted text-sm">Room code</p>
+				<aside
+					className="
+        order-1 lg:order-none
+        w-full lg:col-span-3
+        p-4 sm:p-6
+        border-b lg:border-b-0 lg:border-r border-border
+        flex flex-col items-center
+      "
+				>
+					<h1
+						className="text-center text-3xl sm:text-4xl font-extrabold tracking-tight
+                     text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
+                     drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15] pb-6 sm:pb-8"
+					>
+						Guess the song
+					</h1>
+					<div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4 text-center mb-4 sm:mb-6 w-full">
+						<p className="text-text-muted text-xs sm:text-sm">Room code</p>
 						{room ? (
-							<p className="text-4xl font-mono font-bold text-secondary">{room.code}</p>
+							<p className="text-3xl sm:text-4xl font-mono font-bold text-secondary">
+								{room.code}
+							</p>
 						) : (
-							<p className="text-4xl font-mono font-bold text-secondary">Loading…</p>
+							<p className="text-3xl sm:text-4xl font-mono font-bold text-secondary">
+								Loading…
+							</p>
 						)}
 					</div>
-					<PlayerList players={room.players} submittedPlayers={submittedPlayers} />
+					{/* Scroll area on small screens */}
+					<div className="w-full max-h-56 sm:max-h-72 lg:max-h-none overflow-y-auto">
+						<PlayerList
+							players={room.players}
+							submittedPlayers={submittedPlayers}
+							className="w-full"
+						/>
+					</div>
 				</aside>
 
 				{/* Main Panel: Guess list */}
-				<main className="flex-1 p-6 flex flex-col items-center">
-					<h1 className="text-2xl font-semibold text-text mb-4">Guess the Submitter</h1>
+				<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
+					<h1 className="text-xl sm:text-3xl font-semibold text-text mb-4 sm:mb-6">
+						Guess the Submitter
+					</h1>
 
 					{/* ── DragDropContext + Droppable + Draggable (unchanged logic) ── */}
 					<SubmissionOrderList order={order} submitted={submitted} onDragEnd={handleReorder} />
@@ -350,8 +440,16 @@ export default function JoinGameClient({ code, playerName }: Props) {
 				</main>
 
 				{/* Right Sidebar: Playlist */}
-				<aside className="w-full lg:w-1/4 p-6 border-l border-border flex flex-col">
-					<h2 className="text-xl font-semibold text-text mb-4">Playlist</h2>
+				<aside
+					className="
+        order-2 lg:order-none
+        w-full lg:col-span-3
+        p-4 sm:p-6
+        border-t lg:border-t-0 lg:border-l border-border
+        flex flex-col
+      "
+				>
+					<h2 className="text-lg sm:text-xl font-semibold text-text mb-3 sm:mb-4">Playlist</h2>
 					<div className="space-y-2 flex-1 overflow-y-auto">
 						{room?.songs.map((s: Song, idx: number) => (
 							<div
