@@ -14,6 +14,7 @@ export interface HostCardProps {
 	onCreate: (e: FormEvent) => void;
 	className?: string;
 	disabled?: boolean;
+	isLoading?: boolean;
 }
 
 export const HostCard: FC<HostCardProps> = ({
@@ -23,7 +24,10 @@ export const HostCard: FC<HostCardProps> = ({
 	onBackgroundChange,
 	onCreate,
 	className,
+	disabled,
+	isLoading,
 }) => {
+	const lock = disabled || isLoading;
 	return (
 		<div
 			className={clsx(
@@ -40,6 +44,7 @@ export const HostCard: FC<HostCardProps> = ({
 					value={theme}
 					onChange={(e) => onThemeChange(e.target.value)}
 					className="w-full"
+					disabled={lock}
 				/>
 				<Input
 					type="text"
@@ -48,8 +53,16 @@ export const HostCard: FC<HostCardProps> = ({
 					value={backgroundUrl}
 					onChange={(e) => onBackgroundChange(e.target.value)}
 					className="w-full"
+					disabled={lock}
 				/>
-				<Button type="submit" variant="primary" size="md" className="w-full">
+				<Button
+					type="submit"
+					variant="primary"
+					size="md"
+					className="w-full"
+					loading={isLoading}
+					disabled={lock}
+				>
 					Create Lobby
 				</Button>
 			</form>

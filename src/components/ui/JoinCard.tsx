@@ -13,6 +13,7 @@ interface JoinCardProps {
 	onJoin: (e: React.FormEvent) => void;
 	className?: string;
 	disabled?: boolean;
+	isLoading?: boolean;
 }
 
 export default function JoinCard({
@@ -22,7 +23,10 @@ export default function JoinCard({
 	onRoomCodeChange,
 	onJoin,
 	className,
+	disabled,
+	isLoading,
 }: JoinCardProps) {
+	const lock = disabled || isLoading;
 	return (
 		<div
 			className={clsx(
@@ -40,6 +44,7 @@ export default function JoinCard({
 					onChange={(e) => onNameChange(e.target.value)}
 					required
 					className="w-full"
+					disabled={lock}
 				/>
 				<Input
 					type="text"
@@ -50,8 +55,16 @@ export default function JoinCard({
 					required
 					maxLength={6}
 					className="w-full"
+					disabled={lock}
 				/>
-				<Button type="submit" variant="primary" size="md" className="w-full">
+				<Button
+					type="submit"
+					variant="primary"
+					size="md"
+					className="w-full"
+					loading={isLoading}
+					disabled={lock}
+				>
 					Join Lobby
 				</Button>
 			</form>
