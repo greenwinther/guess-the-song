@@ -13,6 +13,7 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	size?: ButtonSize;
 	/** Button style variant */
 	variant?: ButtonVariant;
+	loading?: boolean;
 };
 
 const baseStyles =
@@ -35,19 +36,44 @@ export const Button: FC<ButtonProps> = ({
 	size = "md",
 	className,
 	children,
+	loading = false,
+	disabled,
 	...props
 }) => {
+	const isDisabled = disabled || loading;
 	return (
 		<button
 			className={clsx(
 				baseStyles,
 				variantStyles[variant],
 				sizeStyles[size],
-				props.disabled && "opacity-50 cursor-not-allowed hover:opacity-50",
+				isDisabled && "opacity-50 cursor-not-allowed hover:opacity-50",
+				"inline-flex items-center justify-center gap-2",
 				className
 			)}
+			aria-busy={loading || undefined}
+			disabled={isDisabled}
 			{...props}
 		>
+			{loading && (
+				<svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<circle
+						className="opacity-25"
+						cx="12"
+						cy="12"
+						r="10"
+						stroke="currentColor"
+						strokeWidth="4"
+					/>
+					<path
+						className="opacity-75"
+						d="M4 12a8 8 0 018-8"
+						stroke="currentColor"
+						strokeWidth="4"
+						strokeLinecap="round"
+					/>
+				</svg>
+			)}
 			{children}
 		</button>
 	);
