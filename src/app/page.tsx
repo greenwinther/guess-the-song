@@ -25,6 +25,7 @@ export default function HomePage() {
 	// Create lobby: send theme + background URL directly
 	const handleCreate = async (e: FormEvent) => {
 		e.preventDefault();
+		if (creating) return;
 		setCreating(true);
 
 		try {
@@ -39,8 +40,7 @@ export default function HomePage() {
 
 			if (!res.ok) {
 				const err = await res.json();
-				alert(err.error || "Could not create room");
-				setCreating(false);
+				setError(err.error || "Could not create room");
 				return;
 			}
 
@@ -48,7 +48,8 @@ export default function HomePage() {
 			router.push(`/host/${code}`);
 		} catch (err) {
 			console.error("Lobby creation failed", err);
-			alert("Something went wrong while creating the room");
+			setError("Something went wrong while creating the room");
+		} finally {
 			setCreating(false);
 		}
 	};
@@ -59,20 +60,17 @@ export default function HomePage() {
 		if (!name.trim() || !roomCode.trim() || joining) return;
 
 		setJoining(true);
+		const code = roomCode.trim().toUpperCase();
 
-		socket.emit("joinRoom", { code: roomCode, name }, (ok: boolean) => {
+		socket.emit("joinRoom", { code, name }, (ok: boolean) => {
 			if (ok) {
-				router.push(`/join/${roomCode}?name=${encodeURIComponent(name)}`);
+				router.push(`/join/${code}?name=${encodeURIComponent(name)}`);
 			} else {
-				alert("Failed to join—check the room code and try again.");
+				setError("Failed to join—check the room code and try again.");
 				setJoining(false);
 			}
 		});
 	};
-
-	{
-		error && <p className="mt-2 text-sm text-red-400 text-center">{error}</p>;
-	}
 
 	return (
 		<main
@@ -87,12 +85,12 @@ export default function HomePage() {
 				<div className="relative z-20 overflow-visible w-full">
 					<h1
 						className="
-          text-center
-          text-5xl sm:text-5xl font-extrabold tracking-tight
-          text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
-          drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
-          leading-[1.15] overflow-visible pb-10
-        "
+						text-center
+						text-5xl sm:text-5xl font-extrabold tracking-tight
+						text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
+						drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
+						leading-[1.15] overflow-visible pb-10
+						"
 					>
 						Guess the Song
 					</h1>
@@ -101,17 +99,21 @@ export default function HomePage() {
 				{/* Single card with toggle and conditional form */}
 				<div
 					className="
-        relative z-10 w-full border border-border rounded-2xl p-8
-        bg-card bg-opacity-20 backdrop-blur-xl
-        flex flex-col items-center
-      "
+					relative z-10 w-full border border-border rounded-2xl p-8
+					bg-card bg-opacity-20 backdrop-blur-xl
+					flex flex-col items-center
+					"
 				>
 					{/* Toggle buttons */}
 					<div role="tablist" aria-label="Mode" className="flex w-full mb-6 gap-4">
 						<Button
+							type="button"
 							role="tab"
 							aria-selected={mode === "host"}
-							onClick={() => setMode("host")}
+							onClick={() => {
+								setMode("host");
+								if (error) setError(null);
+							}}
 							variant={mode === "host" ? "primary" : "secondary"}
 							size="md"
 							className="flex-1"
@@ -119,9 +121,13 @@ export default function HomePage() {
 							Host
 						</Button>
 						<Button
+							type="button"
 							role="tab"
 							aria-selected={mode === "player"}
-							onClick={() => setMode("player")}
+							onClick={() => {
+								setMode("player");
+								if (error) setError(null);
+							}}
 							variant={mode === "player" ? "primary" : "secondary"}
 							size="md"
 							className="flex-1"
@@ -129,7 +135,10 @@ export default function HomePage() {
 							Player
 						</Button>
 					</div>
-
+					{/* Error message slot (prevents layout jump) */}
+					<div className="w-full" aria-live="polite">
+						{error && <p className="text-sm text-red-400 text-center">{error}</p>}
+					</div>
 					{/* Conditionally render based on mode */}
 					{mode === "host" ? (
 						<HostCard
@@ -139,6 +148,7 @@ export default function HomePage() {
 							onBackgroundChange={setBackgroundUrl}
 							onCreate={handleCreate}
 							disabled={creating}
+							isLoading={creating}
 							className="space-y-4"
 						/>
 					) : (
@@ -149,6 +159,7 @@ export default function HomePage() {
 							onRoomCodeChange={setRoomCode}
 							onJoin={handleJoin}
 							disabled={joining}
+							isLoading={joining}
 							className="space-y-4"
 						/>
 					)}
