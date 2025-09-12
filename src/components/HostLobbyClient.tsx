@@ -124,8 +124,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			className="min-h-screen
 			p-4 sm:p-6 lg:p-8       
 			bg-gradient-to-br from-bg to-secondary
-			bg-no-repeat bg-cover bg-center
-			"
+			bg-no-repeat bg-cover bg-center"
 			style={{
 				backgroundImage: `url(${room.backgroundUrl})`,
 				backgroundBlendMode: "overlay",
@@ -142,8 +141,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				className="w-full max-w-none
 				bg-card/60 border border-border rounded-2xl backdrop-blur-xl
 				grid grid-cols-1 lg:grid-cols-12
-				overflow-hidden
-				"
+				overflow-hidden"
 			>
 				{/* Left sidebar */}
 				<aside
@@ -151,8 +149,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 					w-full lg:col-span-3
 					p-4 sm:p-6
 					border-b lg:border-b-0 lg:border-r border-border
-					flex flex-col items-center
-					"
+					flex flex-col items-center"
 				>
 					<h1
 						className="text-center text-3xl sm:text-4xl font-extrabold tracking-tight
@@ -217,13 +214,11 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 
 				{/* Right sidebar */}
 				<aside
-					className="
-        order-2 lg:order-none
-        w-full lg:col-span-3
-        p-4 sm:p-6
-        border-t lg:border-t-0 lg:border-l border-border
-        flex flex-col
-      "
+					className="order-2 lg:order-none
+					w-full lg:col-span-3
+					p-4 sm:p-6
+					border-t lg:border-t-0 lg:border-l border-border
+					flex flex-col"
 				>
 					<h2 className="text-lg sm:text-xl font-semibold text-text mb-3 sm:mb-4">Playlist</h2>
 					<div className="bg-card/50 border border-border rounded-lg divide-y divide-border overflow-auto max-h-56 sm:max-h-72 lg:max-h-none">

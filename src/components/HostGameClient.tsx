@@ -229,12 +229,10 @@ export default function HostGameClient({ code }: { code: string }) {
 
 	return (
 		<div
-			className="
-			min-h-screen
+			className="min-h-screen
 			p-4 sm:p-6 lg:p-8       
 			bg-gradient-to-br from-bg to-secondary
-			bg-no-repeat bg-cover bg-center
-			"
+			bg-no-repeat bg-cover bg-center"
 			style={{
 				// Use the thumbnail if set; otherwise fall back to the room’s background
 				backgroundImage: bgThumbnail ? `url(${bgThumbnail})` : `url(${room.backgroundUrl})`,
@@ -247,17 +245,14 @@ export default function HostGameClient({ code }: { code: string }) {
 				</div>
 			)}
 			<div
-				className="
-				w-full max-w-none
+				className="w-full max-w-none
 				bg-card/60 border border-border rounded-2xl backdrop-blur-xl
 				grid grid-cols-1 lg:grid-cols-12
-				overflow-hidden
-				"
+				overflow-hidden"
 			>
 				{/** ========== LEFT SIDEBAR ========== **/}
 				<aside
-					className="
-					order-1 lg:order-none
+					className="order-1 lg:order-none
 					w-full lg:col-span-3
 					p-4 sm:p-6
 					border-b lg:border-b-0 lg:border-r border-border
@@ -265,8 +260,8 @@ export default function HostGameClient({ code }: { code: string }) {
 				>
 					<h1
 						className="text-center text-3xl sm:text-4xl font-extrabold tracking-tight
-                     text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
-                     drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15] pb-6 sm:pb-8"
+						text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
+						drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15] pb-6 sm:pb-8"
 					>
 						Guess the song
 					</h1>
@@ -446,13 +441,11 @@ export default function HostGameClient({ code }: { code: string }) {
 
 				{/* Right sidebar */}
 				<aside
-					className="
-					order-2 lg:order-none
+					className="order-2 lg:order-none
 					w-full lg:col-span-3
 					p-4 sm:p-6
 					border-t lg:border-t-0 lg:border-l border-border
-					flex flex-col
-					"
+					flex flex-col"
 				>
 					<h2 className="text-lg sm:text-xl font-semibold text-text mb-3 sm:mb-4">Playlist</h2>
 					<div className="space-y-2 sm:space-y-3 flex-1 overflow-y-auto max-h-56 sm:max-h-72 lg:max-h-none">
