@@ -41,6 +41,7 @@ export default function HomePage() {
 			if (!res.ok) {
 				const err = await res.json();
 				setError(err.error || "Could not create room");
+				setCreating(false);
 				return;
 			}
 
@@ -49,7 +50,6 @@ export default function HomePage() {
 		} catch (err) {
 			console.error("Lobby creation failed", err);
 			setError("Something went wrong while creating the room");
-		} finally {
 			setCreating(false);
 		}
 	};
