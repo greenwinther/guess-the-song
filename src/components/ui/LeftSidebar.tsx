@@ -1,15 +1,19 @@
-// src/components/join/LeftSidebar.tsx
-import PlayerList from "@/components/ui/PlayerList";
+// src/components/ui/LeftSidebar.tsx
+"use client";
+import PlayerList from "./PlayerList";
 import type { Player } from "@/types/room";
 
 export default function LeftSidebar({
 	roomCode,
 	players,
-	submittedPlayers,
+	submittedPlayers = [],
+	fallbackName,
 }: {
 	roomCode?: string;
 	players: Player[];
-	submittedPlayers: string[];
+	submittedPlayers?: string[];
+	showHostBadge?: boolean;
+	fallbackName?: string;
 }) {
 	return (
 		<aside className="order-1 lg:order-none w-full lg:col-span-3 p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-border flex flex-col items-center">
@@ -19,13 +23,16 @@ export default function LeftSidebar({
 
 			<div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4 text-center mb-4 sm:mb-6 w-full">
 				<p className="text-text-muted text-xs sm:text-sm">Room code</p>
-				<p className="text-3xl sm:text-4xl font-mono font-bold text-secondary">
-					{roomCode ?? "Loading…"}
-				</p>
+				<p className="text-3xl sm:text-4xl font-mono font-bold text-secondary">{roomCode ?? "—"}</p>
 			</div>
 
 			<div className="w-full max-h-56 sm:max-h-72 lg:max-h-none overflow-y-auto">
-				<PlayerList players={players} submittedPlayers={submittedPlayers} className="w-full" />
+				<PlayerList
+					players={players}
+					submittedPlayers={submittedPlayers}
+					className="w-full"
+					fallbackName={fallbackName}
+				/>
 			</div>
 		</aside>
 	);
