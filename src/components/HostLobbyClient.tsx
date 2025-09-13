@@ -55,6 +55,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				roomCode={viewRoom.code}
 				players={viewRoom.players}
 				submittedPlayers={submittedPlayers}
+				fallbackName="Host"
 			/>
 
 			{/* Center: form + preview + start button */}
