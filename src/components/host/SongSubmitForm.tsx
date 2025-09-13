@@ -3,8 +3,8 @@
 
 import { useSocket } from "@/contexts/SocketContext";
 import { useState, useEffect } from "react";
-import Input from "./ui/Input";
-import Button from "./ui/Button";
+import Input from "../ui/Input";
+import Button from "../ui/Button";
 import { getYouTubeID } from "@/lib/youtube";
 import Image from "next/image";
 
