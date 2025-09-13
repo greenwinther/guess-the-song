@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import HostLobbyClient from "@/components/HostLobbyClient";
 import { Room } from "@/types/room";
+import Loading from "@/components/ui/Loading";
 
 export default function HostLobbyPage() {
 	const { code } = useParams();
@@ -32,7 +33,7 @@ export default function HostLobbyPage() {
 			.catch((err) => toast.error(err.message));
 	}, [code]);
 
-	if (!room) return <p>Loading lobby…</p>;
+	if (!room) return <Loading />;
 
 	return <HostLobbyClient initialRoom={room} />;
 }
