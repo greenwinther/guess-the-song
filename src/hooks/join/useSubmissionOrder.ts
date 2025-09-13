@@ -1,6 +1,6 @@
 // src/hooks/join/useSubmissionOrder.ts
-import { useEffect, useMemo, useState } from "react";
-import { shuffleArray } from "@/utils/shuffelArray";
+import { useEffect } from "react";
+import { shuffleArray } from "@/utils/shuffleArray";
 import type { Room } from "@/types/room";
 import type { OrderItem } from "@/components/join/SubmissionOrderList";
 import { useLocalStorageState } from "./useLocalStorageState";
