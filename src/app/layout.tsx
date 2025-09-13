@@ -3,6 +3,7 @@
 import { GameProvider } from "@/contexts/tempContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 import "./globals.css";
+import SocketStatusBanner from "@/components/SocketStatusBanner";
 
 export const metadata = {
 	title: "Guess the Song",
@@ -24,7 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="en">
 			<body>
 				<SocketProvider>
-					<GameProvider>{children}</GameProvider>
+					<GameProvider>
+						<SocketStatusBanner />
+						{children}
+					</GameProvider>
 				</SocketProvider>
 			</body>
 		</html>
