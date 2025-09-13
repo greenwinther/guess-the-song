@@ -24,7 +24,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	const router = useRouter();
 	const socket = useSocket();
 
-	const { room, setGameStarted, submittedPlayers } = useGame();
+	const { room: ctxRoom, setGameStarted, submittedPlayers } = useGame();
 
 	// Host lobby socket wiring + initial room bootstrap
 	useHostLobbySocket(initialRoom);
@@ -32,25 +32,30 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	// Reconnect banner + auto re-join as "Host"
 	const socketError = useReconnectNotice(initialRoom.code, "Host");
 
+	// 🔑 Use the prop immediately; context may still be null on the first paint
+	const viewRoom = ctxRoom ?? initialRoom;
+
 	// Local UI state
 	const [previewUrl, setPreviewUrl] = useState<string>("");
 
 	// Start
 	const startGame = () => {
-		if (!room) return;
-		socket.emit("startGame", { code: room.code }, (ok: boolean) => {
+		if (!viewRoom) return;
+		socket.emit("startGame", { code: viewRoom.code }, (ok: boolean) => {
 			if (!ok) return alert("Could not start game");
 			setGameStarted(true);
-			router.push(`/host/${room.code}/game`);
+			router.push(`/host/${viewRoom.code}/game`);
 		});
 	};
 
-	if (!room) return <p>Loading lobby…</p>;
-
 	return (
-		<BackgroundShell bgImage={room.backgroundUrl ?? null} socketError={socketError}>
+		<BackgroundShell bgImage={viewRoom.backgroundUrl ?? null} socketError={socketError}>
 			{/* Left sidebar: title, room code, players */}
-			<LeftSidebar roomCode={room.code} players={room.players} submittedPlayers={submittedPlayers} />
+			<LeftSidebar
+				roomCode={viewRoom.code}
+				players={viewRoom.players}
+				submittedPlayers={submittedPlayers}
+			/>
 
 			{/* Center: form + preview + start button */}
 			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col">
@@ -58,7 +63,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 					<h2 className="text-xl sm:text-3xl font-semibold text-text mb-4 sm:mb-6">Song Setup</h2>
 
 					<div className="w-full">
-						<SongSubmitForm code={room.code} onUrlChange={setPreviewUrl} />
+						<SongSubmitForm code={viewRoom.code} onUrlChange={setPreviewUrl} />
 					</div>
 
 					<div className="w-full mt-6 sm:mt-8">
