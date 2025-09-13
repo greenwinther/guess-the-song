@@ -2,7 +2,7 @@
 
 // src/components/HostGameClient.tsx
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 
@@ -64,30 +64,42 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	// Local playback UI state
 	const [isPlaying, setIsPlaying] = useState(false);
 
-	// Derive current index / totals
+	const songs = viewRoom?.songs ?? [];
+
+	// Derive these like before
 	const currentIndex = useMemo(
-		() => (currentSong ? room?.songs.findIndex((s) => s.id === currentSong.id) ?? -1 : -1),
-		[room, currentSong]
+		() => (currentSong ? songs.findIndex((s) => s.id === currentSong.id) : -1),
+		[songs, currentSong]
 	);
+
 	const totalSongs = room?.songs.length ?? 0;
 	const allPlayed = totalSongs > 0 && !!room?.songs.every((s) => revealedSongs.includes(s.id));
 
 	// Centralized play helper that mirrors your socket flow + reveal sync
-	const playSong = (song: Song) => {
-		socket.emit("playSong", { code, songId: song.id }, () => {
-			if (!revealedSongs.includes(song.id)) {
-				const updated = [...revealedSongs, song.id];
-				setRevealedSongs(updated);
-				socket.emit("revealedSongs", { code, revealed: updated });
-			}
-		});
-		setIsPlaying(true);
-	};
+	const playSong = useCallback(
+		(song: Song) => {
+			socket.emit("playSong", { code, songId: song.id }, () => {
+				if (!revealedSongs.includes(song.id)) {
+					const updated = [...revealedSongs, song.id];
+					setRevealedSongs(updated);
+					socket.emit("revealedSongs", { code, revealed: updated });
+				}
+			});
+			setIsPlaying(true);
+		},
+		[socket, code, revealedSongs, setRevealedSongs]
+	);
 
-	const playAtIndex = (idx: number) => {
-		if (!viewRoom?.songs[idx]) return;
-		playSong(viewRoom.songs[idx]);
-	};
+	const playAtIndex = useCallback(
+		(idx: number) => {
+			if (!songs[idx]) return;
+			playSong(songs[idx]);
+		},
+		[songs, playSong]
+	);
+
+	// For the ArrowRight bound check
+	const songsLen = songs.length;
 
 	// Keyboard shortcuts
 	useEffect(() => {
@@ -102,17 +114,13 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				else setIsPlaying((p) => !p);
 			}
 			if (e.code === "ArrowLeft" && currentIndex > 0) playAtIndex(currentIndex - 1);
-			if (
-				e.code === "ArrowRight" &&
-				currentIndex >= 0 &&
-				currentIndex < (viewRoom?.songs.length ?? 0) - 1
-			) {
+			if (e.code === "ArrowRight" && currentIndex >= 0 && currentIndex < songsLen - 1) {
 				playAtIndex(currentIndex + 1);
 			}
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [currentIndex, viewRoom, currentSong]);
+	}, [currentIndex, currentSong, songsLen, playAtIndex]);
 
 	const bgImage = bgThumbnail ?? viewRoom?.backgroundUrl ?? null;
 

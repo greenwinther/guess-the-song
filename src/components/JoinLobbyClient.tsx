@@ -35,14 +35,14 @@ export default function JoinLobbyClient({
 	const roomCodeRef = useRef(initialRoom.code);
 	const playerNameRef = useRef(currentUserName);
 
+	// Seed room once (or whenever initialRoom changes)
 	useEffect(() => {
 		if (!room) setRoom(initialRoom);
+	}, [room, initialRoom, setRoom]);
 
-		const onPlayerJoined = (player: Player) => {
-			// console.log("🟢 playerJoined:", player.name);
-			addPlayer(player);
-		};
-
+	// Socket listeners (no 'room' here)
+	useEffect(() => {
+		const onPlayerJoined = (player: Player) => addPlayer(player);
 		const onRoomData = (room: Room) => setRoom(room);
 		const onSongAdded = (song: Song) => addSong(song);
 		const onSongRemoved = ({ songId }: { songId: number }) => removeSong(songId);
