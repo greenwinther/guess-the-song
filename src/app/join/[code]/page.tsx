@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import JoinLobbyClient from "@/components/JoinLobbyClient";
 import { Room } from "@/types/room";
+import Loading from "@/components/ui/Loading";
 
 export default function JoinLobbyPage() {
 	const { code } = useParams();
@@ -34,7 +35,7 @@ export default function JoinLobbyPage() {
 			.catch((err) => toast.error(err.message));
 	}, [code]);
 
-	if (!room || !name) return <p>Loading lobby…</p>;
+	if (!room || !name) return <Loading />;
 
 	return <JoinLobbyClient initialRoom={room} currentUserName={name} />;
 }
