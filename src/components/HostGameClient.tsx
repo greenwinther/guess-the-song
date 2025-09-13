@@ -41,7 +41,6 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 
 	// Socket listeners for game (host) lifecycle
 	useHostGameSocket(code);
-
 	useRevealedSubmittersSync();
 
 	// always join (on first connect and on reconnect)
@@ -64,7 +63,8 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	// Local playback UI state
 	const [isPlaying, setIsPlaying] = useState(false);
 
-	const songs = viewRoom?.songs ?? [];
+	const roomSongs = viewRoom?.songs;
+	const songs = useMemo(() => roomSongs ?? [], [roomSongs]);
 
 	// Derive these like before
 	const currentIndex = useMemo(
