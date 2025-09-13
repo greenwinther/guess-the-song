@@ -13,6 +13,7 @@ export const useGameState = (): GameContextType => {
 	const [scores, setScores] = useState<Record<string, number> | null>(null);
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
+	const [revealedSubmitters, setRevealedSubmitters] = useState<number[]>([]);
 	const [theme, setTheme] = useState<string>("");
 	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
 
@@ -64,5 +65,7 @@ export const useGameState = (): GameContextType => {
 		setTheme,
 		backgroundUrl,
 		setBackgroundUrl,
+		revealedSubmitters,
+		setRevealedSubmitters,
 	};
 };

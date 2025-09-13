@@ -43,4 +43,7 @@ export type GameContextType = {
 
 	backgroundUrl: string;
 	setBackgroundUrl: (url: string) => void;
+
+	revealedSubmitters: number[];
+	setRevealedSubmitters: React.Dispatch<React.SetStateAction<number[]>>;
 };
