@@ -1,6 +1,7 @@
 // src/components/host/HostPlaybackPanel.tsx
 "use client";
 
+import React, { useEffect, useMemo, useState } from "react";
 import ReactPlayer from "react-player";
 import Button from "@/components/ui/Button";
 import type { Song } from "@/types/room";
@@ -32,39 +33,87 @@ export default function HostPlaybackPanel({
 	allPlayed: boolean;
 	onShowResults: () => void;
 }) {
-	// Final results view
-	if (scores) {
+	// ----- Results state (lives always; only used when scores != null) -----
+	const grouped = useMemo(() => {
+		if (!scores) return null;
 		const ranking: [string, number][] = Object.entries(scores).sort(([, a], [, b]) => b - a);
-
-		// group by score for ties
-		const grouped: { score: number; names: string[] }[] = [];
+		const acc: { score: number; names: string[] }[] = [];
 		for (const [name, score] of ranking) {
-			const existing = grouped.find((g) => g.score === score);
-			if (existing) existing.names.push(name);
-			else grouped.push({ score, names: [name] });
+			const g = acc.find((x) => x.score === score);
+			if (g) g.names.push(name);
+			else acc.push({ score, names: [name] });
 		}
+		return acc.slice(0, 3);
+	}, [scores]);
 
+	const [revealedIdxs, setRevealedIdxs] = useState<number[]>([]);
+	useEffect(() => {
+		// whenever scores object changes (including going from null -> object), reset reveals
+		setRevealedIdxs([]);
+	}, [scores]);
+
+	const reveal = (i: number) => setRevealedIdxs((prev) => (prev.includes(i) ? prev : [...prev, i]));
+
+	const revealNext = () => {
+		if (!grouped) return;
+		const next = grouped.findIndex((_, i) => !revealedIdxs.includes(i));
+		if (next !== -1) reveal(next);
+	};
+
+	const revealAll = () => {
+		if (!grouped) return;
+		setRevealedIdxs(grouped.map((_, i) => i));
+	};
+
+	const allRevealed = grouped ? revealedIdxs.length >= grouped.length : true;
+
+	// ----- Results view -----
+	if (scores && grouped) {
 		return (
 			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
 				<h2 className="text-xl sm:text-2xl font-semibold text-text mb-3 sm:mb-4">Final Results</h2>
+
 				<div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-xl w-full max-w-md">
-					{grouped.slice(0, 3).map((group, idx) => (
-						<div
-							key={`${group.score}-${idx}`}
-							className="flex justify-between py-2 border-b border-border last:border-b-0"
-						>
-							<span className="text-text">
-								#{idx + 1} {group.names.join(", ")}
-							</span>
-							<span className="text-text font-medium">{group.score} pts</span>
-						</div>
-					))}
+					{grouped.map((group, idx) => {
+						const isRevealed = revealedIdxs.includes(idx);
+						return (
+							<button
+								key={`${group.score}-${idx}`}
+								onClick={() => reveal(idx)}
+								disabled={isRevealed}
+								className={`w-full text-left flex justify-between items-center py-2 border-b border-border last:border-b-0 transition ${
+									isRevealed ? "cursor-default" : "hover:bg-card/40"
+								}`}
+								aria-expanded={isRevealed}
+							>
+								{isRevealed ? (
+									<>
+										<span className="text-text">
+											#{idx + 1} {group.names.join(", ")}
+										</span>
+										<span className="text-text font-medium">{group.score} pts</span>
+									</>
+								) : (
+									<span className="text-text italic">#{idx + 1} Click to reveal</span>
+								)}
+							</button>
+						);
+					})}
+				</div>
+
+				<div className="flex gap-3 mt-4">
+					<Button variant="secondary" size="md" onClick={revealNext} disabled={allRevealed}>
+						{allRevealed ? "All revealed" : "Reveal next"}
+					</Button>
+					<Button variant="secondary" size="md" onClick={revealAll} disabled={allRevealed}>
+						Reveal all
+					</Button>
 				</div>
 			</main>
 		);
 	}
 
-	// In-progress playback
+	// ----- In-progress playback -----
 	return (
 		<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
 			<h2 className="text-lg sm:text-2xl font-semibold text-text">
@@ -86,7 +135,7 @@ export default function HostPlaybackPanel({
 							<div className="text-center px-4">
 								<p className="text-base sm:text-lg">No song selected</p>
 								<p className="text-xs sm:text-sm opacity-80">
-									Press Play to start with track 1
+									Press <span className="font-medium">Play</span> to start with track 1
 								</p>
 							</div>
 						</div>
@@ -94,7 +143,6 @@ export default function HostPlaybackPanel({
 				</div>
 			</div>
 
-			{/* Transport controls */}
 			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-2 sm:mt-3 w-full max-w-md mx-auto">
 				<Button
 					variant="secondary"
@@ -128,14 +176,12 @@ export default function HostPlaybackPanel({
 				</Button>
 			</div>
 
-			{/* Progress / Results CTA */}
 			{!allPlayed ? (
 				<p className="mt-3 sm:mt-4 text-xs sm:text-sm text-text-muted">
 					Played {playedCount}/{totalSongs}
 				</p>
 			) : (
 				<div className="flex gap-4 mt-3 sm:mt-4">
-					{/* Host triggers result reveal via socket elsewhere (keep as-is in your server flow) */}
 					<Button variant="secondary" size="md" onClick={onShowResults}>
 						Show Results
 					</Button>
