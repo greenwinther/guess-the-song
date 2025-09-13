@@ -10,24 +10,30 @@ const SocketStatusContext = createContext<{ status: SocketStatus; error: string 
 	error: null,
 });
 
-export function SocketProvider({ children }: { children: ReactNode }) {
-	// Create socket synchronously so the app doesn't block rendering
-	const socket = useMemo(
-		() =>
-			io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
-				transports: ["websocket"],
-				reconnectionDelay: 200,
-				reconnectionDelayMax: 1000,
-				reconnectionAttempts: Infinity,
-			}),
-		[]
-	);
+// ── Singleton across the whole app (persists across Strict Mode remounts)
+let socketSingleton: Socket | null = null;
+function getSocket(): Socket {
+	if (socketSingleton) return socketSingleton;
+	socketSingleton = io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
+		transports: ["websocket"],
+		reconnectionDelay: 200,
+		reconnectionDelayMax: 1000,
+		reconnectionAttempts: Infinity,
+		autoConnect: false, // <- don't connect during render
+	});
+	return socketSingleton;
+}
 
-	const [status, setStatus] = useState<SocketStatus>("connecting");
+export function SocketProvider({ children }: { children: ReactNode }) {
+	const socket = useMemo(getSocket, []);
+	const [status, setStatus] = useState<SocketStatus>(socket.connected ? "connected" : "connecting");
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		// ── Socket-level (typed with params) ───────────────────────────
+		// Connect after mount (idempotent)
+		if (!socket.connected) socket.connect();
+
+		// Socket-level
 		const onConnect = () => {
 			setStatus("connected");
 			setError(null);
@@ -45,7 +51,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 		socket.on("disconnect", onDisconnect);
 		socket.on("connect_error", onConnectError);
 
-		// ── Manager-level (use zero-arg handlers to satisfy types) ─────
+		// Manager-level (typed as no-arg in many versions)
 		const onReconnectAttempt = () => setStatus("reconnecting");
 		const onReconnect = () => {
 			setStatus("connected");
@@ -66,6 +72,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 		socket.io.on("reconnect_failed", onReconnectFailed);
 
 		return () => {
+			// Remove listeners to avoid dupes across Strict Mode remounts
 			socket.off("connect", onConnect);
 			socket.off("disconnect", onDisconnect);
 			socket.off("connect_error", onConnectError);
@@ -75,7 +82,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 			socket.io.off("reconnect_error", onReconnectError);
 			socket.io.off("reconnect_failed", onReconnectFailed);
 
-			socket.disconnect();
+			// IMPORTANT: don't disconnect the singleton in development Strict Mode
+			if (process.env.NODE_ENV !== "development") {
+				socket.disconnect();
+			}
 		};
 	}, [socket]);
 
