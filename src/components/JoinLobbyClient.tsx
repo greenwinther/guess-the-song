@@ -27,6 +27,7 @@ export default function JoinLobbyClient({
 		submittedPlayers,
 		setSubmittedPlayers,
 	} = useGame();
+
 	const hasJoined = useRef(false);
 	const [socketError, setSocketError] = useState<string | null>(null);
 
@@ -35,10 +36,31 @@ export default function JoinLobbyClient({
 	const playerNameRef = useRef(currentUserName);
 
 	useEffect(() => {
-		if (!room) {
-			setRoom(initialRoom);
-		}
+		if (!room) setRoom(initialRoom);
 
+		const onPlayerJoined = (player: Player) => {
+			// console.log("🟢 playerJoined:", player.name);
+			addPlayer(player);
+		};
+
+		const onRoomData = (room: Room) => setRoom(room);
+		const onSongAdded = (song: Song) => addSong(song);
+		const onSongRemoved = ({ songId }: { songId: number }) => removeSong(songId);
+
+		const onGameStarted = (room: Room) => {
+			// console.log("🎮 gameStarted -> redirect to JoinGame");
+			setGameStarted(true);
+			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
+		};
+
+		// Attach listeners BEFORE we emit joinRoom
+		socket.on("playerJoined", onPlayerJoined);
+		socket.on("roomData", onRoomData);
+		socket.on("songAdded", onSongAdded);
+		socket.on("songRemoved", onSongRemoved);
+		socket.on("gameStarted", onGameStarted);
+
+		// Now it’s safe to join (late-join reply won't be missed)
 		if (!hasJoined.current) {
 			socket.emit("joinRoom", { code: initialRoom.code, name: currentUserName }, (ok: boolean) => {
 				if (!ok) console.error("❌ Failed to join socket room");
@@ -46,30 +68,24 @@ export default function JoinLobbyClient({
 			hasJoined.current = true;
 		}
 
-		socket.on("playerJoined", (player: Player) => {
-			console.log("🟢 playerJoined received:", player.name);
-			addPlayer(player);
-		});
-
-		socket.on("roomData", (room: Room) => {
-			setRoom(room);
-		});
-
-		socket.on("songAdded", (song: Song) => {
-			addSong(song);
-		});
-
-		socket.on("songRemoved", ({ songId }) => {
-			removeSong(songId);
-		});
-
 		return () => {
-			socket.off("roomData");
-			socket.off("songAdded");
-			socket.off("songRemoved");
-			socket.off("playerJoined");
+			socket.off("playerJoined", onPlayerJoined);
+			socket.off("roomData", onRoomData);
+			socket.off("songAdded", onSongAdded);
+			socket.off("songRemoved", onSongRemoved);
+			socket.off("gameStarted", onGameStarted);
 		};
-	}, [socket, initialRoom, currentUserName, router, room, setRoom, addPlayer, addSong, removeSong]);
+	}, [
+		socket,
+		initialRoom,
+		currentUserName,
+		setRoom,
+		addPlayer,
+		addSong,
+		removeSong,
+		setGameStarted,
+		router,
+	]);
 
 	useEffect(() => {
 		socket.on("playerLeft", (playerId: number) => {
@@ -100,7 +116,7 @@ export default function JoinLobbyClient({
 				"joinRoom",
 				{ code: roomCodeRef.current, name: playerNameRef.current },
 				(ok: boolean) => {
-					console.log("re-join ack:", ok);
+					if (!ok) console.error("❌ Failed to re-join");
 				}
 			);
 		};
