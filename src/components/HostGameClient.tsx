@@ -33,8 +33,8 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 
 	// seed context once after refresh
 	useEffect(() => {
-		if (initialRoom && !room) setRoom(initialRoom);
-	}, [initialRoom, room, setRoom]);
+		if (initialRoom) setRoom(initialRoom);
+	}, [initialRoom, setRoom]);
 
 	// Use whichever we have
 	const viewRoom = room ?? initialRoom ?? null;
