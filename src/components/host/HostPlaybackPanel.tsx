@@ -54,18 +54,28 @@ export default function HostPlaybackPanel({
 
 	const reveal = (i: number) => setRevealedIdxs((prev) => (prev.includes(i) ? prev : [...prev, i]));
 
-	const revealNext = () => {
-		if (!grouped) return;
-		const next = grouped.findIndex((_, i) => !revealedIdxs.includes(i));
-		if (next !== -1) reveal(next);
-	};
+	// Reveal order: 3rd place (idx=2), then 2nd (1), then 1st (0)
+	const revealNextIndex = useMemo(() => {
+		if (!grouped) return null;
+		for (let i = grouped.length - 1; i >= 0; i--) {
+			if (!revealedIdxs.includes(i)) return i;
+		}
+		return null;
+	}, [grouped, revealedIdxs]);
 
-	const revealAll = () => {
-		if (!grouped) return;
-		setRevealedIdxs(grouped.map((_, i) => i));
+	const revealNext = () => {
+		if (revealNextIndex !== null) reveal(revealNextIndex);
 	};
 
 	const allRevealed = grouped ? revealedIdxs.length >= grouped.length : true;
+
+	const revealLabel = () => {
+		if (allRevealed) return "All revealed";
+		if (revealNextIndex === 2) return "Reveal 3rd place";
+		if (revealNextIndex === 1) return "Reveal 2nd place";
+		if (revealNextIndex === 0) return "Reveal 1st place";
+		return "Reveal next";
+	};
 
 	// ----- Results view -----
 	if (scores && grouped) {
@@ -103,10 +113,7 @@ export default function HostPlaybackPanel({
 
 				<div className="flex gap-3 mt-4">
 					<Button variant="secondary" size="md" onClick={revealNext} disabled={allRevealed}>
-						{allRevealed ? "All revealed" : "Reveal next"}
-					</Button>
-					<Button variant="secondary" size="md" onClick={revealAll} disabled={allRevealed}>
-						Reveal all
+						{revealLabel()}
 					</Button>
 				</div>
 			</main>
