@@ -166,6 +166,7 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				revealedIds={revealedSongs}
 				currentSongId={currentSong?.id ?? null}
 				onSelect={playSong}
+				allPlayed={allPlayed}
 			/>
 		</BackgroundShell>
 	);
