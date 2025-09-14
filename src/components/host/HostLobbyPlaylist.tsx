@@ -1,4 +1,4 @@
-// src/components/host/HostPlaylistPanel.tsx
+// src/components/host/HostLobbyPlaylist.tsx
 "use client";
 
 import { useState } from "react";
@@ -6,7 +6,7 @@ import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 import type { Song } from "@/types/room";
 
-export default function HostPlaylistPanel() {
+export default function HostLobbyPlaylist() {
 	const socket = useSocket();
 	const { room } = useGame();
 	const [revealedId, setRevealedId] = useState<number | null>(null);

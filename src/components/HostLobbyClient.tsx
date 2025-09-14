@@ -16,7 +16,7 @@ import BackgroundShell from "./ui/BackgroundShell";
 import LeftSidebar from "./ui/LeftSidebar";
 import SongSubmitForm from "./host/SongSubmitForm";
 import Button from "./ui/Button";
-import HostPlaylistPanel from "./host/HostPlaylistPanel";
+import HostLobbyPlaylist from "./host/HostLobbyPlaylist";
 
 import type { Room } from "@/types/room";
 
@@ -87,7 +87,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			</main>
 
 			{/* Right: playlist with reveal/remove */}
-			<HostPlaylistPanel />
+			<HostLobbyPlaylist />
 		</BackgroundShell>
 	);
 }
