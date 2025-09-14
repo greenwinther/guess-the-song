@@ -23,15 +23,18 @@ export default function HostGamePlaylist({
 	const socket = useSocket();
 	const { room, revealedSubmitters = [], setRevealedSubmitters } = useGame();
 
-	// ---- derive flags with hooks FIRST (safe with optional chaining) ----
+	// pull this outside the useMemo
+	const roomPlayedCount = (room as any)?.playedCount as number | undefined;
+
 	const effectiveAllPlayed = useMemo(() => {
 		if (typeof allPlayedProp === "boolean") return allPlayedProp;
+
 		const total = songs?.length ?? 0;
-		const playedFromRoom = (room as any)?.playedCount as number | undefined;
 		const playedFromSongs = songs?.filter((s: any) => s?.played === true).length ?? 0;
-		const played = typeof playedFromRoom === "number" ? playedFromRoom : playedFromSongs;
+		const played = typeof roomPlayedCount === "number" ? roomPlayedCount : playedFromSongs;
+
 		return total > 0 && played >= total;
-	}, [allPlayedProp, songs, (room as any)?.playedCount]);
+	}, [allPlayedProp, songs, roomPlayedCount]);
 
 	const unrevealedIds = useMemo(
 		() => songs?.map((s) => s.id).filter((id) => !revealedSubmitters.includes(id)) ?? [],
