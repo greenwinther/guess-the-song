@@ -18,7 +18,7 @@ export default function RightSidebarPlaylist({
 						className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-card hover:bg-border text-text"
 					>
 						<span className="text-secondary font-mono">{idx + 1}.</span>
-						<span>{revealedIds.includes(s.id) ? s.title ?? s.url : "Hidden title"}</span>
+						<span>{revealedIds.includes(s.id) ? s.title ?? s.url : "Guess the song"}</span>
 					</div>
 				))}
 			</div>

@@ -78,7 +78,7 @@ export default function HostGamePlaylist({
 							<div className="flex items-center gap-2">
 								<span className="font-mono text-secondary">{idx + 1}.</span>
 								<span className="font-medium">
-									{isTitleRevealed ? s.title ?? s.url : "Hidden title"}
+									{isTitleRevealed ? s.title ?? s.url : "Guess the song"}
 								</span>
 							</div>
 
