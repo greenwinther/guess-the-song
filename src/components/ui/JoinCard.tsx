@@ -53,7 +53,7 @@ export default function JoinCard({
 					value={code}
 					onChange={(e) => onRoomCodeChange(e.target.value.toUpperCase())}
 					required
-					maxLength={6}
+					maxLength={4}
 					className="w-full"
 					disabled={lock}
 				/>
