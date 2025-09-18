@@ -32,6 +32,11 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	} = useGame();
 
 	const [recapRunning, setRecapRunning] = useState(false);
+	const [fastRecap, setFastRecap] = useState<boolean>(() => {
+		// optional persist
+		if (typeof window === "undefined") return false;
+		return localStorage.getItem("gts_fast_recap") === "1";
+	});
 
 	// seed context once after refresh
 	useEffect(() => {
@@ -44,6 +49,12 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	// Socket listeners for game (host) lifecycle
 	useHostGameSocket(code);
 	useRevealedSubmittersSync();
+
+	useEffect(() => {
+		localStorage.setItem("gts_fast_recap", fastRecap ? "1" : "0");
+	}, [fastRecap]);
+
+	const recapSeconds = fastRecap ? 15 : 30;
 
 	// always join (on first connect and on reconnect)
 	useEffect(() => {
@@ -176,7 +187,9 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 					}
 				}}
 				onStopRecap={() => setRecapRunning(false)}
-				recapSeconds={20}
+				recapSeconds={recapSeconds}
+				fastRecap={fastRecap}
+				onToggleFastRecap={setFastRecap}
 			/>
 
 			<HostGamePlaylist
