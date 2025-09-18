@@ -19,4 +19,5 @@ export type Room = {
 	backgroundUrl?: string | null;
 	players: Player[];
 	songs: Song[];
+	hardcore?: boolean;
 };
