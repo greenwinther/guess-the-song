@@ -22,7 +22,9 @@ export default function HostPlaybackPanel({
 	recapRunning = false,
 	onStartRecap,
 	onStopRecap,
-	recapSeconds = 20, // configurable clip length
+	recapSeconds = 30,
+	fastRecap = false,
+	onToggleFastRecap,
 }: {
 	code: string;
 	currentSong: Song | null;
@@ -40,6 +42,8 @@ export default function HostPlaybackPanel({
 	onStartRecap?: () => void;
 	onStopRecap?: () => void;
 	recapSeconds?: number;
+	fastRecap?: boolean;
+	onToggleFastRecap?: (checked: boolean) => void;
 }) {
 	// ----- Results state (lives always; only used when scores != null) -----
 	const grouped = useMemo(() => {
@@ -55,6 +59,13 @@ export default function HostPlaybackPanel({
 	}, [scores]);
 
 	const [revealedIdxs, setRevealedIdxs] = useState<number[]>([]);
+	const [recapTriggered, setRecapTriggered] = useState(false);
+
+	const handleStartRecap = () => {
+		setRecapTriggered(true);
+		onStartRecap?.();
+	};
+
 	useEffect(() => {
 		// whenever scores object changes (including going from null -> object), reset reveals
 		setRevealedIdxs([]);
@@ -208,22 +219,16 @@ export default function HostPlaybackPanel({
 					◀ Previous
 				</Button>
 
-				{!recapRunning ? (
-					<Button
-						variant="primary"
-						size="md"
-						onClick={onPlayPause}
-						aria-keyshortcuts="Space"
-						aria-label="Play/Pause (Space)"
-						className="w-full sm:flex-1"
-					>
-						{isPlaying ? "Pause" : currentSong ? "Play" : "Play • Start Track 1"}
-					</Button>
-				) : (
-					<Button variant="danger" size="md" onClick={onStopRecap} className="w-full sm:flex-1">
-						Stop recap
-					</Button>
-				)}
+				<Button
+					variant="primary"
+					size="md"
+					onClick={onPlayPause}
+					aria-keyshortcuts="Space"
+					aria-label="Play/Pause (Space)"
+					className="w-full sm:flex-1"
+				>
+					{isPlaying ? "Pause" : currentSong ? "Play" : "Play • Start Track 1"}
+				</Button>
 
 				<Button
 					variant="secondary"
@@ -242,17 +247,55 @@ export default function HostPlaybackPanel({
 					Played {playedCount}/{totalSongs}
 				</p>
 			) : (
-				<div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
-					{/* Recap button appears only when all played and NOT running */}
-					{!recapRunning && onStartRecap && (
-						<Button variant="secondary" size="md" onClick={onStartRecap}>
-							Recap ({recapSeconds}s each)
-						</Button>
+				<div className="w-full max-w-md mx-auto mt-3 sm:mt-4">
+					{/* Fast recap toggle (kept separate so buttons can be equal width) */}
+					{!recapRunning && (
+						<label
+							htmlFor="fast-recap"
+							className="inline-flex items-center gap-2 select-none mb-2"
+						>
+							<input
+								id="fast-recap"
+								type="checkbox"
+								className="h-4 w-4 accent-primary"
+								checked={!!fastRecap}
+								onChange={(e) => onToggleFastRecap?.(e.target.checked)}
+							/>
+							<span className="text-sm text-text">Fast recap</span>
+						</label>
 					)}
 
-					<Button variant="primary" size="md" onClick={onShowResults}>
-						Show Results
-					</Button>
+					{/* Recap / Show results row — same sizing as Play row */}
+					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+						{!recapRunning && onStartRecap ? (
+							<Button
+								variant={recapTriggered ? "secondary" : "primary"}
+								size="md"
+								onClick={handleStartRecap}
+								className="w-full sm:flex-1"
+							>
+								Recap
+							</Button>
+						) : (
+							<Button
+								variant="danger"
+								size="md"
+								onClick={onStopRecap}
+								className="w-full sm:flex-1"
+							>
+								Stop recap
+							</Button>
+						)}
+
+						<Button
+							variant={recapTriggered ? "primary" : "secondary"}
+							size="md"
+							onClick={onShowResults}
+							className="w-full sm:flex-1"
+						>
+							Show Results
+						</Button>
+					</div>
 				</div>
 			)}
 		</main>
