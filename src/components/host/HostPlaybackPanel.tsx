@@ -1,7 +1,7 @@
 // src/components/host/HostPlaybackPanel.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import Button from "@/components/ui/Button";
 import type { Song } from "@/types/room";
@@ -19,6 +19,10 @@ export default function HostPlaybackPanel({
 	totalSongs,
 	allPlayed,
 	onShowResults,
+	recapRunning = false,
+	onStartRecap,
+	onStopRecap,
+	recapSeconds = 20, // configurable clip length
 }: {
 	code: string;
 	currentSong: Song | null;
@@ -32,6 +36,10 @@ export default function HostPlaybackPanel({
 	totalSongs: number;
 	allPlayed: boolean;
 	onShowResults: () => void;
+	recapRunning?: boolean;
+	onStartRecap?: () => void;
+	onStopRecap?: () => void;
+	recapSeconds?: number;
 }) {
 	// ----- Results state (lives always; only used when scores != null) -----
 	const grouped = useMemo(() => {
@@ -75,6 +83,41 @@ export default function HostPlaybackPanel({
 		if (revealNextIndex === 1) return "Reveal 2nd place";
 		if (revealNextIndex === 0) return "Reveal 1st place";
 		return "Reveal next";
+	};
+
+	// ===== Recap wiring (NEW) =====
+	const playerRef = useRef<ReactPlayer | null>(null);
+	const advancedRef = useRef(false); // guard so we don’t call onNext twice
+
+	// When recap starts, ensure playback is on.
+	useEffect(() => {
+		if (recapRunning) {
+			setIsPlaying(true);
+			advancedRef.current = false;
+		} else {
+			// leaving recap resets guard
+			advancedRef.current = false;
+		}
+	}, [recapRunning, setIsPlaying]);
+
+	// When song changes, reset the guard so the new one can advance.
+	useEffect(() => {
+		advancedRef.current = false;
+	}, [currentSong?.url]);
+
+	const handleProgress = (state: { playedSeconds: number }) => {
+		if (!recapRunning || advancedRef.current) return;
+		if (state.playedSeconds >= recapSeconds - 0.15) {
+			advancedRef.current = true;
+			onNext(); // parent moves to next track
+		}
+	};
+
+	const handleEnded = () => {
+		if (recapRunning && !advancedRef.current) {
+			advancedRef.current = true;
+			onNext(); // ended before 20s → advance immediately
+		}
 	};
 
 	// ----- Results view -----
@@ -131,11 +174,14 @@ export default function HostPlaybackPanel({
 				<div className="rounded-lg overflow-hidden border border-border aspect-video">
 					{currentSong ? (
 						<ReactPlayer
+							ref={playerRef}
 							url={currentSong.url}
 							controls
 							playing={isPlaying && !!currentSong}
 							width="100%"
 							height="100%"
+							onProgress={handleProgress}
+							onEnded={handleEnded}
 						/>
 					) : (
 						<div className="w-full h-full grid place-items-center bg-black/80 text-text-muted">
@@ -151,45 +197,60 @@ export default function HostPlaybackPanel({
 			</div>
 
 			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-2 sm:mt-3 w-full max-w-md mx-auto">
+				{/* Transport controls disabled during recap to avoid conflicts */}
 				<Button
 					variant="secondary"
 					size="md"
 					onClick={onPrev}
-					disabled={!currentSong}
+					disabled={!currentSong || recapRunning}
 					className="w-full sm:flex-1"
 				>
 					◀ Previous
 				</Button>
 
-				<Button
-					variant="primary"
-					size="md"
-					onClick={onPlayPause}
-					aria-keyshortcuts="Space"
-					aria-label="Play/Pause (Space)"
-					className="w-full sm:flex-1"
-				>
-					{isPlaying ? "Pause" : currentSong ? "Play" : "Play • Start Track 1"}
-				</Button>
+				{!recapRunning ? (
+					<Button
+						variant="primary"
+						size="md"
+						onClick={onPlayPause}
+						aria-keyshortcuts="Space"
+						aria-label="Play/Pause (Space)"
+						className="w-full sm:flex-1"
+					>
+						{isPlaying ? "Pause" : currentSong ? "Play" : "Play • Start Track 1"}
+					</Button>
+				) : (
+					<Button variant="danger" size="md" onClick={onStopRecap} className="w-full sm:flex-1">
+						Stop recap
+					</Button>
+				)}
 
 				<Button
 					variant="secondary"
 					size="md"
 					onClick={onNext}
-					disabled={!currentSong}
+					disabled={!currentSong || recapRunning}
 					className="w-full sm:flex-1"
 				>
 					Next ▶
 				</Button>
 			</div>
 
+			{/* Footer actions */}
 			{!allPlayed ? (
 				<p className="mt-3 sm:mt-4 text-xs sm:text-sm text-text-muted">
 					Played {playedCount}/{totalSongs}
 				</p>
 			) : (
-				<div className="flex gap-4 mt-3 sm:mt-4">
-					<Button variant="secondary" size="md" onClick={onShowResults}>
+				<div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
+					{/* Recap button appears only when all played and NOT running */}
+					{!recapRunning && onStartRecap && (
+						<Button variant="secondary" size="md" onClick={onStartRecap}>
+							Recap ({recapSeconds}s each)
+						</Button>
+					)}
+
+					<Button variant="primary" size="md" onClick={onShowResults}>
 						Show Results
 					</Button>
 				</div>
