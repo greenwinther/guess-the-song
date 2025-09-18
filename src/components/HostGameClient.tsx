@@ -31,6 +31,8 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 		bgThumbnail,
 	} = useGame();
 
+	const [recapRunning, setRecapRunning] = useState(false);
+
 	// seed context once after refresh
 	useEffect(() => {
 		if (initialRoom) setRoom(initialRoom);
@@ -144,8 +146,14 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 					else setIsPlaying((p) => !p);
 				}}
 				onNext={() => {
-					if (currentIndex >= 0 && currentIndex < (room?.songs.length ?? 0) - 1) {
+					const lastIdx = (room?.songs.length ?? 0) - 1;
+					if (currentIndex >= 0 && currentIndex < lastIdx) {
 						playAtIndex(currentIndex + 1);
+					} else {
+						// We’re at the end
+						if (recapRunning) setRecapRunning(false);
+						// optionally: keep the player paused at the last video
+						setIsPlaying(false);
 					}
 				}}
 				scores={scores}
@@ -159,6 +167,16 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 						if (!ok) alert("Failed to show results");
 					});
 				}}
+				recapRunning={recapRunning}
+				onStartRecap={() => {
+					setRecapRunning(true);
+					if (songs.length > 0) {
+						// Always start recap from the first track
+						playAtIndex(0);
+					}
+				}}
+				onStopRecap={() => setRecapRunning(false)}
+				recapSeconds={20}
 			/>
 
 			<HostGamePlaylist
