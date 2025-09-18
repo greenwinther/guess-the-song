@@ -17,7 +17,7 @@ export default function HomePage() {
 	const [roomCode, setRoomCode] = useState<string>("");
 	const [joining, setJoining] = useState(false);
 	const [creating, setCreating] = useState(false);
-	const [mode, setMode] = useState<"host" | "player">("host");
+	const [mode, setMode] = useState<"host" | "player">("player");
 	const [error, setError] = useState<string | null>(null);
 
 	const { theme, setTheme, backgroundUrl, setBackgroundUrl } = useGame();
