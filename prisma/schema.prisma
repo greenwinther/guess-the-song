@@ -14,6 +14,7 @@ model Room {
   backgroundUrl String?
   songs         Song[]
   players       Player[]
+  hardcore      Boolean  @default(false)
 }
 
 model Song {
