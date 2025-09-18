@@ -9,6 +9,9 @@ import { showResultHandler } from "./showResultsHandler";
 import { startGameHandler } from "./startGameHandler";
 import { submitAllOrdersHandler } from "./submitAllOrdersHandler";
 import { joinRoomHandler } from "./joinRoomHandler";
+import { lockAnswerHandler } from "./lockAnswerHandler";
+import { selectOrderHandler } from "./selectOrderHandler";
+import { nextSongHandler } from "./nextSongHandler";
 
 export const registerSocketHandlers = (io: Server, socket: Socket) => {
 	createRoomHandler(io, socket);
@@ -20,4 +23,7 @@ export const registerSocketHandlers = (io: Server, socket: Socket) => {
 	showResultHandler(io, socket);
 	startGameHandler(io, socket);
 	submitAllOrdersHandler(io, socket);
+	lockAnswerHandler(io, socket);
+	selectOrderHandler(io, socket);
+	nextSongHandler(io, socket);
 };
