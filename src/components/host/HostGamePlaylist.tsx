@@ -96,7 +96,7 @@ export default function HostGamePlaylist({
 			{/* Bottom center button: HIDDEN until all tracks are played */}
 			{effectiveAllPlayed && !allSubmittersRevealed && (
 				<div className="mt-4 flex justify-center">
-					<Button variant="secondary" size="md" onClick={revealNextSubmitter} className="min-w-52">
+					<Button variant="primary" size="md" onClick={revealNextSubmitter} className="min-w-52">
 						{`Reveal submitter #${songs.findIndex((s) => s.id === nextUnrevealedId) + 1}`}
 					</Button>
 				</div>
