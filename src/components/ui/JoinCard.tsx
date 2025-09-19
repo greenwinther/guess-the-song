@@ -1,6 +1,5 @@
-"use client";
-
 // src/components/ui/JoinCard.tsx
+"use client";
 import clsx from "clsx";
 import Input from "./Input";
 import Button from "./Button";
@@ -11,6 +10,8 @@ interface JoinCardProps {
 	code: string;
 	onRoomCodeChange: (val: string) => void;
 	onJoin: (e: React.FormEvent) => void;
+	hardcore: boolean;
+	onHardcoreChange: (val: boolean) => void;
 	className?: string;
 	disabled?: boolean;
 	isLoading?: boolean;
@@ -22,11 +23,14 @@ export default function JoinCard({
 	code,
 	onRoomCodeChange,
 	onJoin,
+	hardcore,
+	onHardcoreChange,
 	className,
 	disabled,
 	isLoading,
 }: JoinCardProps) {
 	const lock = disabled || isLoading;
+
 	return (
 		<div
 			className={clsx(
@@ -57,6 +61,19 @@ export default function JoinCard({
 					className="w-full"
 					disabled={lock}
 				/>
+
+				{/* Hardcore toggle */}
+				<label className="flex items-center gap-2 text-sm text-text/90">
+					<input
+						type="checkbox"
+						className="h-4 w-4 accent-pink-500"
+						checked={hardcore}
+						onChange={(e) => onHardcoreChange(e.target.checked)}
+						disabled={lock}
+					/>
+					<span>Play Hardcore</span>
+				</label>
+
 				<Button
 					type="submit"
 					variant="primary"
