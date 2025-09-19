@@ -20,7 +20,7 @@ export default function HomePage() {
 	const [mode, setMode] = useState<"host" | "player">("player");
 	const [error, setError] = useState<string | null>(null);
 
-	const { theme, setTheme, backgroundUrl, setBackgroundUrl } = useGame();
+	const { theme, setTheme, backgroundUrl, setBackgroundUrl, playerHardcore, setPlayerHardcore } = useGame();
 
 	// Create lobby: send theme + background URL directly
 	const handleCreate = async (e: FormEvent) => {
@@ -62,7 +62,7 @@ export default function HomePage() {
 		setJoining(true);
 		const code = roomCode.trim().toUpperCase();
 
-		socket.emit("joinRoom", { code, name }, (ok: boolean) => {
+		socket.emit("joinRoom", { code, name, hardcore: playerHardcore }, (ok: boolean) => {
 			if (ok) {
 				router.push(`/join/${code}?name=${encodeURIComponent(name)}`);
 			} else {
@@ -158,6 +158,8 @@ export default function HomePage() {
 							code={roomCode}
 							onRoomCodeChange={setRoomCode}
 							onJoin={handleJoin}
+							hardcore={playerHardcore}
+							onHardcoreChange={setPlayerHardcore}
 							disabled={joining}
 							isLoading={joining}
 							className="space-y-4"
