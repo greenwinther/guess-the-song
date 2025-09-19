@@ -1,37 +1,41 @@
 // src/server/socket/nextSongHandler.ts
 import { Server, Socket } from "socket.io";
-import { finalizeSongForAll, lockCounts } from "../../lib/game";
-import { getRoom } from "../../lib/rooms"; // if you keep currentSong client-side, you may pass it in instead
+import { finalizeSongForPlayers } from "../../lib/game";
+import { getRoom, getHardcorePlayerNames } from "../../lib/rooms";
+import { activeSongByRoom } from "../sharedState"; // adjust path if needed
 
 export const nextSongHandler = (io: Server, socket: Socket) => {
-	socket.on(
-		"nextSong",
-		async (
-			data: {
-				code: string;
-				currentSongId: number; // pass from host client
-				nextSongId: number; // pass from host client
-			},
-			cb?: (ok: boolean) => void
-		) => {
-			try {
-				// Finalize the current song for everyone
-				const counts = finalizeSongForAll(data.code, data.currentSongId);
+	socket.on("nextSong", async (data: { code: string }, cb?: (ok: boolean) => void) => {
+		try {
+			const room = await getRoom(data.code);
+			if (!room) return cb?.(false);
 
-				// Broadcast results for this song if you want (optional), then advance
+			const current = activeSongByRoom[data.code];
+
+			if (current != null) {
+				const hcNames = await getHardcorePlayerNames(data.code);
+				// 🔒 lock ONLY hardcore players
+				const { locked, total } = finalizeSongForPlayers(data.code, current, hcNames);
 				io.to(data.code).emit("songFinalized", {
-					songId: data.currentSongId,
-					counts,
+					songId: current,
+					locked,
+					total,
+					mode: "hardcoreOnly",
 				});
-
-				// Tell clients to switch UI to nextSongId
-				io.to(data.code).emit("songChanged", { songId: data.nextSongId });
-
-				cb?.(true);
-			} catch (e) {
-				console.error("nextSong error", e);
-				cb?.(false);
 			}
+
+			// advance
+			const ids = room.songs.map((s) => s.id);
+			const idx = current != null ? ids.indexOf(current) : -1;
+			const nextId = ids[idx + 1] ?? null;
+
+			activeSongByRoom[data.code] = nextId;
+			io.to(data.code).emit("songChanged", { songId: nextId });
+
+			cb?.(true);
+		} catch (e) {
+			console.error("nextSong error", e);
+			cb?.(false);
 		}
-	);
+	});
 };
