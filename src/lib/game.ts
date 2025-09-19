@@ -102,6 +102,32 @@ export function lockCounts(code: string, songId: number): { locked: number; tota
 	return { locked, total };
 }
 
+// lib/game.ts
+export function getLockedPlayers(code: string, songId: number): string[] {
+	const rd = activeRounds[code]?.[songId];
+	if (!rd) return [];
+	return Object.entries(rd.locks)
+		.filter(([, li]) => li.locked)
+		.map(([name]) => name);
+}
+
+// Lock only specific players for a given song (auto lock)
+export function finalizeSongForPlayers(code: string, songId: number, playerNames: string[]) {
+	const rd = activeRounds[code]?.[songId];
+	if (!rd) return { locked: 0, total: playerNames.length };
+
+	let locked = 0;
+	for (const name of playerNames) {
+		const already = rd.locks?.[name]?.locked;
+		if (!already) {
+			rd.orders[name] = rd.orders[name] ?? []; // empty = no guess
+			rd.locks[name] = { locked: true, lockedAt: Date.now(), method: "auto" };
+		}
+		if (rd.locks[name]?.locked) locked++;
+	}
+	return { locked, total: playerNames.length };
+}
+
 // --- Your existing scoring stays identical ---
 export function computeScores(
 	allOrders: Record<string, string[]>,
