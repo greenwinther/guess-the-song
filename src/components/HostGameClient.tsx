@@ -38,6 +38,10 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 		return localStorage.getItem("gts_fast_recap") === "1";
 	});
 
+	const [lockedBySong, setLockedBySong] = useState<Map<number, Set<string>>>(
+		new Map<number, Set<string>>()
+	);
+
 	// seed context once after refresh
 	useEffect(() => {
 		if (initialRoom) setRoom(initialRoom);
@@ -69,6 +73,60 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 			socket.off("connect", join);
 		};
 	}, [socket, code]);
+
+	const lockedCounts = useMemo(() => {
+		const acc: Record<string, number> = {};
+		lockedBySong.forEach((names) => {
+			names.forEach((n) => {
+				acc[n] = (acc[n] || 0) + 1;
+			});
+		});
+		return acc;
+	}, [lockedBySong]);
+
+	useEffect(() => {
+		if (!socket) return;
+
+		const onPlayerGuessLocked = ({ songId, playerName }: { songId: number; playerName: string }) => {
+			setLockedBySong((prev) => {
+				const m = new Map(prev);
+				const s = new Set<string>(m.get(songId) ?? new Set<string>()); // 👈
+				s.add(playerName);
+				m.set(songId, s);
+				return m;
+			});
+		};
+
+		const onPlayerGuessUndo = ({ songId, playerName }: { songId: number; playerName: string }) => {
+			setLockedBySong((prev) => {
+				const m = new Map(prev);
+				const s = new Set<string>(m.get(songId) ?? new Set<string>()); // 👈
+				s.delete(playerName);
+				m.set(songId, s);
+				return m;
+			});
+		};
+
+		const onSongFinalized = ({ songId, lockedNames }: { songId: number; lockedNames?: string[] }) => {
+			if (!lockedNames?.length) return;
+			setLockedBySong((prev) => {
+				const m = new Map(prev);
+				const s = new Set<string>(m.get(songId) ?? new Set<string>()); // 👈
+				lockedNames.forEach((n) => s.add(n));
+				m.set(songId, s);
+				return m;
+			});
+		};
+
+		socket.on("playerGuessLocked", onPlayerGuessLocked);
+		socket.on("playerGuessUndo", onPlayerGuessUndo);
+		socket.on("songFinalized", onSongFinalized);
+		return () => {
+			socket.off("playerGuessLocked", onPlayerGuessLocked);
+			socket.off("playerGuessUndo", onPlayerGuessUndo);
+			socket.off("songFinalized", onSongFinalized);
+		};
+	}, [socket]);
 
 	// Reconnect banner + auto re-join as "Host"
 	const socketError = useReconnectNotice(code, "Host");
@@ -138,6 +196,9 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	const bgImage = bgThumbnail ?? viewRoom?.backgroundUrl ?? null;
 	const nonHostPlayers = (viewRoom?.players ?? []).filter((p) => !p.isHost);
 	const notSubmitted = nonHostPlayers.map((p) => p.name).filter((name) => !submittedPlayers.includes(name));
+	const currentLockedNames = Array.from(
+		lockedBySong.get(currentSong?.id ?? -1) ?? new Set<string>() // 👈 typed
+	);
 
 	return (
 		<BackgroundShell bgImage={bgImage} socketError={socketError}>
@@ -145,7 +206,9 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				roomCode={viewRoom?.code ?? code}
 				players={viewRoom?.players ?? []}
 				submittedPlayers={submittedPlayers}
-				fallbackName="Host" // your earlier preference
+				fallbackName="Host"
+				lockedNames={currentLockedNames}
+				lockedCounts={lockedCounts}
 			/>
 
 			<HostPlaybackPanel
@@ -178,7 +241,6 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				totalSongs={totalSongs}
 				allPlayed={allPlayed}
 				onShowResults={() => {
-					if (notSubmitted.length > 0) return; // guard (or prompt)
 					socket.emit("showResults", { code }, (ok: boolean) => {
 						if (!ok) alert("Failed to show results");
 					});
