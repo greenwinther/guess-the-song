@@ -1,3 +1,4 @@
+// src/components/join/SubmissionOrderList.tsx
 "use client";
 
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from "@dnd-kit/core";
@@ -15,48 +16,61 @@ interface SubmissionOrderListProps {
 	order: OrderItem[];
 	submitted: boolean;
 	onDragEnd: (newOrder: OrderItem[]) => void;
+
+	/** NEW: index of the currently active song (0-based) */
+	currentIndex: number;
+
+	/** NEW: indices that are locked (cannot change occupant) */
+	lockedIndices: number[];
 }
 
-export default function SubmissionOrderList({ order, submitted, onDragEnd }: SubmissionOrderListProps) {
+export default function SubmissionOrderList({
+	order,
+	submitted,
+	onDragEnd,
+	currentIndex,
+	lockedIndices,
+}: SubmissionOrderListProps) {
 	const [activeId, setActiveId] = useState<number | null>(null);
+	const lockedSet = new Set(lockedIndices);
+
 	const sensors = useSensors(
 		useSensor(PointerSensor),
-		useSensor(TouchSensor, {
-			activationConstraint: {
-				delay: 0,
-				tolerance: 3,
-			},
-		})
+		useSensor(TouchSensor, { activationConstraint: { delay: 0, tolerance: 3 } })
 	);
 
 	useEffect(() => {
 		const disableScroll = (e: TouchEvent) => e.preventDefault();
-		if (activeId !== null) {
-			document.body.addEventListener("touchmove", disableScroll, { passive: false });
-		}
-		return () => {
-			document.body.removeEventListener("touchmove", disableScroll);
-		};
+		if (activeId !== null) document.body.addEventListener("touchmove", disableScroll, { passive: false });
+		return () => document.body.removeEventListener("touchmove", disableScroll);
 	}, [activeId]);
 
-	const handleDragStart = (event: any) => {
-		setActiveId(Number(event.active.id));
-	};
+	const handleDragStart = (event: any) => setActiveId(Number(event.active.id));
 
 	const handleDragEnd = (event: any) => {
-		if (submitted) return; // 🚫 Don't allow reordering after submission
+		if (submitted) return;
 
 		const { active, over } = event;
 		setActiveId(null);
-
 		if (!over || active.id === over.id) return;
 
-		const oldIndex = order.findIndex((item) => item.id === Number(active.id));
-		const newIndex = order.findIndex((item) => item.id === Number(over.id));
+		const oldIndex = order.findIndex((it) => it.id === Number(active.id));
+		const newIndex = order.findIndex((it) => it.id === Number(over.id));
+
+		// Hard stops: don't allow grabbing/dropping locked positions directly
+		if (lockedSet.has(oldIndex) || lockedSet.has(newIndex)) return;
 
 		if (oldIndex !== -1 && newIndex !== -1) {
-			const newOrder = arrayMove(order, oldIndex, newIndex);
-			onDragEnd(newOrder);
+			const candidate = arrayMove(order, oldIndex, newIndex);
+
+			// Guard: ensure **every locked index** keeps the same item as before
+			for (const i of lockedSet) {
+				if (candidate[i]?.id !== order[i]?.id) {
+					return; // reject move that disturbs a locked slot
+				}
+			}
+
+			onDragEnd(candidate);
 		}
 	};
 
@@ -77,7 +91,8 @@ export default function SubmissionOrderList({ order, submitted, onDragEnd }: Sub
 								id={item.id}
 								name={item.name}
 								index={idx}
-								disabled={submitted}
+								disabled={submitted || lockedSet.has(idx)}
+								isCurrent={idx === currentIndex}
 							/>
 						))}
 					</ul>
@@ -92,18 +107,17 @@ function SortableItem({
 	name,
 	index,
 	disabled,
+	isCurrent,
 }: {
 	id: number;
 	name: string;
 	index: number;
 	disabled: boolean;
+	isCurrent: boolean;
 }) {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-	};
+	const style = { transform: CSS.Transform.toString(transform), transition };
 
 	return (
 		<li
@@ -112,11 +126,14 @@ function SortableItem({
 			{...(!disabled ? attributes : {})}
 			{...(!disabled ? listeners : {})}
 			className={`flex items-center justify-between rounded-lg p-3
-		bg-card ${isDragging ? "opacity-80" : "opacity-100"}
-		${disabled ? "opacity-60 cursor-not-allowed select-none" : "cursor-grab"}`}
+        bg-card ${isDragging ? "opacity-80" : "opacity-100"}
+        ${disabled ? "opacity-60 cursor-not-allowed select-none" : "cursor-grab"}`}
+			title={disabled ? "Locked" : isCurrent ? "Current song" : undefined}
 		>
 			<span className="font-medium">{index + 1}.</span>
 			<span className="flex-1 mx-4">{name}</span>
+			{disabled && <span className="text-xs opacity-70">🔒</span>}
+			{isCurrent && !disabled && <span className="text-xs opacity-70">🎯</span>}
 		</li>
 	);
 }
