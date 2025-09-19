@@ -68,17 +68,19 @@ export function GuessPanel({
 					</Button>
 				)}
 			</div>
-			{showSubmitAll && onSubmitAll && (
-				<Button
-					onClick={onSubmitAll}
-					variant="secondary"
-					size="lg"
-					disabled={submitted}
-					className="flex-1"
-				>
-					{submitted ? "Submitted" : "Submit all guesses"}
-				</Button>
-			)}
+			<div className="mt-6 flex items-center gap-3">
+				{showSubmitAll && onSubmitAll && (
+					<Button
+						onClick={onSubmitAll}
+						variant="secondary"
+						size="lg"
+						disabled={submitted}
+						className="flex-1"
+					>
+						{submitted ? "Submitted" : "Submit all guesses"}
+					</Button>
+				)}
+			</div>
 
 			{scoreForMe != null && (
 				<div className="mt-6 text-center">
