@@ -1,7 +1,7 @@
 // // src/server/socket/showResultHandler.ts
 import { activeRounds, computeScores } from "../../lib/game";
 import { Server, Socket } from "socket.io";
-import { finalScoresByRoom } from "./sharedState";
+import { finalScoresByRoom } from "../sharedState";
 
 export const showResultHandler = (io: Server, socket: Socket) => {
 	socket.on("showResults", (data: { code: string }, callback: (ok: boolean) => void) => {
