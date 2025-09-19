@@ -20,7 +20,7 @@ export async function createRoom(theme: string, backgroundUrl: string | null, ho
 	});
 }
 
-export async function joinRoom(code: string, name: string) {
+export async function joinRoom(code: string, name: string, hardcore: boolean) {
 	const room = await prisma.room.findUnique({
 		where: { code },
 		include: { players: true },
@@ -33,7 +33,7 @@ export async function joinRoom(code: string, name: string) {
 
 	// Otherwise create a new one and return it
 	return await prisma.player.create({
-		data: { name, roomId: room.id },
+		data: { name, isHost: name === "Host", roomId: room.id, hardcore },
 	});
 }
 
@@ -69,4 +69,12 @@ export async function removeSong(code: string, songId: number) {
 
 	// Return the deleted ID so we can broadcast it
 	return songId;
+}
+
+export async function getHardcorePlayerNames(code: string): Promise<string[]> {
+	const room = await prisma.room.findUnique({
+		where: { code },
+		include: { players: { where: { hardcore: true } } },
+	});
+	return room?.players.map((p) => p.name) ?? [];
 }
