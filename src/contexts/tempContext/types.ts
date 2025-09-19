@@ -46,4 +46,10 @@ export type GameContextType = {
 
 	revealedSubmitters: number[];
 	setRevealedSubmitters: React.Dispatch<React.SetStateAction<number[]>>;
+
+	hardcore: boolean;
+	setHardcore: React.Dispatch<React.SetStateAction<boolean>>;
+
+	playerHardcore: boolean;
+	setPlayerHardcore: React.Dispatch<React.SetStateAction<boolean>>;
 };
