@@ -1,7 +1,9 @@
 export type Player = {
 	id: number;
 	name: string;
+	isHost: boolean;
 	roomId: number;
+	hardcore?: boolean;
 };
 
 export type Song = {
@@ -19,5 +21,4 @@ export type Room = {
 	backgroundUrl?: string | null;
 	players: Player[];
 	songs: Song[];
-	hardcore?: boolean;
 };
