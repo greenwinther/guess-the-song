@@ -57,21 +57,46 @@ export default function SubmissionOrderList({
 		const oldIndex = order.findIndex((it) => it.id === Number(active.id));
 		const newIndex = order.findIndex((it) => it.id === Number(over.id));
 
-		// Hard stops: don't allow grabbing/dropping locked positions directly
-		if (lockedSet.has(oldIndex) || lockedSet.has(newIndex)) return;
+		// If we somehow don't find indices, bail
+		if (oldIndex === -1 || newIndex === -1) return;
 
-		if (oldIndex !== -1 && newIndex !== -1) {
-			const candidate = arrayMove(order, oldIndex, newIndex);
+		// Don't allow grabbing from a locked slot
+		if (lockedSet.has(oldIndex)) return;
 
-			// Guard: ensure **every locked index** keeps the same item as before
-			for (const i of lockedSet) {
-				if (candidate[i]?.id !== order[i]?.id) {
-					return; // reject move that disturbs a locked slot
-				}
-			}
+		// If they dropped *on* a locked slot, either bail…
+		if (lockedSet.has(newIndex)) return;
+		// …OR (optional) snap to nearest unlocked target:
+		// let target = newIndex;
+		// if (lockedSet.has(target)) {
+		//   const dir = newIndex > oldIndex ? 1 : -1;
+		//   while (target >= 0 && target < order.length && lockedSet.has(target)) {
+		//     target += dir;
+		//   }
+		//   if (target < 0 || target >= order.length) return;
+		//   newIndex = target;
+		// }
 
-			onDragEnd(candidate);
-		}
+		// Build list of unlocked indices
+		const unlockedIdxs = order.map((_, i) => i).filter((i) => !lockedSet.has(i));
+
+		// Where are we inside the unlocked-only sequence?
+		const posOld = unlockedIdxs.indexOf(oldIndex);
+		const posNew = unlockedIdxs.indexOf(newIndex);
+		if (posOld === -1 || posNew === -1) return;
+
+		// Extract the unlocked items in order
+		const unlockedItems = unlockedIdxs.map((i) => order[i]);
+
+		// Reorder only those
+		const movedUnlocked = arrayMove(unlockedItems, posOld, posNew);
+
+		// Rebuild full candidate, keeping locked slots intact
+		const candidate = order.slice();
+		unlockedIdxs.forEach((i, k) => {
+			candidate[i] = movedUnlocked[k];
+		});
+
+		onDragEnd(candidate);
 	};
 
 	return (
