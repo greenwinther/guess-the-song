@@ -2,12 +2,27 @@
 import { Server, Socket } from "socket.io";
 import { createRoom } from "../../lib/rooms";
 
-export const createRoomHandler = (io: Server, socket: Socket) => {
-	socket.on("createRoom", async (data, callback) => {
-		try {
-			const { theme, backgroundUrl, hostName } = data;
+type CreateRoomPayload = {
+	theme?: string;
+	backgroundUrl?: string | null;
+	hostName: string;
+};
 
-			const newRoom = await createRoom(theme, backgroundUrl || null, hostName);
+type CreateRoomResponse = {
+	code: string;
+	theme?: string | null;
+	backgroundUrl?: string;
+	hostName: string;
+};
+
+export const createRoomHandler = (io: Server, socket: Socket) => {
+	socket.on("createRoom", async (data: CreateRoomPayload, callback: (resp: CreateRoomResponse) => void) => {
+		try {
+			const theme = data.theme?.trim() ?? "";
+			const backgroundUrl = data.backgroundUrl ?? null;
+			const hostName = data.hostName?.trim() || "Host";
+
+			const newRoom = await createRoom(theme, backgroundUrl, hostName);
 
 			socket.join(newRoom.code);
 
