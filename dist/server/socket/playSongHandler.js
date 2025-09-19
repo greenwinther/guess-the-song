@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.playSongHandler = void 0;
-const sharedState_1 = require("./sharedState");
+const sharedState_1 = require("../sharedState");
 const prisma_1 = require("../../lib/prisma");
 const playSongHandler = (io, socket) => {
     socket.on("playSong", async (data, callback) => {

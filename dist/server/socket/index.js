@@ -10,6 +10,9 @@ const showResultsHandler_1 = require("./showResultsHandler");
 const startGameHandler_1 = require("./startGameHandler");
 const submitAllOrdersHandler_1 = require("./submitAllOrdersHandler");
 const joinRoomHandler_1 = require("./joinRoomHandler");
+const lockAnswerHandler_1 = require("./lockAnswerHandler");
+const selectOrderHandler_1 = require("./selectOrderHandler");
+const nextSongHandler_1 = require("./nextSongHandler");
 const registerSocketHandlers = (io, socket) => {
     (0, createRoomHandler_1.createRoomHandler)(io, socket);
     (0, joinRoomHandler_1.joinRoomHandler)(io, socket);
@@ -20,5 +23,8 @@ const registerSocketHandlers = (io, socket) => {
     (0, showResultsHandler_1.showResultHandler)(io, socket);
     (0, startGameHandler_1.startGameHandler)(io, socket);
     (0, submitAllOrdersHandler_1.submitAllOrdersHandler)(io, socket);
+    (0, lockAnswerHandler_1.lockAnswerHandler)(io, socket);
+    (0, selectOrderHandler_1.selectOrderHandler)(io, socket);
+    (0, nextSongHandler_1.nextSongHandler)(io, socket);
 };
 exports.registerSocketHandlers = registerSocketHandlers;

@@ -4,9 +4,10 @@ exports.startGameHandler = void 0;
 // // src/server/socket/startGameHandler.ts
 const game_1 = require("../../lib/game");
 const rooms_1 = require("../../lib/rooms");
-const sharedState_1 = require("./sharedState");
+const sharedState_1 = require("../sharedState");
 const startGameHandler = (io, socket) => {
     socket.on("startGame", async (data, callback) => {
+        var _a, _b;
         try {
             // 1) Fetch the room and its songs
             const room = await (0, rooms_1.getRoom)(data.code);
@@ -20,6 +21,10 @@ const startGameHandler = (io, socket) => {
                 (0, game_1.startRoundData)(data.code, song.id, song.submitter, room.songs.map((s) => s.submitter));
                 // Note: we pass the full list of all submitters, but computeScores only cares about correctAnswer.
             }
+            const firstId = (_b = (_a = room.songs[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
+            sharedState_1.activeSongByRoom[data.code] = firstId;
+            io.to(data.code).emit("songChanged", { songId: firstId });
+            io.to(data.code).emit("lockSnapshot", { songId: firstId, locked: [] });
             // 3) Broadcast “gameStarted” with the full room so clients can build their guess UI.
             sharedState_1.gamesInProgress[data.code] = true;
             io.to(data.code).emit("gameStarted", room);

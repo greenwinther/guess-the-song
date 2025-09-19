@@ -5,11 +5,12 @@ exports.joinRoom = joinRoom;
 exports.getRoom = getRoom;
 exports.addSong = addSong;
 exports.removeSong = removeSong;
+exports.getHardcorePlayerNames = getHardcorePlayerNames;
 // src/lib/rooms.ts
 const nanoid_1 = require("nanoid");
 const prisma_1 = require("./prisma");
 async function createRoom(theme, backgroundUrl, hostName) {
-    const code = (0, nanoid_1.nanoid)(6).toUpperCase();
+    const code = (0, nanoid_1.nanoid)(4).toUpperCase();
     return await prisma_1.prisma.room.create({
         data: {
             code,
@@ -25,7 +26,7 @@ async function createRoom(theme, backgroundUrl, hostName) {
         include: { players: true },
     });
 }
-async function joinRoom(code, name) {
+async function joinRoom(code, name, hardcore) {
     const room = await prisma_1.prisma.room.findUnique({
         where: { code },
         include: { players: true },
@@ -38,7 +39,7 @@ async function joinRoom(code, name) {
         return existing;
     // Otherwise create a new one and return it
     return await prisma_1.prisma.player.create({
-        data: { name, roomId: room.id },
+        data: { name, isHost: name === "Host", roomId: room.id, hardcore },
     });
 }
 // And update getRoom to include players
@@ -71,4 +72,12 @@ async function removeSong(code, songId) {
     });
     // Return the deleted ID so we can broadcast it
     return songId;
+}
+async function getHardcorePlayerNames(code) {
+    var _a;
+    const room = await prisma_1.prisma.room.findUnique({
+        where: { code },
+        include: { players: { where: { hardcore: true } } },
+    });
+    return (_a = room === null || room === void 0 ? void 0 : room.players.map((p) => p.name)) !== null && _a !== void 0 ? _a : [];
 }

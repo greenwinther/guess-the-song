@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.showResultHandler = void 0;
 // // src/server/socket/showResultHandler.ts
 const game_1 = require("../../lib/game");
-const sharedState_1 = require("./sharedState");
+const sharedState_1 = require("../sharedState");
 const showResultHandler = (io, socket) => {
     socket.on("showResults", (data, callback) => {
         try {

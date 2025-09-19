@@ -4,12 +4,13 @@ exports.joinRoomHandler = void 0;
 // src/server/socket/joinRoomHandler.ts
 const game_1 = require("../../lib/game");
 const rooms_1 = require("../../lib/rooms");
-const sharedState_1 = require("./sharedState");
+const sharedState_1 = require("../sharedState");
 const joinRoomHandler = (io, socket) => {
     socket.on("joinRoom", async (data, callback) => {
+        var _a, _b;
         try {
             // 1) Add player to room
-            const newPlayer = await (0, rooms_1.joinRoom)(data.code, data.name);
+            const newPlayer = await (0, rooms_1.joinRoom)(data.code, data.name, !!data.hardcore);
             socket.join(data.code);
             // 2) Store for disconnect tracking
             socket.data.roomMeta = { code: data.code, playerName: data.name };
@@ -28,6 +29,12 @@ const joinRoomHandler = (io, socket) => {
             if (roundsForCode && Object.keys(roundsForCode).length > 0) {
                 // Emit gameStarted so that JoinGameClient can flip state.gameStarted = true
                 socket.emit("gameStarted", room);
+            }
+            socket.emit("songChanged", { songId: (_a = sharedState_1.activeSongByRoom[data.code]) !== null && _a !== void 0 ? _a : null });
+            const activeId = (_b = sharedState_1.activeSongByRoom[data.code]) !== null && _b !== void 0 ? _b : null;
+            if (activeId) {
+                const locked = (0, game_1.getLockedPlayers)(data.code, activeId);
+                socket.emit("lockSnapshot", { songId: activeId, locked });
             }
             // 6) If game is over, send final scores
             if (sharedState_1.finalScoresByRoom[data.code]) {
