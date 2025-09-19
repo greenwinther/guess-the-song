@@ -2,7 +2,7 @@
 import { startRoundData } from "../../lib/game";
 import { getRoom } from "../../lib/rooms";
 import { Server, Socket } from "socket.io";
-import { gamesInProgress } from "./sharedState";
+import { activeSongByRoom, gamesInProgress } from "../sharedState";
 
 export const startGameHandler = (io: Server, socket: Socket) => {
 	socket.on("startGame", async (data: { code: string }, callback: (ok: boolean) => void) => {
@@ -24,6 +24,12 @@ export const startGameHandler = (io: Server, socket: Socket) => {
 				);
 				// Note: we pass the full list of all submitters, but computeScores only cares about correctAnswer.
 			}
+
+			const firstId = room.songs[0]?.id ?? null;
+			activeSongByRoom[data.code] = firstId;
+
+			io.to(data.code).emit("songChanged", { songId: firstId });
+			io.to(data.code).emit("lockSnapshot", { songId: firstId, locked: [] });
 
 			// 3) Broadcast “gameStarted” with the full room so clients can build their guess UI.
 			gamesInProgress[data.code] = true;
