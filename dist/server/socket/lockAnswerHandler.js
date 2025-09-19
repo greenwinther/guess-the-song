@@ -19,7 +19,25 @@ const lockAnswerHandler = (io, socket) => {
             cb === null || cb === void 0 ? void 0 : cb(ok);
         }
         catch (e) {
-            console.error("lockAnswer", e);
+            console.error("lockAnswer error", e);
+            cb === null || cb === void 0 ? void 0 : cb(false);
+        }
+    });
+    socket.on("undoLock", (data, cb) => {
+        try {
+            const ok = (0, game_1.tryUndoManualLock)(data.code, data.songId, data.playerName);
+            if (ok) {
+                const counts = (0, game_1.lockCounts)(data.code, data.songId);
+                io.to(data.code).emit("playerGuessUndo", {
+                    playerName: data.playerName,
+                    songId: data.songId,
+                    counts,
+                });
+            }
+            cb === null || cb === void 0 ? void 0 : cb(ok);
+        }
+        catch (e) {
+            console.error("undoLock error", e);
             cb === null || cb === void 0 ? void 0 : cb(false);
         }
     });
