@@ -16,6 +16,8 @@ export const useGameState = (): GameContextType => {
 	const [revealedSubmitters, setRevealedSubmitters] = useState<number[]>([]);
 	const [theme, setTheme] = useState<string>("");
 	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
+	const [hardcore, setHardcore] = useState(false);
+	const [playerHardcore, setPlayerHardcore] = useState(false);
 
 	const addPlayer = useCallback((player: Player) => {
 		setRoom((prev) => {
@@ -67,5 +69,9 @@ export const useGameState = (): GameContextType => {
 		setBackgroundUrl,
 		revealedSubmitters,
 		setRevealedSubmitters,
+		hardcore,
+		setHardcore,
+		playerHardcore,
+		setPlayerHardcore,
 	};
 };
