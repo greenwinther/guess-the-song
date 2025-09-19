@@ -8,12 +8,16 @@ export default function LeftSidebar({
 	players,
 	submittedPlayers = [],
 	fallbackName,
+	lockedNames, // 👈 NEW (optional)
+	lockedCounts, // 👈 NEW
 }: {
 	roomCode?: string;
 	players: Player[];
 	submittedPlayers?: string[];
 	showHostBadge?: boolean;
 	fallbackName?: string;
+	lockedNames?: string[]; // names locked for the *current* song
+	lockedCounts?: Record<string, number>; // total songs locked per player
 }) {
 	return (
 		<aside className="order-1 lg:order-none w-full lg:col-span-3 p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-border flex flex-col items-center">
@@ -32,6 +36,8 @@ export default function LeftSidebar({
 					submittedPlayers={submittedPlayers}
 					className="w-full"
 					fallbackName={fallbackName}
+					lockedNames={lockedNames}
+					lockedCounts={lockedCounts}
 				/>
 			</div>
 		</aside>
