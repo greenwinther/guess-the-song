@@ -39,6 +39,10 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	const [selfLocked, setSelfLocked] = useState<Set<number>>(new Set());
 	const [finalizedForAll, setFinalizedForAll] = useState<Set<number>>(new Set());
 
+	const [lockedBySong, setLockedBySong] = useState<Map<number, Set<string>>>(
+		new Map<number, Set<string>>()
+	);
+
 	const songIndexById = useMemo(() => {
 		const map = new Map<number, number>();
 		room?.songs.forEach((s, i) => map.set(s.id, i));
@@ -50,6 +54,16 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		return songIndexById.get(currentSongId) ?? 0;
 	}, [room, currentSongId, songIndexById]);
 
+	const lockedCounts = useMemo(() => {
+		const acc: Record<string, number> = {};
+		lockedBySong.forEach((names) => {
+			names.forEach((n) => {
+				acc[n] = (acc[n] || 0) + 1;
+			});
+		});
+		return acc;
+	}, [lockedBySong]);
+
 	// Socket listeners for song lifecycle
 	useEffect(() => {
 		if (!socket) return;
@@ -60,46 +74,89 @@ export default function JoinGameClient({ code, playerName }: Props) {
 
 		const onPlayerGuessLocked = ({
 			songId,
-			playerName: lockedBy, // 👈 rename
+			playerName: lockedBy,
 		}: {
 			songId: number;
 			playerName: string;
 		}) => {
-			if (lockedBy !== playerName) return; // 👈 compare to the prop
-			const idx = songIndexById.get(songId);
-			if (idx != null) setSelfLocked((prev) => new Set(prev).add(idx));
+			// self UI lock (you already have)
+			if (lockedBy === playerName) {
+				const idx = songIndexById.get(songId);
+				if (idx != null) setSelfLocked((prev) => new Set(prev).add(idx));
+			}
+			// 👇 NEW: update per-song snapshot (for counts)
+			setLockedBySong((prev) => {
+				const m = new Map(prev);
+				const s = new Set<string>(m.get(songId) ?? new Set<string>());
+				s.add(lockedBy);
+				m.set(songId, s);
+				return m;
+			});
 		};
 
 		const onPlayerGuessUndo = ({
 			songId,
-			playerName: unlockedBy, // 👈 rename
+			playerName: unlockedBy,
 		}: {
 			songId: number;
 			playerName: string;
 		}) => {
-			if (unlockedBy !== playerName) return; // 👈 compare to the prop
-			const idx = songIndexById.get(songId);
-			if (idx != null)
-				setSelfLocked((prev) => {
-					const n = new Set(prev);
-					n.delete(idx);
-					return n;
-				});
+			if (unlockedBy === playerName) {
+				const idx = songIndexById.get(songId);
+				if (idx != null)
+					setSelfLocked((prev) => {
+						const n = new Set(prev);
+						n.delete(idx);
+						return n;
+					});
+			}
+			// 👇 NEW
+			setLockedBySong((prev) => {
+				const m = new Map(prev);
+				const s = new Set<string>(m.get(songId) ?? new Set<string>());
+				s.delete(unlockedBy);
+				m.set(songId, s);
+				return m;
+			});
 		};
 
-		const onSongFinalized = ({ songId, mode }: { songId: number; mode?: string }) => {
+		// songFinalized with snapshot from the server (HC auto-locks included)
+		const onSongFinalized = ({
+			songId,
+			lockedNames,
+			mode,
+		}: {
+			songId: number;
+			lockedNames?: string[];
+			mode?: string;
+		}) => {
 			const idx = songIndexById.get(songId);
 			if (idx == null) return;
 
-			// If server finalized HC only and I'm HC, lock me; otherwise ignore.
-			const me = room?.players.find((p) => p.name === playerName);
-			const imHC = !!me?.hardcore;
+			// 1) Always update the per-song snapshot so counts/PlayerList stay correct
+			if (lockedNames?.length) {
+				setLockedBySong((prev) => {
+					const m = new Map(prev);
+					const s = new Set<string>(m.get(songId) ?? new Set<string>());
+					lockedNames.forEach((n) => s.add(n));
+					m.set(songId, s);
+					return m;
+				});
+			}
+
+			// 2) Mark *me* as locked, either because my name is in the snapshot
+			//    or (fallback for older payloads) mode==='hardcoreOnly' && I'm HC.
+			const imInSnapshot = !!lockedNames?.includes(playerName);
+			if (imInSnapshot) {
+				setSelfLocked((prev) => new Set(prev).add(idx));
+				return;
+			}
 
 			if (mode === "hardcoreOnly") {
-				if (imHC) setSelfLocked((prev) => new Set(prev).add(idx));
-			} else {
-				// keep if you later finalize-for-all
-				setFinalizedForAll((prev) => new Set(prev).add(idx));
+				const me = room?.players.find((p) => p.name === playerName);
+				if (me?.hardcore) {
+					setSelfLocked((prev) => new Set(prev).add(idx));
+				}
 			}
 		};
 
@@ -207,10 +264,20 @@ export default function JoinGameClient({ code, playerName }: Props) {
 
 	// You can hide the legacy submit button now, since Lock is per-song
 	const canLock = Boolean(order[currentIndex]?.name) && !selfLocked.has(currentIndex);
+	const currentLockedNames = Array.from(
+		lockedBySong.get(currentSongId ?? -1) ?? new Set<string>() // 👈 typed
+	);
 
 	return (
 		<BackgroundShell bgImage={bgImage} socketError={socketError}>
-			<LeftSidebar roomCode={room.code} players={room.players} submittedPlayers={submittedPlayers} />
+			<LeftSidebar
+				roomCode={room.code}
+				players={room.players}
+				submittedPlayers={submittedPlayers}
+				fallbackName="Host"
+				lockedNames={currentLockedNames} // optional per-song lock icon
+				lockedCounts={lockedCounts}
+			/>
 
 			{isResultsMode ? (
 				<ResultsPanel order={order} correctList={correctList} />
