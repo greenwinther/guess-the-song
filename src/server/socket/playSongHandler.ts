@@ -1,6 +1,6 @@
 // src/server/socket/playSongHandler.ts
 import { Server, Socket } from "socket.io";
-import { revealedSongsByRoom } from "./sharedState";
+import { revealedSongsByRoom } from "../sharedState";
 import { prisma } from "../../lib/prisma";
 
 export const playSongHandler = (io: Server, socket: Socket) => {
