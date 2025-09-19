@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import Button from "@/components/ui/Button";
 import type { Song } from "@/types/room";
+import { useGame } from "@/contexts/tempContext";
+import { useSocket } from "@/contexts/SocketContext";
 
 export default function HostPlaybackPanel({
 	code,
@@ -45,7 +47,9 @@ export default function HostPlaybackPanel({
 	fastRecap?: boolean;
 	onToggleFastRecap?: (checked: boolean) => void;
 }) {
-	// ----- Results state (lives always; only used when scores != null) -----
+	// ---------- HOOKS (always top-level, never conditional) ----------
+	const { room } = useGame();
+
 	const grouped = useMemo(() => {
 		if (!scores) return null;
 		const ranking: [string, number][] = Object.entries(scores).sort(([, a], [, b]) => b - a);
@@ -61,26 +65,51 @@ export default function HostPlaybackPanel({
 	const [revealedIdxs, setRevealedIdxs] = useState<number[]>([]);
 	const [recapTriggered, setRecapTriggered] = useState(false);
 
+	// recap / playback refs
+	const playerRef = useRef<ReactPlayer | null>(null);
+	const advancedRef = useRef(false);
+
+	// reset reveals when scores appear/change
+	useEffect(() => {
+		setRevealedIdxs([]);
+	}, [scores]);
+
+	// When recap starts, ensure playback is on and reset guard
+	useEffect(() => {
+		if (recapRunning) {
+			setIsPlaying(true);
+			advancedRef.current = false;
+		} else {
+			advancedRef.current = false;
+		}
+	}, [recapRunning, setIsPlaying]);
+
+	// When song changes, reset the guard so the new one can advance.
+	useEffect(() => {
+		advancedRef.current = false;
+	}, [currentSong?.url]);
+
+	// ---------- SAFE EARLY RETURN (after hooks) ----------
+	if (!room) {
+		return <div className="p-4 text-text/70">Loading room…</div>;
+	}
+
+	// ---------- Handlers / helpers ----------
 	const handleStartRecap = () => {
 		setRecapTriggered(true);
 		onStartRecap?.();
 	};
 
-	useEffect(() => {
-		// whenever scores object changes (including going from null -> object), reset reveals
-		setRevealedIdxs([]);
-	}, [scores]);
-
 	const reveal = (i: number) => setRevealedIdxs((prev) => (prev.includes(i) ? prev : [...prev, i]));
 
-	// Reveal order: 3rd place (idx=2), then 2nd (1), then 1st (0)
-	const revealNextIndex = useMemo(() => {
-		if (!grouped) return null;
-		for (let i = grouped.length - 1; i >= 0; i--) {
-			if (!revealedIdxs.includes(i)) return i;
-		}
-		return null;
-	}, [grouped, revealedIdxs]);
+	const revealNextIndex = grouped
+		? (() => {
+				for (let i = grouped.length - 1; i >= 0; i--) {
+					if (!revealedIdxs.includes(i)) return i;
+				}
+				return null;
+		  })()
+		: null;
 
 	const revealNext = () => {
 		if (revealNextIndex !== null) reveal(revealNextIndex);
@@ -96,42 +125,22 @@ export default function HostPlaybackPanel({
 		return "Reveal next";
 	};
 
-	// ===== Recap wiring (NEW) =====
-	const playerRef = useRef<ReactPlayer | null>(null);
-	const advancedRef = useRef(false); // guard so we don’t call onNext twice
-
-	// When recap starts, ensure playback is on.
-	useEffect(() => {
-		if (recapRunning) {
-			setIsPlaying(true);
-			advancedRef.current = false;
-		} else {
-			// leaving recap resets guard
-			advancedRef.current = false;
-		}
-	}, [recapRunning, setIsPlaying]);
-
-	// When song changes, reset the guard so the new one can advance.
-	useEffect(() => {
-		advancedRef.current = false;
-	}, [currentSong?.url]);
-
 	const handleProgress = (state: { playedSeconds: number }) => {
 		if (!recapRunning || advancedRef.current) return;
 		if (state.playedSeconds >= recapSeconds - 0.15) {
 			advancedRef.current = true;
-			onNext(); // parent moves to next track
+			onNext();
 		}
 	};
 
 	const handleEnded = () => {
 		if (recapRunning && !advancedRef.current) {
 			advancedRef.current = true;
-			onNext(); // ended before 20s → advance immediately
+			onNext();
 		}
 	};
 
-	// ----- Results view -----
+	// ---------- Results view ----------
 	if (scores && grouped) {
 		return (
 			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
@@ -174,7 +183,7 @@ export default function HostPlaybackPanel({
 		);
 	}
 
-	// ----- In-progress playback -----
+	// ---------- In-progress playback ----------
 	return (
 		<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
 			<h2 className="text-lg sm:text-2xl font-semibold text-text">
@@ -208,7 +217,7 @@ export default function HostPlaybackPanel({
 			</div>
 
 			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-2 sm:mt-3 w-full max-w-md mx-auto">
-				{/* Transport controls disabled during recap to avoid conflicts */}
+				{/* Transport controls (note: you now also have HostControls with Next) */}
 				<Button
 					variant="secondary"
 					size="md"
@@ -248,7 +257,6 @@ export default function HostPlaybackPanel({
 				</p>
 			) : (
 				<div className="w-full max-w-md mx-auto mt-3 sm:mt-4">
-					{/* Fast recap toggle (kept separate so buttons can be equal width) */}
 					{!recapRunning && (
 						<label
 							htmlFor="fast-recap"
@@ -265,7 +273,6 @@ export default function HostPlaybackPanel({
 						</label>
 					)}
 
-					{/* Recap / Show results row — same sizing as Play row */}
 					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
 						{!recapRunning && onStartRecap ? (
 							<Button
