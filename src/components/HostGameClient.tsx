@@ -136,6 +136,8 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	}, [currentIndex, currentSong, songsLen, playAtIndex]);
 
 	const bgImage = bgThumbnail ?? viewRoom?.backgroundUrl ?? null;
+	const nonHostPlayers = (viewRoom?.players ?? []).filter((p) => !p.isHost);
+	const notSubmitted = nonHostPlayers.map((p) => p.name).filter((name) => !submittedPlayers.includes(name));
 
 	return (
 		<BackgroundShell bgImage={bgImage} socketError={socketError}>
@@ -157,13 +159,15 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 					else setIsPlaying((p) => !p);
 				}}
 				onNext={() => {
+					// 1) ask server to finalize HC + advance round
+					socket.emit("nextSong", { code }, () => {});
+
+					// 2) keep your current local playback behavior
 					const lastIdx = (room?.songs.length ?? 0) - 1;
 					if (currentIndex >= 0 && currentIndex < lastIdx) {
 						playAtIndex(currentIndex + 1);
 					} else {
-						// We’re at the end
 						if (recapRunning) setRecapRunning(false);
-						// optionally: keep the player paused at the last video
 						setIsPlaying(false);
 					}
 				}}
@@ -174,6 +178,7 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				totalSongs={totalSongs}
 				allPlayed={allPlayed}
 				onShowResults={() => {
+					if (notSubmitted.length > 0) return; // guard (or prompt)
 					socket.emit("showResults", { code }, (ok: boolean) => {
 						if (!ok) alert("Failed to show results");
 					});
