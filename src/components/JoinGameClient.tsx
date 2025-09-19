@@ -1,7 +1,7 @@
+// src/components/JoinGameClient.tsx
 "use client";
 
-// src/components/JoinGameClient.tsx
-
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useGame } from "@/contexts/tempContext";
 import { useSocket } from "@/contexts/SocketContext";
 
@@ -24,16 +24,116 @@ interface Props {
 
 export default function JoinGameClient({ code, playerName }: Props) {
 	const socket = useSocket();
-
+	const lastSentGuessRef = useRef<Map<number, string>>(new Map());
 	const { room, currentClip, bgThumbnail, scores, revealedSongs, submittedPlayers } = useGame();
+	const [undoUntil, setUndoUntil] = useState<number | null>(null);
 
-	// Socket + sync hooks
 	useJoinRoomSocket(code, playerName);
 	useRevealedSongsSync();
 	const socketError = useReconnectNotice(code, playerName);
 
-	// Local submission/order state (persisted)
 	const { order, submitted, setSubmitted, handleReorder } = useSubmissionOrder(code, room ?? null);
+
+	// NEW: active song id/index + locked indices
+	const [currentSongId, setCurrentSongId] = useState<number | null>(null);
+	const [selfLocked, setSelfLocked] = useState<Set<number>>(new Set());
+	const [finalizedForAll, setFinalizedForAll] = useState<Set<number>>(new Set());
+
+	const songIndexById = useMemo(() => {
+		const map = new Map<number, number>();
+		room?.songs.forEach((s, i) => map.set(s.id, i));
+		return map;
+	}, [room?.songs]);
+
+	const currentIndex = useMemo(() => {
+		if (!room || currentSongId == null) return 0;
+		return songIndexById.get(currentSongId) ?? 0;
+	}, [room, currentSongId, songIndexById]);
+
+	// Socket listeners for song lifecycle
+	useEffect(() => {
+		if (!socket) return;
+
+		const onSongChanged = ({ songId }: { songId: number | null }) => {
+			setCurrentSongId(songId);
+		};
+
+		const onPlayerGuessLocked = ({
+			songId,
+			playerName: lockedBy, // 👈 rename
+		}: {
+			songId: number;
+			playerName: string;
+		}) => {
+			if (lockedBy !== playerName) return; // 👈 compare to the prop
+			const idx = songIndexById.get(songId);
+			if (idx != null) setSelfLocked((prev) => new Set(prev).add(idx));
+		};
+
+		const onPlayerGuessUndo = ({
+			songId,
+			playerName: unlockedBy, // 👈 rename
+		}: {
+			songId: number;
+			playerName: string;
+		}) => {
+			if (unlockedBy !== playerName) return; // 👈 compare to the prop
+			const idx = songIndexById.get(songId);
+			if (idx != null)
+				setSelfLocked((prev) => {
+					const n = new Set(prev);
+					n.delete(idx);
+					return n;
+				});
+		};
+
+		const onSongFinalized = ({ songId, mode }: { songId: number; mode?: string }) => {
+			const idx = songIndexById.get(songId);
+			if (idx == null) return;
+
+			// If server finalized HC only and I'm HC, lock me; otherwise ignore.
+			const me = room?.players.find((p) => p.name === playerName);
+			const imHC = !!me?.hardcore;
+
+			if (mode === "hardcoreOnly") {
+				if (imHC) setSelfLocked((prev) => new Set(prev).add(idx));
+			} else {
+				// keep if you later finalize-for-all
+				setFinalizedForAll((prev) => new Set(prev).add(idx));
+			}
+		};
+
+		socket.on("songChanged", onSongChanged);
+		socket.on("playerGuessLocked", onPlayerGuessLocked);
+		socket.on("playerGuessUndo", onPlayerGuessUndo);
+		socket.on("songFinalized", onSongFinalized);
+
+		return () => {
+			socket.off("songChanged", onSongChanged);
+			socket.off("playerGuessLocked", onPlayerGuessLocked);
+			socket.off("playerGuessUndo", onPlayerGuessUndo);
+			socket.off("songFinalized", onSongFinalized);
+		};
+	}, [socket, songIndexById, room?.players, playerName]);
+
+	useEffect(() => {
+		if (!socket) return;
+		if (currentSongId == null) return;
+		if (!room) return;
+
+		const idx = songIndexById.get(currentSongId);
+		if (idx == null) return;
+
+		const guess = order[idx]?.name ?? "";
+		const prev = lastSentGuessRef.current.get(currentSongId);
+
+		// Only send if changed or never sent
+		if (prev !== guess) {
+			socket.emit("selectOrder", { code, songId: currentSongId, playerName, order: [guess] }, () => {
+				lastSentGuessRef.current.set(currentSongId!, guess);
+			});
+		}
+	}, [socket, code, playerName, room, currentSongId, songIndexById, order]);
 
 	// Guard: no room yet
 	if (!room) {
@@ -44,7 +144,42 @@ export default function JoinGameClient({ code, playerName }: Props) {
 		);
 	}
 
-	// Submit guesses for all songs (keeps parity with your previous behavior)
+	// Reorder handler -> update local + notify server for the **current** song
+	const onReorder = (o: OrderItem[]) => {
+		handleReorder(o);
+	};
+
+	// Lock current song answer
+	const onLockCurrent = () => {
+		if (currentSongId == null) return;
+		socket.emit("lockAnswer", { code, songId: currentSongId, playerName }, (ok: boolean) => {
+			if (ok) {
+				setSelfLocked((prev) => new Set(prev).add(currentIndex)); // 👈 use selfLocked
+				setUndoUntil(Date.now() + 2000);
+				setTimeout(() => setUndoUntil(null), 2000);
+			}
+		});
+	};
+
+	const undoVisible = undoUntil != null && Date.now() < undoUntil;
+
+	// Small undo (only works if server supports it)
+	const onUndo = () => {
+		if (currentSongId == null) return;
+		socket.emit("undoLock", { code, songId: currentSongId, playerName }, (ok: boolean) => {
+			if (ok) {
+				setSelfLocked((prev) => {
+					// 👈 use selfLocked
+					const n = new Set(prev);
+					n.delete(currentIndex);
+					return n;
+				});
+				setUndoUntil(null);
+			}
+		});
+	};
+
+	// Old "submit all" (keep if you still want the legacy button)
 	const handleSubmitAll = () => {
 		if (!room) return;
 
@@ -54,19 +189,14 @@ export default function JoinGameClient({ code, playerName }: Props) {
 			guessesPayload[s.id.toString()] = [guessed];
 		});
 
-		// Persist submitted flag immediately to survive refreshes
-		try {
-			localStorage.setItem(`submitted-${code}`, "true");
-		} catch {}
+		// Freeze UI immediately so players can’t reorder during submit
+		const prevSubmitted = submitted;
+		setSubmitted(true);
 
 		socket.emit("submitAllOrders", { code, playerName, guesses: guessesPayload }, (ok: boolean) => {
 			if (!ok) {
+				setSubmitted(prevSubmitted);
 				alert("Failed to submit guesses");
-				try {
-					localStorage.setItem(`submitted-${code}`, "false");
-				} catch {}
-			} else {
-				setSubmitted(true);
 			}
 		});
 	};
@@ -74,6 +204,9 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	const bgImage = bgThumbnail ?? room.backgroundUrl ?? null;
 	const isResultsMode = Boolean(scores && currentClip);
 	const correctList = room.songs.map((s) => s.submitter);
+
+	// You can hide the legacy submit button now, since Lock is per-song
+	const canLock = Boolean(order[currentIndex]?.name) && !selfLocked.has(currentIndex);
 
 	return (
 		<BackgroundShell bgImage={bgImage} socketError={socketError}>
@@ -85,8 +218,15 @@ export default function JoinGameClient({ code, playerName }: Props) {
 				<GuessPanel
 					order={order}
 					submitted={submitted}
-					onReorder={(o: OrderItem[]) => handleReorder(o)}
-					onSubmit={handleSubmitAll}
+					onReorder={onReorder}
+					onLockCurrent={onLockCurrent}
+					currentIndex={currentIndex}
+					lockedIndices={Array.from(selfLocked)}
+					canLock={canLock}
+					undoVisible={undoVisible}
+					onUndo={onUndo}
+					onSubmitAll={handleSubmitAll} // 👈 new
+					showSubmitAll={!submitted} // 👈 only for non-HC, and hide after submit
 					scoreForMe={scores?.[playerName] ?? null}
 				/>
 			)}
