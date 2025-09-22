@@ -64,6 +64,8 @@ export default function HostPlaybackPanel({
 
 	const [revealedIdxs, setRevealedIdxs] = useState<number[]>([]);
 	const [recapTriggered, setRecapTriggered] = useState(false);
+	const [durationSec, setDurationSec] = useState<number | null>(null);
+	const [startAtSec, setStartAtSec] = useState(0);
 
 	// recap / playback refs
 	const playerRef = useRef<ReactPlayer | null>(null);
@@ -87,7 +89,18 @@ export default function HostPlaybackPanel({
 	// When song changes, reset the guard so the new one can advance.
 	useEffect(() => {
 		advancedRef.current = false;
-	}, [currentSong?.url]);
+		setDurationSec(null);
+		setStartAtSec(0);
+	}, [currentSong?.id]);
+
+	// also react if recap turns on or the clip length changes
+	useEffect(() => {
+		if (!recapRunning || durationSec == null) return;
+		const s = computeStartAt(durationSec);
+		setStartAtSec(s);
+		playerRef.current?.seekTo(s, "seconds");
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [recapRunning, recapSeconds, durationSec, currentSong?.id]);
 
 	// ---------- SAFE EARLY RETURN (after hooks) ----------
 	if (!room) {
@@ -125,9 +138,27 @@ export default function HostPlaybackPanel({
 		return "Reveal next";
 	};
 
+	const computeStartAt = (d: number) => {
+		const raw = d * 0.2;
+		const maxStart = Math.max(0, d - recapSeconds);
+		return Math.min(raw, maxStart);
+	};
+
+	// when we know the duration
+	const handleDuration = (d: number) => {
+		setDurationSec(d);
+		if (recapRunning) {
+			const s = computeStartAt(d);
+			setStartAtSec(s);
+			playerRef.current?.seekTo(s, "seconds");
+		}
+	};
+
 	const handleProgress = (state: { playedSeconds: number }) => {
 		if (!recapRunning || advancedRef.current) return;
-		if (state.playedSeconds >= recapSeconds - 0.15) {
+
+		// stop after recapSeconds from the seek point
+		if (state.playedSeconds >= startAtSec + recapSeconds - 0.15) {
 			advancedRef.current = true;
 			onNext();
 		}
@@ -202,6 +233,7 @@ export default function HostPlaybackPanel({
 							height="100%"
 							onProgress={handleProgress}
 							onEnded={handleEnded}
+							onDuration={handleDuration}
 						/>
 					) : (
 						<div className="w-full h-full grid place-items-center bg-black/80 text-text-muted">
