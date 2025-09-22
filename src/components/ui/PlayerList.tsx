@@ -10,6 +10,8 @@ interface PlayerListProps {
 	fallbackName?: string;
 	lockedNames?: string[]; // who is locked for the *current* song (optional)
 	lockedCounts?: Record<string, number>; // how many songs each player has locked (new)
+	solvedByTheme?: string[]; // who has solved the theme (new)
+	lockedForThisRound?: string[]; // who has locked in a guess for this round (new)
 }
 
 export default function PlayerList({
@@ -19,6 +21,8 @@ export default function PlayerList({
 	fallbackName,
 	lockedNames = [],
 	lockedCounts = {}, // default to empty
+	solvedByTheme = [],
+	lockedForThisRound = [],
 }: PlayerListProps) {
 	const lockedSet = new Set(lockedNames);
 	const hasFallback =
@@ -68,6 +72,11 @@ export default function PlayerList({
 						<span className="ml-auto text-xs opacity-70 tabular-nums" title="Songs locked">
 							{lockCount}
 						</span>
+
+						{solvedByTheme?.includes(p.name) && <span title="Solved theme">✅</span>}
+						{!solvedByTheme?.includes(p.name) && lockedNames?.includes(p.name) && (
+							<span title="Guessed this round">🔒</span>
+						)}
 					</li>
 				);
 			})}
