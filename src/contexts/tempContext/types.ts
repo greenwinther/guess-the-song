@@ -52,4 +52,16 @@ export type GameContextType = {
 
 	playerHardcore: boolean;
 	setPlayerHardcore: React.Dispatch<React.SetStateAction<boolean>>;
+
+	solvedByTheme: string[];
+	setSolvedByTheme: React.Dispatch<React.SetStateAction<string[]>>;
+
+	lockedForThisRound: string[];
+	setLockedForThisRound: React.Dispatch<React.SetStateAction<string[]>>;
+
+	themeHint: string | null; // obfuscated, e.g., "D•••••"
+	setThemeHint: React.Dispatch<React.SetStateAction<string | null>>;
+
+	themeRevealed: boolean;
+	setThemeRevealed: React.Dispatch<React.SetStateAction<boolean>>;
 };

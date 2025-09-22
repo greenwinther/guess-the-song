@@ -18,6 +18,10 @@ export const useGameState = (): GameContextType => {
 	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
 	const [hardcore, setHardcore] = useState(false);
 	const [playerHardcore, setPlayerHardcore] = useState(false);
+	const [solvedByTheme, setSolvedByTheme] = useState<string[]>([]);
+	const [lockedForThisRound, setLockedForThisRound] = useState<string[]>([]);
+	const [themeHint, setThemeHint] = useState<string | null>(null);
+	const [themeRevealed, setThemeRevealed] = useState(false);
 
 	const addPlayer = useCallback((player: Player) => {
 		setRoom((prev) => {
@@ -73,5 +77,13 @@ export const useGameState = (): GameContextType => {
 		setHardcore,
 		playerHardcore,
 		setPlayerHardcore,
+		solvedByTheme,
+		setSolvedByTheme,
+		lockedForThisRound,
+		setLockedForThisRound,
+		themeHint,
+		setThemeHint,
+		themeRevealed,
+		setThemeRevealed,
 	};
 };
