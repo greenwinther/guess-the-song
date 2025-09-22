@@ -12,6 +12,8 @@ import { joinRoomHandler } from "./joinRoomHandler";
 import { lockAnswerHandler } from "./lockAnswerHandler";
 import { selectOrderHandler } from "./selectOrderHandler";
 import { nextSongHandler } from "./nextSongHandler";
+import { themeEditHandler } from "./themeEditHandler";
+import { themeGuessHandler } from "./themeGuessHandler";
 
 export const registerSocketHandlers = (io: Server, socket: Socket) => {
 	createRoomHandler(io, socket);
@@ -26,4 +28,6 @@ export const registerSocketHandlers = (io: Server, socket: Socket) => {
 	lockAnswerHandler(io, socket);
 	selectOrderHandler(io, socket);
 	nextSongHandler(io, socket);
+	themeEditHandler(io, socket);
+	themeGuessHandler(io, socket);
 };
