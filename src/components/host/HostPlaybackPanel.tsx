@@ -6,6 +6,8 @@ import ReactPlayer from "react-player";
 import Button from "@/components/ui/Button";
 import type { Song } from "@/types/room";
 import { useGame } from "@/contexts/tempContext";
+import { useThemeSockets } from "@/hooks/useThemeSockets";
+import { ThemeHintBanner } from "../ui/ThemeHintBanner";
 import { useSocket } from "@/contexts/SocketContext";
 
 export default function HostPlaybackPanel({
@@ -49,6 +51,8 @@ export default function HostPlaybackPanel({
 }) {
 	// ---------- HOOKS (always top-level, never conditional) ----------
 	const { room } = useGame();
+	const socket = useSocket();
+	useThemeSockets();
 
 	const grouped = useMemo(() => {
 		if (!scores) return null;
@@ -171,6 +175,10 @@ export default function HostPlaybackPanel({
 		}
 	};
 
+	// --- Theme: show Reveal button on last song
+	const lastSongId = room?.songs?.length ? room.songs[room.songs.length - 1].id : null;
+	const isLastSong = !!currentSong && lastSongId === currentSong.id;
+
 	// ---------- Results view ----------
 	if (scores && grouped) {
 		return (
@@ -220,7 +228,6 @@ export default function HostPlaybackPanel({
 			<h2 className="text-lg sm:text-2xl font-semibold text-text">
 				{currentSong ? currentSong.title ?? "Unknown title" : "Press Play to start with track 1"}
 			</h2>
-
 			<div className="w-full mt-4 mb-4 sm:mt-6 sm:mb-6">
 				<div className="rounded-lg overflow-hidden border border-border aspect-video">
 					{currentSong ? (
@@ -247,7 +254,8 @@ export default function HostPlaybackPanel({
 					)}
 				</div>
 			</div>
-
+			{/* Theme last-round hint (same as players) */}
+			<ThemeHintBanner />
 			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-2 sm:mt-3 w-full max-w-md mx-auto">
 				{/* Transport controls (note: you now also have HostControls with Next) */}
 				<Button
@@ -281,7 +289,19 @@ export default function HostPlaybackPanel({
 					Next ▶
 				</Button>
 			</div>
-
+			{/* Reveal Theme (only on last song) */}
+			{isLastSong && (
+				<div className="mt-3 w-full max-w-md mx-auto">
+					<Button
+						variant="secondary"
+						size="md"
+						onClick={() => room && socket.emit("THEME_REVEAL", { code: room.code })}
+						className="w-full"
+					>
+						Reveal Theme
+					</Button>
+				</div>
+			)}
 			{/* Footer actions */}
 			{!allPlayed ? (
 				<p className="mt-3 sm:mt-4 text-xs sm:text-sm text-text-muted">
