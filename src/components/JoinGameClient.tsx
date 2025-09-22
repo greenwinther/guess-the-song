@@ -16,6 +16,9 @@ import RightSidebarPlaylist from "./join/RightSidebarPlaylist";
 import { GuessPanel } from "./join/GuessPanel";
 import { ResultsPanel } from "./join/ResultsPanel";
 import type { OrderItem } from "./join/SubmissionOrderList";
+import { useThemeSockets } from "@/hooks/useThemeSockets";
+import { ThemeHintBanner } from "./ui/ThemeHintBanner";
+import { ThemeGuessBar } from "./join/ThemeGuessBar";
 
 interface Props {
 	code: string;
@@ -30,6 +33,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 
 	useJoinRoomSocket(code, playerName);
 	useRevealedSongsSync();
+	useThemeSockets();
 	const socketError = useReconnectNotice(code, playerName);
 
 	const { order, submitted, setSubmitted, handleReorder } = useSubmissionOrder(code, room ?? null);
@@ -37,7 +41,6 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	// NEW: active song id/index + locked indices
 	const [currentSongId, setCurrentSongId] = useState<number | null>(null);
 	const [selfLocked, setSelfLocked] = useState<Set<number>>(new Set());
-	const [finalizedForAll, setFinalizedForAll] = useState<Set<number>>(new Set());
 
 	const [lockedBySong, setLockedBySong] = useState<Map<number, Set<string>>>(
 		new Map<number, Set<string>>()
@@ -297,6 +300,10 @@ export default function JoinGameClient({ code, playerName }: Props) {
 					scoreForMe={scores?.[playerName] ?? null}
 				/>
 			)}
+
+			{/* THEME mini-game UI */}
+			<ThemeHintBanner />
+			<ThemeGuessBar code={code} playerName={playerName} />
 
 			<RightSidebarPlaylist songs={room.songs} revealedIds={revealedSongs} />
 		</BackgroundShell>
