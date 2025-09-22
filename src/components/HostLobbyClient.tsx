@@ -19,10 +19,13 @@ import Button from "./ui/Button";
 import HostLobbyPlaylist from "./host/HostLobbyPlaylist";
 
 import type { Room } from "@/types/room";
+import { useThemeSockets } from "@/hooks/useThemeSockets";
+import { HostThemeControls } from "./host/HostThemeControls";
 
 export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) {
 	const router = useRouter();
 	const socket = useSocket();
+	useThemeSockets();
 
 	const { room: ctxRoom, setGameStarted, submittedPlayers } = useGame();
 
@@ -59,7 +62,14 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 			/>
 
 			{/* Center: form + preview + start button */}
+			{/* Center: theme controls + form + preview + start button */}
 			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col">
+				<section className="mb-8">
+					<h2 className="text-xl sm:text-3xl font-semibold text-text mb-3">Theme</h2>
+					<div className="w-full">
+						<HostThemeControls />
+					</div>
+				</section>
 				<div>
 					<h2 className="text-xl sm:text-3xl font-semibold text-text mb-4 sm:mb-6">Song Setup</h2>
 
