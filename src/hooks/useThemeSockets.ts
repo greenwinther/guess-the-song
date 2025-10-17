@@ -1,3 +1,4 @@
+// src/hooks/useThemeSockets.ts
 "use client";
 import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
@@ -12,7 +13,6 @@ export function useThemeSockets() {
 
 		const onUpdated = ({ theme }: { theme?: string }) => {
 			setTheme(theme ?? "");
-			// reset mini-game client view when theme changes
 			setSolvedByTheme([]);
 			setLockedForThisRound([]);
 			setThemeHint(null);
@@ -23,9 +23,7 @@ export function useThemeSockets() {
 			setSolvedByTheme((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
 		};
 
-		const onRoundReset = () => {
-			setLockedForThisRound([]);
-		};
+		const onRoundReset = () => setLockedForThisRound([]);
 
 		const onGuessResult = ({
 			playerName,
@@ -36,7 +34,6 @@ export function useThemeSockets() {
 			correct: boolean;
 			lockedForRound?: boolean;
 		}) => {
-			// Only wrong-but-consumed attempt should lock for this round
 			if (!correct && lockedForRound) {
 				setLockedForThisRound((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
 			}
@@ -46,13 +43,8 @@ export function useThemeSockets() {
 			setLockedForThisRound((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
 		};
 
-		const onHint = ({ obfuscated }: { obfuscated: string }) => {
-			setThemeHint(obfuscated);
-		};
-
-		const onRevealed = () => {
-			setThemeRevealed(true);
-		};
+		const onHint = ({ obfuscated }: { obfuscated: string }) => setThemeHint(obfuscated);
+		const onRevealed = () => setThemeRevealed(true);
 
 		socket.on("THEME_UPDATED", onUpdated);
 		socket.on("THEME_SOLVED", onSolved);
@@ -75,9 +67,8 @@ export function useThemeSockets() {
 		socket,
 		setTheme,
 		setSolvedByTheme,
-		setLockedForThisRound,
+		setLockedForThisRound, // ← keep once
 		setThemeHint,
 		setThemeRevealed,
-		setLockedForThisRound,
 	]);
 }
