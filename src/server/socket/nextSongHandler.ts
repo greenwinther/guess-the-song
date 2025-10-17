@@ -1,9 +1,9 @@
 // src/server/socket/nextSongHandler.ts
 import { Server, Socket } from "socket.io";
-import { finalizeSongForPlayers, getLockedPlayers } from "../../lib/game"; // make sure exported
+import { finalizeSongForPlayers, getLockedPlayers } from "../../lib/game";
 import { getRoom } from "../../lib/rooms";
 import { activeSongByRoom } from "../sharedState";
-import { clearRoundLocks, obfuscateTheme, setHint } from "@/lib/theme"; // <-- NEW: theme helpers
+import { clearRoundLocks, obfuscateTheme, setHint } from "../../lib/theme";
 
 export const nextSongHandler = (io: Server, socket: Socket) => {
 	socket.on("nextSong", async (data: { code: string }, cb?: (ok: boolean) => void) => {

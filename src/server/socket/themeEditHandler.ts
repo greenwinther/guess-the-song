@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
-import { prisma } from "@/lib/prisma";
-import { resetForNewTheme } from "@/lib/theme";
+import { prisma } from "../../lib/prisma";
+import { resetForNewTheme } from "../../lib/theme";
 
 export const themeEditHandler = (io: Server, socket: Socket) => {
 	// Expect payload with room code (string), to match your existing API style

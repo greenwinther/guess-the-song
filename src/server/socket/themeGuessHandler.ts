@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../lib/prisma";
 import {
 	initThemeState,
 	isRevealed,
@@ -8,7 +8,7 @@ import {
 	alreadySolved,
 	markSolved,
 	normalize,
-} from "@/lib/theme";
+} from "../../lib/theme";
 import { addPointsByCodeName } from "@/lib/score";
 
 export const themeGuessHandler = (io: Server, socket: Socket) => {
