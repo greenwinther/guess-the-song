@@ -1,7 +1,10 @@
+// src/components/join/ThemeGuessBar.tsx
 "use client";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, KeyboardEvent } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 export function ThemeGuessBar({ code, playerName }: { code: string; playerName: string }) {
 	const socket = useSocket();
@@ -14,7 +17,28 @@ export function ThemeGuessBar({ code, playerName }: { code: string; playerName: 
 		[lockedForThisRound, playerName]
 	);
 
-	const disabled = !room?.theme || themeRevealed || iSolved || iLockedThisRound;
+	if (!room?.theme) return null;
+
+	// ✅ If I solved it: show message instead of the form
+	if (iSolved) {
+		return (
+			<div
+				className="px-3 py-2 rounded-lg bg-card border border-border text-text"
+				role="status"
+				aria-live="polite"
+			>
+				Good job, you solved the theme.
+			</div>
+		);
+	}
+
+	const disabled = !room?.theme || themeRevealed || iLockedThisRound;
+
+	const placeholder = themeRevealed
+		? "Theme revealed"
+		: iLockedThisRound
+		? "You’ve guessed this round"
+		: "Guess the theme";
 
 	const onSubmit = (e: FormEvent) => {
 		e.preventDefault();
@@ -23,31 +47,29 @@ export function ThemeGuessBar({ code, playerName }: { code: string; playerName: 
 		if (!guess) return;
 
 		socket.emit("THEME_GUESS", { code, playerName, guess });
-		setValue(""); // no more this round anyway
+		setValue(""); // locked for this round anyway
 	};
 
-	if (!room?.theme) return null;
+	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") e.preventDefault(); // form handles submit
+	};
 
 	return (
 		<form onSubmit={onSubmit} className="flex gap-2 items-center">
-			<input
-				className="input input-bordered flex-1"
+			<Input
 				value={value}
 				onChange={(e) => setValue(e.target.value)}
-				placeholder={
-					themeRevealed
-						? "Theme revealed"
-						: iSolved
-						? "You’ve solved the theme!"
-						: iLockedThisRound
-						? "You’ve guessed this round"
-						: "Guess the theme"
-				}
+				onKeyDown={onKeyDown}
+				size="md"
+				variant="default"
+				className="flex-1 bg-card text-text placeholder:text-text-muted"
+				placeholder={placeholder}
 				disabled={disabled}
+				aria-label="Theme guess"
 			/>
-			<button className="btn btn-primary" type="submit" disabled={disabled}>
+			<Button type="submit" variant="primary" size="md" disabled={disabled}>
 				Lock in theme guess
-			</button>
+			</Button>
 		</form>
 	);
 }
