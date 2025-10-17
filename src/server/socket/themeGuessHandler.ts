@@ -9,7 +9,7 @@ import {
 	markSolved,
 	normalize,
 } from "../../lib/theme";
-import { addPointsByCodeName } from "@/lib/score";
+import { addPointsByCodeName } from "../../lib/score";
 
 export const themeGuessHandler = (io: Server, socket: Socket) => {
 	// Use playerName to match your lib/game.ts conventions
