@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 import type { Song } from "@/types/room";
+import { HostThemeControls } from "./HostThemeControls";
 
 export default function HostLobbyPlaylist() {
 	const socket = useSocket();
@@ -16,7 +17,6 @@ export default function HostLobbyPlaylist() {
 	return (
 		<aside className="order-2 lg:order-none w-full lg:col-span-3 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
 			<h2 className="text-lg sm:text-xl font-semibold text-text mb-3 sm:mb-4">Playlist</h2>
-
 			<div className="bg-card/50 border border-border rounded-lg divide-y divide-border overflow-auto max-h-56 sm:max-h-72 lg:max-h-none">
 				{room.songs.map((s: Song, i: number) => {
 					const isRevealed = revealedId === s.id;

@@ -7,7 +7,6 @@ import Button from "@/components/ui/Button";
 import type { Song } from "@/types/room";
 import { useGame } from "@/contexts/tempContext";
 import { useThemeSockets } from "@/hooks/useThemeSockets";
-import { ThemeHintBanner } from "../ui/ThemeHintBanner";
 import { useSocket } from "@/contexts/SocketContext";
 
 export default function HostPlaybackPanel({
@@ -50,8 +49,8 @@ export default function HostPlaybackPanel({
 	onToggleFastRecap?: (checked: boolean) => void;
 }) {
 	// ---------- HOOKS (always top-level, never conditional) ----------
-	const { room } = useGame();
 	const socket = useSocket();
+	const { room, theme, themeRevealed } = useGame();
 	useThemeSockets();
 
 	const grouped = useMemo(() => {
@@ -175,15 +174,29 @@ export default function HostPlaybackPanel({
 		}
 	};
 
-	// --- Theme: show Reveal button on last song
-	const lastSongId = room?.songs?.length ? room.songs[room.songs.length - 1].id : null;
-	const isLastSong = !!currentSong && lastSongId === currentSong.id;
-
 	// ---------- Results view ----------
 	if (scores && grouped) {
 		return (
 			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
-				<h2 className="text-xl sm:text-2xl font-semibold text-text mb-3 sm:mb-4">Final Results</h2>
+				{/* Header row: Final Results + theme badge/button on the right */}
+				<div className="w-full max-w-md flex items-center justify-between mb-3 sm:mb-4">
+					<h2 className="text-xl sm:text-2xl font-semibold text-text">Final Results</h2>
+					{/* If theme already revealed -> show name as a pill; else -> button to reveal */}
+					{themeRevealed ? (
+						<Button variant="secondary" size="sm" disabled className="whitespace-nowrap">
+							{theme || "Theme"}
+						</Button>
+					) : (
+						<Button
+							variant="secondary"
+							size="sm"
+							onClick={() => socket.emit("THEME_REVEAL", { code: room.code })}
+							className="whitespace-nowrap"
+						>
+							Reveal Theme
+						</Button>
+					)}
+				</div>
 
 				<div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-xl w-full max-w-md">
 					{grouped.map((group, idx) => {
@@ -228,6 +241,7 @@ export default function HostPlaybackPanel({
 			<h2 className="text-lg sm:text-2xl font-semibold text-text">
 				{currentSong ? currentSong.title ?? "Unknown title" : "Press Play to start with track 1"}
 			</h2>
+
 			<div className="w-full mt-4 mb-4 sm:mt-6 sm:mb-6">
 				<div className="rounded-lg overflow-hidden border border-border aspect-video">
 					{currentSong ? (
@@ -254,10 +268,9 @@ export default function HostPlaybackPanel({
 					)}
 				</div>
 			</div>
-			{/* Theme last-round hint (same as players) */}
-			<ThemeHintBanner />
+
+			{/* Transport controls */}
 			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-2 sm:mt-3 w-full max-w-md mx-auto">
-				{/* Transport controls (note: you now also have HostControls with Next) */}
 				<Button
 					variant="secondary"
 					size="md"
@@ -289,19 +302,7 @@ export default function HostPlaybackPanel({
 					Next ▶
 				</Button>
 			</div>
-			{/* Reveal Theme (only on last song) */}
-			{isLastSong && (
-				<div className="mt-3 w-full max-w-md mx-auto">
-					<Button
-						variant="secondary"
-						size="md"
-						onClick={() => room && socket.emit("THEME_REVEAL", { code: room.code })}
-						className="w-full"
-					>
-						Reveal Theme
-					</Button>
-				</div>
-			)}
+
 			{/* Footer actions */}
 			{!allPlayed ? (
 				<p className="mt-3 sm:mt-4 text-xs sm:text-sm text-text-muted">
@@ -346,10 +347,13 @@ export default function HostPlaybackPanel({
 							</Button>
 						)}
 
+						{/* IMPORTANT: Show Results now also reveals theme immediately */}
 						<Button
 							variant={recapTriggered ? "primary" : "secondary"}
 							size="md"
-							onClick={onShowResults}
+							onClick={() => {
+								onShowResults();
+							}}
 							className="w-full sm:flex-1"
 						>
 							Show Results
