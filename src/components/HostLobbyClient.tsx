@@ -61,18 +61,13 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 				fallbackName="Host"
 			/>
 
-			{/* Center: form + preview + start button */}
 			{/* Center: theme controls + form + preview + start button */}
 			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col">
-				<section className="mb-8">
-					<h2 className="text-xl sm:text-3xl font-semibold text-text mb-3">Theme</h2>
-					<div className="w-full">
+				<div>
+					<div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
+						<h2 className="text-xl sm:text-3xl font-semibold text-text">Song Setup</h2>
 						<HostThemeControls />
 					</div>
-				</section>
-				<div>
-					<h2 className="text-xl sm:text-3xl font-semibold text-text mb-4 sm:mb-6">Song Setup</h2>
-
 					<div className="w-full">
 						<SongSubmitForm code={viewRoom.code} onUrlChange={setPreviewUrl} />
 					</div>
