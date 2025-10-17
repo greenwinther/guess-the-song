@@ -42,6 +42,10 @@ export function useThemeSockets() {
 			}
 		};
 
+		const onGuessedThisRound = ({ playerName }: { playerName: string }) => {
+			setLockedForThisRound((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
+		};
+
 		const onHint = ({ obfuscated }: { obfuscated: string }) => {
 			setThemeHint(obfuscated);
 		};
@@ -56,6 +60,7 @@ export function useThemeSockets() {
 		socket.on("THEME_GUESS_RESULT", onGuessResult);
 		socket.on("THEME_HINT_READY", onHint);
 		socket.on("THEME_REVEALED", onRevealed);
+		socket.on("THEME_GUESSED_THIS_ROUND", onGuessedThisRound);
 
 		return () => {
 			socket.off("THEME_UPDATED", onUpdated);
@@ -64,6 +69,15 @@ export function useThemeSockets() {
 			socket.off("THEME_GUESS_RESULT", onGuessResult);
 			socket.off("THEME_HINT_READY", onHint);
 			socket.off("THEME_REVEALED", onRevealed);
+			socket.off("THEME_GUESSED_THIS_ROUND", onGuessedThisRound);
 		};
-	}, [socket, setTheme, setSolvedByTheme, setLockedForThisRound, setThemeHint, setThemeRevealed]);
+	}, [
+		socket,
+		setTheme,
+		setSolvedByTheme,
+		setLockedForThisRound,
+		setThemeHint,
+		setThemeRevealed,
+		setLockedForThisRound,
+	]);
 }

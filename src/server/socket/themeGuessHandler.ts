@@ -58,6 +58,9 @@ export const themeGuessHandler = (io: Server, socket: Socket) => {
 			// Consume their single attempt this round
 			lockPlayerThisRound(code, playerName);
 
+			// 👇 NEW: tell everyone that this player has used their theme guess this round
+			io.to(code).emit("THEME_GUESSED_THIS_ROUND", { playerName });
+
 			const correct = normalize(guess) === normalize(room.theme);
 			if (!correct) {
 				socket.emit("THEME_GUESS_RESULT", {
