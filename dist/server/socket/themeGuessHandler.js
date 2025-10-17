@@ -34,8 +34,8 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.themeGuessHandler = void 0;
-const prisma_1 = require("@/lib/prisma");
-const theme_1 = require("@/lib/theme");
+const prisma_1 = require("../../lib/prisma");
+const theme_1 = require("../../lib/theme");
 const score_1 = require("@/lib/score");
 const themeGuessHandler = (io, socket) => {
     // Use playerName to match your lib/game.ts conventions

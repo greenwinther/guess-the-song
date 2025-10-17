@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nextSongHandler = void 0;
-const game_1 = require("../../lib/game"); // make sure exported
+const game_1 = require("../../lib/game");
 const rooms_1 = require("../../lib/rooms");
 const sharedState_1 = require("../sharedState");
-const theme_1 = require("@/lib/theme"); // <-- NEW: theme helpers
+const theme_1 = require("../../lib/theme");
 const nextSongHandler = (io, socket) => {
     socket.on("nextSong", async (data, cb) => {
         var _a;

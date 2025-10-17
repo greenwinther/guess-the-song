@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.themeEditHandler = void 0;
-const prisma_1 = require("@/lib/prisma");
-const theme_1 = require("@/lib/theme");
+const prisma_1 = require("../../lib/prisma");
+const theme_1 = require("../../lib/theme");
 const themeEditHandler = (io, socket) => {
     // Expect payload with room code (string), to match your existing API style
     socket.on("THEME_EDIT", async ({ code, theme }) => {
