@@ -10,6 +10,8 @@ export default function LeftSidebar({
 	fallbackName,
 	lockedNames, // 👈 NEW (optional)
 	lockedCounts, // 👈 NEW
+	solvedByTheme = [],
+	lockedForThisRound = [],
 }: {
 	roomCode?: string;
 	players: Player[];
@@ -18,6 +20,8 @@ export default function LeftSidebar({
 	fallbackName?: string;
 	lockedNames?: string[]; // names locked for the *current* song
 	lockedCounts?: Record<string, number>; // total songs locked per player
+	solvedByTheme?: string[]; // who has solved the theme
+	lockedForThisRound?: string[]; // who has locked in a guess for this round
 }) {
 	return (
 		<aside className="order-1 lg:order-none w-full lg:col-span-3 p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-border flex flex-col items-center">
@@ -38,6 +42,8 @@ export default function LeftSidebar({
 					fallbackName={fallbackName}
 					lockedNames={lockedNames}
 					lockedCounts={lockedCounts}
+					solvedByTheme={solvedByTheme}
+					lockedForThisRound={lockedForThisRound}
 				/>
 			</div>
 		</aside>

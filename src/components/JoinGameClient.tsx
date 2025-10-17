@@ -17,7 +17,6 @@ import { GuessPanel } from "./join/GuessPanel";
 import { ResultsPanel } from "./join/ResultsPanel";
 import type { OrderItem } from "./join/SubmissionOrderList";
 import { useThemeSockets } from "@/hooks/useThemeSockets";
-import { ThemeHintBanner } from "./ui/ThemeHintBanner";
 import { ThemeGuessBar } from "./join/ThemeGuessBar";
 
 interface Props {
@@ -28,7 +27,16 @@ interface Props {
 export default function JoinGameClient({ code, playerName }: Props) {
 	const socket = useSocket();
 	const lastSentGuessRef = useRef<Map<number, string>>(new Map());
-	const { room, currentClip, bgThumbnail, scores, revealedSongs, submittedPlayers } = useGame();
+	const {
+		room,
+		currentClip,
+		bgThumbnail,
+		scores,
+		revealedSongs,
+		submittedPlayers,
+		solvedByTheme,
+		lockedForThisRound,
+	} = useGame();
 	const [undoUntil, setUndoUntil] = useState<number | null>(null);
 
 	useJoinRoomSocket(code, playerName);
@@ -273,38 +281,45 @@ export default function JoinGameClient({ code, playerName }: Props) {
 
 	return (
 		<BackgroundShell bgImage={bgImage} socketError={socketError}>
+			{/* LEFT */}
 			<LeftSidebar
 				roomCode={room.code}
 				players={room.players}
 				submittedPlayers={submittedPlayers}
-				fallbackName="Host"
-				lockedNames={currentLockedNames} // optional per-song lock icon
+				lockedNames={currentLockedNames}
 				lockedCounts={lockedCounts}
+				solvedByTheme={solvedByTheme}
+				lockedForThisRound={lockedForThisRound}
 			/>
 
-			{isResultsMode ? (
-				<ResultsPanel order={order} correctList={correctList} />
-			) : (
-				<GuessPanel
-					order={order}
-					submitted={submitted}
-					onReorder={onReorder}
-					onLockCurrent={onLockCurrent}
-					currentIndex={currentIndex}
-					lockedIndices={Array.from(selfLocked)}
-					canLock={canLock}
-					undoVisible={undoVisible}
-					onUndo={onUndo}
-					onSubmitAll={handleSubmitAll} // 👈 new
-					showSubmitAll={!submitted} // 👈 only for non-HC, and hide after submit
-					scoreForMe={scores?.[playerName] ?? null}
-				/>
-			)}
+			{/* CENTER */}
+			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col">
+				{isResultsMode ? (
+					<ResultsPanel order={order} correctList={correctList} />
+				) : (
+					<GuessPanel
+						order={order}
+						submitted={submitted}
+						onReorder={onReorder}
+						onLockCurrent={onLockCurrent}
+						currentIndex={currentIndex}
+						lockedIndices={Array.from(selfLocked)}
+						canLock={canLock}
+						undoVisible={undoVisible}
+						onUndo={onUndo}
+						onSubmitAll={handleSubmitAll}
+						showSubmitAll={!submitted}
+						scoreForMe={scores?.[playerName] ?? null}
+					/>
+				)}
 
-			{/* THEME mini-game UI */}
-			<ThemeHintBanner />
-			<ThemeGuessBar code={code} playerName={playerName} />
+				{/* THEME mini-game: sits UNDER the center panel */}
+				<div className="mt-4">
+					<ThemeGuessBar code={code} playerName={playerName} />
+				</div>
+			</main>
 
+			{/* RIGHT */}
 			<RightSidebarPlaylist songs={room.songs} revealedIds={revealedSongs} />
 		</BackgroundShell>
 	);

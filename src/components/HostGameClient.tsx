@@ -2,7 +2,7 @@
 
 // src/components/HostGameClient.tsx
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, use } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 
@@ -16,6 +16,7 @@ import { useHostGameSocket } from "@/hooks/host/useHostGameSocket";
 import { useRevealedSubmittersSync } from "@/hooks/useRevealedSubmittersSync";
 
 import type { Song, Room } from "@/types/room";
+import { useThemeSockets } from "@/hooks/useThemeSockets";
 
 export default function HostGameClient({ code, initialRoom }: { code: string; initialRoom?: Room }) {
 	const socket = useSocket();
@@ -29,7 +30,11 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 		currentSong,
 		submittedPlayers,
 		bgThumbnail,
+		solvedByTheme,
+		lockedForThisRound,
 	} = useGame();
+
+	useThemeSockets();
 
 	const [recapRunning, setRecapRunning] = useState(false);
 	const [fastRecap, setFastRecap] = useState<boolean>(() => {
@@ -209,6 +214,8 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				fallbackName="Host"
 				lockedNames={currentLockedNames}
 				lockedCounts={lockedCounts}
+				solvedByTheme={solvedByTheme}
+				lockedForThisRound={lockedForThisRound}
 			/>
 
 			<HostPlaybackPanel
