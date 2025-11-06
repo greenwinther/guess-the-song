@@ -16,12 +16,7 @@ async function createRoom(theme, backgroundUrl, hostName) {
             code,
             theme,
             backgroundUrl,
-            players: {
-                create: {
-                    name: hostName,
-                    isHost: true, // Mark the first player as the host
-                },
-            },
+            players: { create: { name: hostName, isHost: true } },
         },
         include: { players: true },
     });
@@ -33,16 +28,14 @@ async function joinRoom(code, name, hardcore) {
     });
     if (!room)
         throw new Error("Room not found");
-    // If they’re already in, just return that existing player
     const existing = room.players.find((p) => p.name === name);
     if (existing)
-        return existing;
-    // Otherwise create a new one and return it
-    return await prisma_1.prisma.player.create({
+        return { player: existing, created: false };
+    const player = await prisma_1.prisma.player.create({
         data: { name, isHost: name === "Host", roomId: room.id, hardcore },
     });
+    return { player, created: true };
 }
-// And update getRoom to include players
 async function getRoom(code) {
     const room = await prisma_1.prisma.room.findUnique({
         where: { code },
@@ -57,20 +50,11 @@ async function addSong(code, song) {
     if (!room)
         throw new Error("Room not found");
     return await prisma_1.prisma.song.create({
-        data: {
-            url: song.url,
-            submitter: song.submitter,
-            title: song.title,
-            roomId: room.id,
-        },
+        data: { url: song.url, submitter: song.submitter, title: song.title, roomId: room.id },
     });
 }
 async function removeSong(code, songId) {
-    // Optionally verify the song belongs to the room first…
-    await prisma_1.prisma.song.delete({
-        where: { id: songId },
-    });
-    // Return the deleted ID so we can broadcast it
+    await prisma_1.prisma.song.delete({ where: { id: songId } });
     return songId;
 }
 async function getHardcorePlayerNames(code) {
