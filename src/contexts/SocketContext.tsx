@@ -1,4 +1,5 @@
 "use client";
+
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 
@@ -12,15 +13,24 @@ const SocketStatusContext = createContext<{ status: SocketStatus; error: string 
 
 // ── Singleton across the whole app (persists across Strict Mode remounts)
 let socketSingleton: Socket | null = null;
+
 function getSocket(): Socket {
 	if (socketSingleton) return socketSingleton;
-	socketSingleton = io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
+
+	const url = process.env.NEXT_PUBLIC_SOCKET_URL;
+	if (!url) {
+		// Gör ett tydligt fel tidigt om env saknas
+		throw new Error("Missing NEXT_PUBLIC_SOCKET_URL");
+	}
+
+	socketSingleton = io(url, {
 		transports: ["websocket"],
 		reconnectionDelay: 200,
 		reconnectionDelayMax: 1000,
 		reconnectionAttempts: Infinity,
-		autoConnect: false, // <- don't connect during render
+		autoConnect: false, // connect efter mount
 	});
+
 	return socketSingleton;
 }
 
@@ -30,16 +40,30 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		// Connect after mount (idempotent)
-		if (!socket.connected) socket.connect();
+		// Starta uppkoppling (idempotent)
+		if (!socket.connected) {
+			setStatus("connecting");
+			setError(null);
+			socket.connect();
+		}
 
-		// Socket-level
+		// Koppla ned först när fliken/fönstret stängs
+		const onUnload = () => {
+			try {
+				socket.disconnect();
+			} catch {}
+		};
+		window.addEventListener("beforeunload", onUnload);
+
+		// ---- Socket-level ----
 		const onConnect = () => {
 			setStatus("connected");
 			setError(null);
 		};
 		const onDisconnect = (reason: string) => {
+			// Socket.IO kallar även "transport close", "ping timeout", etc.
 			setStatus("disconnected");
+			// sätt error endast om det inte var en normal klient-disconnect
 			setError(reason === "io client disconnect" ? null : reason || null);
 		};
 		const onConnectError = (err: Error) => {
@@ -51,7 +75,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 		socket.on("disconnect", onDisconnect);
 		socket.on("connect_error", onConnectError);
 
-		// Manager-level (typed as no-arg in many versions)
+		// ---- Manager-level (återanslutning) ----
 		const onReconnectAttempt = () => setStatus("reconnecting");
 		const onReconnect = () => {
 			setStatus("connected");
@@ -72,7 +96,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 		socket.io.on("reconnect_failed", onReconnectFailed);
 
 		return () => {
-			// Remove listeners to avoid dupes across Strict Mode remounts
+			// Ta bara bort listeners – låt singletonen vara uppkopplad
 			socket.off("connect", onConnect);
 			socket.off("disconnect", onDisconnect);
 			socket.off("connect_error", onConnectError);
@@ -82,10 +106,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 			socket.io.off("reconnect_error", onReconnectError);
 			socket.io.off("reconnect_failed", onReconnectFailed);
 
-			// IMPORTANT: don't disconnect the singleton in development Strict Mode
-			if (process.env.NODE_ENV !== "development") {
-				socket.disconnect();
-			}
+			window.removeEventListener("beforeunload", onUnload);
+			// ❌ Viktigt: ingen socket.disconnect() här – annars reconnect-loopar vid remounts
 		};
 	}, [socket]);
 

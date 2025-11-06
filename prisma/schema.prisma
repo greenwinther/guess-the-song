@@ -22,14 +22,14 @@ model Song {
   submitter  String
   title      String?
   roomId     Int
-  room       Room   @relation(fields: [roomId], references: [id])
+  room       Room   @relation(fields: [roomId], references: [id], onDelete: Cascade) // 👈
 }
 
 model Player {
-  id      Int    @id @default(autoincrement())
-  name    String
-  isHost  Boolean @default(false)
-  roomId  Int
-  room    Room   @relation(fields: [roomId], references: [id])
+  id       Int     @id @default(autoincrement())
+  name     String
+  isHost   Boolean @default(false)
+  roomId   Int
+  room     Room    @relation(fields: [roomId], references: [id], onDelete: Cascade) // 👈
   hardcore Boolean @default(false)
 }
