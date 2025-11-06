@@ -9,35 +9,32 @@ export async function createRoom(theme: string, backgroundUrl: string | null, ho
 			code,
 			theme,
 			backgroundUrl,
-			players: {
-				create: {
-					name: hostName,
-					isHost: true, // Mark the first player as the host
-				},
-			},
+			players: { create: { name: hostName, isHost: true } },
 		},
 		include: { players: true },
 	});
 }
 
-export async function joinRoom(code: string, name: string, hardcore: boolean) {
+export async function joinRoom(
+	code: string,
+	name: string,
+	hardcore: boolean
+): Promise<{ player: any; created: boolean }> {
 	const room = await prisma.room.findUnique({
 		where: { code },
 		include: { players: true },
 	});
 	if (!room) throw new Error("Room not found");
 
-	// If they’re already in, just return that existing player
 	const existing = room.players.find((p) => p.name === name);
-	if (existing) return existing;
+	if (existing) return { player: existing, created: false };
 
-	// Otherwise create a new one and return it
-	return await prisma.player.create({
+	const player = await prisma.player.create({
 		data: { name, isHost: name === "Host", roomId: room.id, hardcore },
 	});
+	return { player, created: true };
 }
 
-// And update getRoom to include players
 export async function getRoom(code: string) {
 	const room = await prisma.room.findUnique({
 		where: { code },
@@ -50,24 +47,13 @@ export async function getRoom(code: string) {
 export async function addSong(code: string, song: { url: string; submitter: string; title: string }) {
 	const room = await prisma.room.findUnique({ where: { code } });
 	if (!room) throw new Error("Room not found");
-
 	return await prisma.song.create({
-		data: {
-			url: song.url,
-			submitter: song.submitter,
-			title: song.title,
-			roomId: room.id,
-		},
+		data: { url: song.url, submitter: song.submitter, title: song.title, roomId: room.id },
 	});
 }
 
 export async function removeSong(code: string, songId: number) {
-	// Optionally verify the song belongs to the room first…
-	await prisma.song.delete({
-		where: { id: songId },
-	});
-
-	// Return the deleted ID so we can broadcast it
+	await prisma.song.delete({ where: { id: songId } });
 	return songId;
 }
 

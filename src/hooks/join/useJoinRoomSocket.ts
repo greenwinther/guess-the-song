@@ -5,6 +5,16 @@ import { useSocket } from "@/contexts/SocketContext";
 import { getYouTubeID } from "@/lib/youtube";
 import type { Player, Room } from "@/types/room";
 
+const getClientId = () => {
+	const k = "gts-client-id";
+	let v = localStorage.getItem(k);
+	if (!v) {
+		v = crypto.randomUUID();
+		localStorage.setItem(k, v);
+	}
+	return v;
+};
+
 export function useJoinRoomSocket(code: string, playerName: string) {
 	const socket = useSocket();
 	const {
@@ -22,14 +32,14 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 	const joinedRef = useRef(false);
 
 	useEffect(() => {
+		if (!socket || !code || !playerName || joinedRef.current) return;
+
 		// listeners FIRST (prevents missing fast server emits)
 		const onRoomData = (room: Room) => {
 			setRoom(room);
-			// no need to flip gameStarted here; this is just the room snapshot
 		};
 
 		const onGameStarted = (room: Room) => {
-			// late joiners will get this immediately if the game already started
 			setRoom(room);
 			setGameStarted(true);
 			setBgThumbnail(null);
@@ -52,13 +62,15 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 
 		const onRevealed = (ids: number[]) => setRevealedSongs(ids);
 
-		const onPlayerSubmitted = ({ playerName }: { playerName: string }) => {
+		const onPlayerSubmitted = ({ playerName }: { playerName: string }) =>
 			setSubmittedPlayers((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
-		};
 
-		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
-			setScores(scores);
-		};
+		const onGameOver = ({ scores }: { scores: Record<string, number> }) => setScores(scores);
+
+		const onPlayerLeft = (playerId: number) =>
+			setRoom((prev) =>
+				prev ? { ...prev, players: prev.players.filter((p) => p.id !== playerId) } : prev
+			);
 
 		socket.on("roomData", onRoomData);
 		socket.on("gameStarted", onGameStarted);
@@ -67,22 +79,27 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 		socket.on("revealedSongs", onRevealed);
 		socket.on("playerSubmitted", onPlayerSubmitted);
 		socket.on("gameOver", onGameOver);
+		socket.on("playerLeft", onPlayerLeft);
 
-		// join once (initial + on reconnect)
-		const join = () => {
-			socket.emit("joinRoom", { code: codeRef.current, name: nameRef.current }, (ok: boolean) => {
-				if (!ok) console.error("❌ Failed to join room");
-			});
+		// ---- idempotent join bound to connect ----
+		const clientId = getClientId();
+		const doJoin = () => {
+			if (joinedRef.current) return;
 			joinedRef.current = true;
+			socket.emit(
+				"joinRoom",
+				{ code: codeRef.current, name: nameRef.current, clientId },
+				(ok: boolean) => {
+					if (!ok) joinedRef.current = false;
+				}
+			);
 		};
 
-		if (socket.connected && !joinedRef.current) join();
-		const onConnect = () => join();
-
-		socket.on("connect", onConnect);
+		if (socket.connected) doJoin();
+		socket.on("connect", doJoin);
 
 		return () => {
-			// ✅ cleanup wrapped in a function body
+			socket.off("connect", doJoin);
 			socket.off("roomData", onRoomData);
 			socket.off("gameStarted", onGameStarted);
 			socket.off("playerJoined", onPlayerJoined);
@@ -90,7 +107,8 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 			socket.off("revealedSongs", onRevealed);
 			socket.off("playerSubmitted", onPlayerSubmitted);
 			socket.off("gameOver", onGameOver);
-			socket.off("connect", onConnect);
+			socket.off("playerLeft", onPlayerLeft);
+			joinedRef.current = false;
 		};
 	}, [
 		socket,
@@ -101,21 +119,7 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 		setRevealedSongs,
 		setSubmittedPlayers,
 		setScores,
+		code,
+		playerName,
 	]);
-
-	// separate effect for playerLeft
-	useEffect(() => {
-		const onPlayerLeft = (playerId: number) => {
-			setRoom((prev) =>
-				prev ? { ...prev, players: prev.players.filter((p) => p.id !== playerId) } : prev
-			);
-		};
-
-		socket.on("playerLeft", onPlayerLeft);
-
-		return () => {
-			// ✅ same fix here
-			socket.off("playerLeft", onPlayerLeft);
-		};
-	}, [socket, setRoom]);
 }

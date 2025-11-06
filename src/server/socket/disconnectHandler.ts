@@ -5,34 +5,29 @@ import { prisma } from "../../lib/prisma";
 
 export const disconnectHandler = (io: Server, socket: Socket) => {
 	socket.on("disconnect", async (reason) => {
-		console.log("↔️ socket disconnected", socket.id);
-		console.log(`↔️ socket ${socket.id} disconnected:`, reason);
+		console.log("↔️ socket disconnected", socket.id, reason);
 
 		const meta = socket.data.roomMeta as { code: string; playerName: string } | undefined;
-		if (meta) {
-			const { code, playerName } = meta;
+		if (!meta) return;
 
-			try {
-				const updated = await getRoom(code);
-				if (!updated) return;
+		const { code, playerName } = meta;
 
-				// Find the player before removing them
-				const leftPlayer = updated.players.find((p) => p.name === playerName);
-				if (!leftPlayer) return;
+		try {
+			const before = await getRoom(code);
+			const leftPlayer = before.players.find((p) => p.name === playerName);
+			if (!leftPlayer) return;
 
-				console.log(`🚨 Player "${leftPlayer.name}" (id: ${leftPlayer.id}) left room ${code}`);
+			console.log(`🚨 Player "${leftPlayer.name}" (id: ${leftPlayer.id}) left room ${code}`);
 
-				// Remove from room
-				await prisma.player.delete({
-					where: { id: leftPlayer.id },
-				});
+			await prisma.player.delete({ where: { id: leftPlayer.id } });
 
-				// Notify other clients
-				io.to(code).emit("playerLeft", leftPlayer.id);
-				io.to(code).emit("roomData", updated);
-			} catch (err) {
-				console.error("[disconnect] cleanup error", err);
-			}
+			// notify first, then send fresh snapshot
+			io.to(code).emit("playerLeft", leftPlayer.id);
+
+			const after = await getRoom(code);
+			io.to(code).emit("roomData", after);
+		} catch (err) {
+			console.error("[disconnect] cleanup error", err);
 		}
 	});
 };
