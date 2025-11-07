@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 import type { Player, Room, Song } from "@/types/room";
-import { useEnsureJoined } from "../UseEnsureJoined";
+import { useEnsureJoined } from "../useEnsureJoined";
 
 export function useHostLobbySocket(initialRoom: Room) {
 	const socket = useSocket();
