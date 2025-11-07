@@ -16,7 +16,7 @@ import RightSidebarPlaylist from "./join/RightSidebarPlaylist";
 import { GuessPanel } from "./join/GuessPanel";
 import { ResultsPanel } from "./join/ResultsPanel";
 import type { OrderItem } from "./join/SubmissionOrderList";
-import { useThemeSockets } from "@/hooks/useThemeSockets";
+import { useThemeSockets } from "../hooks/useThemeSockets";
 import { ThemeGuessBar } from "./join/ThemeGuessBar";
 
 interface Props {

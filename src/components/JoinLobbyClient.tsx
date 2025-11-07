@@ -1,14 +1,14 @@
 "use client";
 // src/components/JoinLobbyClient.tsx
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import PlayerList from "./ui/PlayerList";
-import { useEnsureJoined } from "@/hooks/useEnsureJoined";
-import { useReconnectNotice } from "@/hooks/useReconnectNotice";
+import { useEnsureJoined } from "../hooks/useEnsureJoined";
+import { useReconnectNotice } from "../hooks/useReconnectNotice";
 
 export default function JoinLobbyClient({
 	initialRoom,
