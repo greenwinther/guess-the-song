@@ -33,7 +33,7 @@ export default function HostLobbyClient({ initialRoom }: { initialRoom: Room }) 
 	useHostLobbySocket(initialRoom);
 
 	// Reconnect banner + auto re-join as "Host"
-	const socketError = useReconnectNotice(initialRoom.code, "Host");
+	const socketError = useReconnectNotice();
 
 	// 🔑 Use the prop immediately; context may still be null on the first paint
 	const viewRoom = ctxRoom ?? initialRoom;
