@@ -4,7 +4,7 @@ import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 import { getYouTubeID } from "@/lib/youtube";
 import type { Player, Room } from "@/types/room";
-import { useEnsureJoined } from "../useEnsureJoined";
+import { useJoined } from "../useJoined";
 
 /**
  * Host-side game socket wiring:
@@ -16,7 +16,7 @@ import { useEnsureJoined } from "../useEnsureJoined";
  */
 export function useHostGameSocket(code: string) {
 	const socket = useSocket();
-	useEnsureJoined(code, "Host");
+	useJoined(code, "Host");
 	const {
 		room,
 		setRoom,

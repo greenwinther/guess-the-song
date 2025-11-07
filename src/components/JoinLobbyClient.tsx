@@ -8,7 +8,7 @@ import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import PlayerList from "./ui/PlayerList";
 import { useReconnectNotice } from "../hooks/useReconnectNotice";
-import { useEnsureJoined } from "../hooks/useEnsureJoined";
+import { useJoined } from "../hooks/useJoined";
 
 export default function JoinLobbyClient({
 	initialRoom,
@@ -27,7 +27,7 @@ export default function JoinLobbyClient({
 	}, [room, initialRoom, setRoom]);
 
 	// 2) ensure we’re joined exactly once per connection (and on reconnect)
-	useEnsureJoined(initialRoom.code, currentUserName);
+	useJoined(initialRoom.code, currentUserName);
 
 	// 3) connection status banner (no emits)
 	const socketError = useReconnectNotice();

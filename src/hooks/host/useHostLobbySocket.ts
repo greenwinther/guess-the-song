@@ -3,14 +3,14 @@ import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 import type { Player, Room, Song } from "@/types/room";
-import { useEnsureJoined } from "../useEnsureJoined";
+import { useJoined } from "../useJoined";
 
 export function useHostLobbySocket(initialRoom: Room) {
 	const socket = useSocket();
 	const { setRoom, addPlayer, addSong, removeSong } = useGame();
 
 	// Join as Host (idempotent, handles reconnects)
-	useEnsureJoined(initialRoom.code, "Host");
+	useJoined(initialRoom.code, "Host");
 
 	// Seed room + lobby events
 	useEffect(() => {

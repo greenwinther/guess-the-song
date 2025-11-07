@@ -13,7 +13,7 @@ const getClientId = () => {
 	return v;
 };
 
-export function useEnsureJoined(code: string, name: string) {
+export function useJoined(code: string, name: string) {
 	const socket = useSocket();
 	const joinedRef = useRef(false);
 	const codeRef = useRef(code);
