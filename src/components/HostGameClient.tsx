@@ -65,20 +65,6 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 
 	const recapSeconds = fastRecap ? 15 : 30;
 
-	// always join (on first connect and on reconnect)
-	useEffect(() => {
-		const join = () =>
-			socket.emit("joinRoom", { code, name: "Host" }, (ok: boolean) => {
-				if (!ok) console.error("❌ Failed to join room as Host");
-			});
-
-		if (socket.connected) join();
-		socket.on("connect", join);
-		return () => {
-			socket.off("connect", join);
-		};
-	}, [socket, code]);
-
 	const lockedCounts = useMemo(() => {
 		const acc: Record<string, number> = {};
 		lockedBySong.forEach((names) => {
@@ -134,7 +120,7 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	}, [socket]);
 
 	// Reconnect banner + auto re-join as "Host"
-	const socketError = useReconnectNotice(code, "Host");
+	const socketError = useReconnectNotice();
 
 	// Local playback UI state
 	const [isPlaying, setIsPlaying] = useState(false);

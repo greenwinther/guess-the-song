@@ -8,6 +8,16 @@ import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import PlayerList from "./ui/PlayerList";
 
+const getClientId = () => {
+	const k = "gts-client-id";
+	let v = localStorage.getItem(k);
+	if (!v) {
+		v = crypto.randomUUID();
+		localStorage.setItem(k, v);
+	}
+	return v;
+};
+
 export default function JoinLobbyClient({
 	initialRoom,
 	currentUserName,
@@ -17,31 +27,22 @@ export default function JoinLobbyClient({
 }) {
 	const socket = useSocket();
 	const router = useRouter();
-	const {
-		room,
-		setRoom,
-		addPlayer,
-		addSong,
-		removeSong,
-		setGameStarted,
-		submittedPlayers,
-		setSubmittedPlayers,
-	} = useGame();
+	const { room, setRoom, addPlayer, addSong, removeSong, setGameStarted, submittedPlayers } = useGame();
 
-	const hasJoined = useRef(false);
-	const [socketError, setSocketError] = useState<string | null>(null);
-
-	// keep the room code in a ref so our reconnect handler can access it
-	const roomCodeRef = useRef(initialRoom.code);
-	const playerNameRef = useRef(currentUserName);
-
-	// Seed room once (or whenever initialRoom changes)
+	// seed room once
 	useEffect(() => {
 		if (!room) setRoom(initialRoom);
 	}, [room, initialRoom, setRoom]);
 
+	const roomCodeRef = useRef(initialRoom.code);
+	const playerNameRef = useRef(currentUserName);
+	const joinedRef = useRef(false);
+	const [socketError, setSocketError] = useState<string | null>(null);
+
 	// Socket listeners (no 'room' here)
 	useEffect(() => {
+		if (!socket) return;
+
 		const onPlayerJoined = (player: Player) => addPlayer(player);
 		const onRoomData = (room: Room) => setRoom(room);
 		const onSongAdded = (song: Song) => addSong(song);
@@ -53,20 +54,53 @@ export default function JoinLobbyClient({
 			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		};
 
+		const onPlayerLeft = (playerId: number) => {
+			setRoom((prev) =>
+				prev ? { ...prev, players: prev.players.filter((p) => p.id !== playerId) } : prev
+			);
+		};
+
+		const onDisconnect = (reason: string) => {
+			console.warn("⚠️ socket disconnected:", reason);
+			setSocketError("Connection lost. Reconnecting…");
+			// allow re-join after reconnect
+			joinedRef.current = false;
+		};
+
+		const onConnect = () => {
+			setSocketError(null);
+			doJoin();
+		};
+
 		// Attach listeners BEFORE we emit joinRoom
 		socket.on("playerJoined", onPlayerJoined);
 		socket.on("roomData", onRoomData);
 		socket.on("songAdded", onSongAdded);
 		socket.on("songRemoved", onSongRemoved);
 		socket.on("gameStarted", onGameStarted);
+		socket.on("playerLeft", onPlayerLeft);
+		socket.on("disconnect", onDisconnect);
+		socket.on("connect", onConnect);
 
 		// Now it’s safe to join (late-join reply won't be missed)
-		if (!hasJoined.current) {
-			socket.emit("joinRoom", { code: initialRoom.code, name: currentUserName }, (ok: boolean) => {
-				if (!ok) console.error("❌ Failed to join socket room");
-			});
-			hasJoined.current = true;
+		const clientId = getClientId();
+		function doJoin() {
+			if (joinedRef.current) return;
+			joinedRef.current = true;
+			socket.emit(
+				"joinRoom",
+				{ code: roomCodeRef.current, name: playerNameRef.current, clientId },
+				(ok: boolean) => {
+					if (!ok) {
+						console.error("❌ Failed to join socket room");
+						joinedRef.current = false; // allow retry
+					}
+				}
+			);
 		}
+
+		// if already connected when this component mounts (late mount)
+		if (socket.connected) doJoin();
 
 		return () => {
 			socket.off("playerJoined", onPlayerJoined);
@@ -74,83 +108,11 @@ export default function JoinLobbyClient({
 			socket.off("songAdded", onSongAdded);
 			socket.off("songRemoved", onSongRemoved);
 			socket.off("gameStarted", onGameStarted);
-		};
-	}, [
-		socket,
-		initialRoom,
-		currentUserName,
-		setRoom,
-		addPlayer,
-		addSong,
-		removeSong,
-		setGameStarted,
-		router,
-	]);
-
-	useEffect(() => {
-		socket.on("playerLeft", (playerId: number) => {
-			setRoom((prev) => {
-				if (!prev) return prev;
-				return {
-					...prev,
-					players: prev.players.filter((p) => p.id !== playerId),
-				};
-			});
-		});
-
-		return () => {
-			socket.off("playerLeft");
-		};
-	}, [socket, setRoom]);
-
-	useEffect(() => {
-		const onDisconnect = (reason: any) => {
-			console.warn("⚠️ socket disconnected:", reason);
-			setSocketError("Connection lost. Reconnecting…");
-		};
-
-		const onReconnect = (attempt?: number) => {
-			console.log("✅ socket reconnected", attempt ? `(attempt #${attempt})` : "");
-			setSocketError(null);
-			socket.emit(
-				"joinRoom",
-				{ code: roomCodeRef.current, name: playerNameRef.current },
-				(ok: boolean) => {
-					if (!ok) console.error("❌ Failed to re-join");
-				}
-			);
-		};
-
-		socket.on("disconnect", onDisconnect);
-		socket.on("connect", () => onReconnect());
-		socket.on("reconnect", onReconnect);
-
-		const mgr = (socket as any).io;
-		mgr.on("connect", () => onReconnect());
-		mgr.on("reconnect", onReconnect);
-
-		return () => {
+			socket.off("playerLeft", onPlayerLeft);
 			socket.off("disconnect", onDisconnect);
-			socket.off("connect", () => onReconnect());
-			socket.off("reconnect", onReconnect);
-			mgr.off("connect", () => onReconnect());
-			mgr.off("reconnect", onReconnect);
+			socket.off("connect", onConnect);
 		};
-	}, [socket]);
-
-	useEffect(() => {
-		const onGameStarted = (room: Room) => {
-			console.log("🎮 Game started event received!", room);
-			setGameStarted(true);
-			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
-		};
-
-		socket.on("gameStarted", onGameStarted);
-
-		return () => {
-			socket.off("gameStarted", onGameStarted);
-		};
-	}, [socket, router, currentUserName, setGameStarted]);
+	}, [socket, addPlayer, addSong, removeSong, setGameStarted, setRoom, router]);
 
 	// Render a loading state if for some reason the room isn't set yet
 	if (!room) {

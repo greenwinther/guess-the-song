@@ -42,7 +42,7 @@ export default function JoinGameClient({ code, playerName }: Props) {
 	useJoinRoomSocket(code, playerName);
 	useRevealedSongsSync();
 	useThemeSockets();
-	const socketError = useReconnectNotice(code, playerName);
+	const socketError = useReconnectNotice();
 
 	const { order, submitted, setSubmitted, handleReorder } = useSubmissionOrder(code, room ?? null);
 
