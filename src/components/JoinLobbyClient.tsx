@@ -7,8 +7,8 @@ import { useGame } from "@/contexts/tempContext";
 import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import PlayerList from "./ui/PlayerList";
-import { useEnsureJoined } from "../hooks/useEnsureJoined";
 import { useReconnectNotice } from "../hooks/useReconnectNotice";
+import { useEnsureJoined } from "../hooks/UseEnsureJoined";
 
 export default function JoinLobbyClient({
 	initialRoom,
