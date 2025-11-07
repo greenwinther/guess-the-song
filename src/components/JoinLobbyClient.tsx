@@ -7,16 +7,8 @@ import { useGame } from "@/contexts/tempContext";
 import { Player, Room, Song } from "@/types/room";
 import { useRouter } from "next/navigation";
 import PlayerList from "./ui/PlayerList";
-
-const getClientId = () => {
-	const k = "gts-client-id";
-	let v = localStorage.getItem(k);
-	if (!v) {
-		v = crypto.randomUUID();
-		localStorage.setItem(k, v);
-	}
-	return v;
-};
+import { useEnsureJoined } from "@/hooks/useEnsureJoined";
+import { useReconnectNotice } from "@/hooks/useReconnectNotice";
 
 export default function JoinLobbyClient({
 	initialRoom,
@@ -29,29 +21,29 @@ export default function JoinLobbyClient({
 	const router = useRouter();
 	const { room, setRoom, addPlayer, addSong, removeSong, setGameStarted, submittedPlayers } = useGame();
 
-	// seed room once
+	// 1) seed room once
 	useEffect(() => {
 		if (!room) setRoom(initialRoom);
 	}, [room, initialRoom, setRoom]);
 
-	const roomCodeRef = useRef(initialRoom.code);
-	const playerNameRef = useRef(currentUserName);
-	const joinedRef = useRef(false);
-	const [socketError, setSocketError] = useState<string | null>(null);
+	// 2) ensure we’re joined exactly once per connection (and on reconnect)
+	useEnsureJoined(initialRoom.code, currentUserName);
 
-	// Socket listeners (no 'room' here)
+	// 3) connection status banner (no emits)
+	const socketError = useReconnectNotice();
+
+	// 4) lobby listeners
 	useEffect(() => {
 		if (!socket) return;
 
 		const onPlayerJoined = (player: Player) => addPlayer(player);
-		const onRoomData = (room: Room) => setRoom(room);
+		const onRoomData = (r: Room) => setRoom(r);
 		const onSongAdded = (song: Song) => addSong(song);
 		const onSongRemoved = ({ songId }: { songId: number }) => removeSong(songId);
 
-		const onGameStarted = (room: Room) => {
-			// console.log("🎮 gameStarted -> redirect to JoinGame");
+		const onGameStarted = (r: Room) => {
 			setGameStarted(true);
-			router.push(`/join/${room.code}/game?name=${encodeURIComponent(currentUserName)}`);
+			router.push(`/join/${r.code}/game?name=${encodeURIComponent(currentUserName)}`);
 		};
 
 		const onPlayerLeft = (playerId: number) => {
@@ -60,47 +52,12 @@ export default function JoinLobbyClient({
 			);
 		};
 
-		const onDisconnect = (reason: string) => {
-			console.warn("⚠️ socket disconnected:", reason);
-			setSocketError("Connection lost. Reconnecting…");
-			// allow re-join after reconnect
-			joinedRef.current = false;
-		};
-
-		const onConnect = () => {
-			setSocketError(null);
-			doJoin();
-		};
-
-		// Attach listeners BEFORE we emit joinRoom
 		socket.on("playerJoined", onPlayerJoined);
 		socket.on("roomData", onRoomData);
 		socket.on("songAdded", onSongAdded);
 		socket.on("songRemoved", onSongRemoved);
 		socket.on("gameStarted", onGameStarted);
 		socket.on("playerLeft", onPlayerLeft);
-		socket.on("disconnect", onDisconnect);
-		socket.on("connect", onConnect);
-
-		// Now it’s safe to join (late-join reply won't be missed)
-		const clientId = getClientId();
-		function doJoin() {
-			if (joinedRef.current) return;
-			joinedRef.current = true;
-			socket.emit(
-				"joinRoom",
-				{ code: roomCodeRef.current, name: playerNameRef.current, clientId },
-				(ok: boolean) => {
-					if (!ok) {
-						console.error("❌ Failed to join socket room");
-						joinedRef.current = false; // allow retry
-					}
-				}
-			);
-		}
-
-		// if already connected when this component mounts (late mount)
-		if (socket.connected) doJoin();
 
 		return () => {
 			socket.off("playerJoined", onPlayerJoined);
@@ -109,10 +66,8 @@ export default function JoinLobbyClient({
 			socket.off("songRemoved", onSongRemoved);
 			socket.off("gameStarted", onGameStarted);
 			socket.off("playerLeft", onPlayerLeft);
-			socket.off("disconnect", onDisconnect);
-			socket.off("connect", onConnect);
 		};
-	}, [socket, addPlayer, addSong, removeSong, setGameStarted, setRoom, router]);
+	}, [socket, addPlayer, addSong, removeSong, setGameStarted, setRoom, router, currentUserName]);
 
 	// Render a loading state if for some reason the room isn't set yet
 	if (!room) {
