@@ -115,6 +115,7 @@ yarn dev
 | `NEXT_PUBLIC_SOCKET_URL` | URL for Socket.io server (e.g. `http://localhost:4000`) | _required for client_ |
 | `NEXT_PUBLIC_API_URL`    | URL for HTTP API calls (falls back to `NEXT_PUBLIC_SOCKET_URL`) | _optional_      |
 | `CLIENT_URL`             | Allowed browser origin for Express/Socket CORS         | `http://localhost:3000` |
+| `LOG_LEVEL`              | Server log level used by Pino (`debug`, `info`, `warn`, `error`) | `debug` (dev), `info` (prod) |
 | `PORT`                   | Port for the Next.js web server (if overriding)         | `3000`                |
 | `SOCKET_PORT`            | Port for the Socket.io server (if overriding)           | `4000`                |
 

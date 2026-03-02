@@ -8,6 +8,9 @@ import { parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { toPublicRoom } from "../state/publicRoom";
 import { setPhase } from "../store/roomStore";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.startGame");
 
 export const startGameHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -72,7 +75,7 @@ export const startGameHandler = (
 
 			callback(true);
 		} catch (err: unknown) {
-			console.error("startGame error", err);
+			log.error({ err, code: data.code }, "startGame error");
 			callback(false);
 		}
 	});

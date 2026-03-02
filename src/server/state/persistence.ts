@@ -5,9 +5,11 @@ import { exportRoomStoreState, importRoomStoreState } from "@/server/store/roomS
 import { exportGameState, importGameState } from "./gameState";
 import { exportRoundsState, importRoundsState } from "@/lib/game";
 import { exportThemeState, importThemeState } from "@/lib/theme";
+import { scopedLogger } from "../logger";
 
 const DEFAULT_STATE_PATH = path.join(process.cwd(), "data", "state.json");
 const ROOM_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+const log = scopedLogger("state.persistence");
 
 type PersistedState = {
 	version: 1;
@@ -74,7 +76,7 @@ const readStateFile = (filePath: string): PersistedState | null => {
 		if (!parsed || parsed.version !== 1) return null;
 		return parsed;
 	} catch (err) {
-		console.warn("Warning: Failed to read persisted state:", err);
+		log.warn({ err }, "failed to read persisted state");
 		return null;
 	}
 };

@@ -11,6 +11,9 @@ import type {
 } from "@/types/socket";
 import { parseIntSafe, parseRoomCode } from "../validation";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.lockDetailAnswer");
 
 export const lockDetailAnswerHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -31,7 +34,7 @@ export const lockDetailAnswerHandler = (
 			}
 			cb?.(ok);
 		} catch (e) {
-			console.error("lockDetailAnswer error", e);
+			log.error({ err: e, code: d.code, songId: d.songId }, "lockDetailAnswer error");
 			cb?.(false);
 		}
 	});
@@ -51,7 +54,7 @@ export const lockDetailAnswerHandler = (
 			}
 			cb?.(ok);
 		} catch (e) {
-			console.error("undoDetailLock error", e);
+			log.error({ err: e, code: d.code, songId: d.songId }, "undoDetailLock error");
 			cb?.(false);
 		}
 	});

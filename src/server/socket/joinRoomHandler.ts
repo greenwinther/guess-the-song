@@ -7,6 +7,9 @@ import type { ClientToServerEvents, InterServerEvents, JoinRoomPayload, ServerTo
 import { parseAvatarConfig, parseBool, parseName, parseRoomCode } from "../validation";
 import { toPublicRoom } from "../state/publicRoom";
 import { getHint, getLockedThisRoundList, getSolvedList, isRevealed } from "@/lib/theme";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.joinRoom");
 
 export const joinRoomHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -131,7 +134,7 @@ export const joinRoomHandler = (
 
 				callback?.(true);
 			} catch (err) {
-				console.error("joinRoom error:", err);
+				log.error({ err, code: data.code, playerName: data.name }, "joinRoom error");
 				const reason =
 					err instanceof Error && err.message === "Kicked"
 						? "kicked"

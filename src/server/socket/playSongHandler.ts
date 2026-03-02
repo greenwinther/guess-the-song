@@ -6,6 +6,9 @@ import type { ClientToServerEvents, InterServerEvents, PlaySongPayload, ServerTo
 import { parseRoomCode, parseIntSafe } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.playSong");
 
 export const playSongHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -55,7 +58,7 @@ export const playSongHandler = (
 
 				callback({ success: true });
 			} catch (err: unknown) {
-				console.error("playSong error", err);
+				log.error({ err, code: data.code, songId: data.songId }, "playSong error");
 				const message = err instanceof Error ? err.message : "Unknown error";
 				callback({ success: false, error: message });
 			}

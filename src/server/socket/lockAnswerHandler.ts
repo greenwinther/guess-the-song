@@ -5,6 +5,9 @@ import { getRoomGameState } from "../state/gameState";
 import type { ClientToServerEvents, InterServerEvents, LockAnswerPayload, ServerToClientEvents, SocketData } from "@/types/socket";
 import { parseRoomCode, parseIntSafe } from "../validation";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.lockAnswer");
 
 export const lockAnswerHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -30,7 +33,7 @@ export const lockAnswerHandler = (
 				}
 				cb?.(ok);
 			} catch (e) {
-				console.error("lockAnswer error", e);
+				log.error({ err: e, code: d.code, songId: d.songId }, "lockAnswer error");
 				cb?.(false);
 			}
 		}
@@ -57,7 +60,7 @@ export const lockAnswerHandler = (
 				}
 				cb?.(ok);
 			} catch (e) {
-				console.error("undoLock error", e);
+				log.error({ err: e, code: data.code, songId: data.songId }, "undoLock error");
 				cb?.(false);
 			}
 		}

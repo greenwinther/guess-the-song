@@ -14,6 +14,9 @@ import { parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { toPublicRoom } from "../state/publicRoom";
 import { getHint, getLockedThisRoundList, getSolvedList, isRevealed } from "@/lib/theme";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.resync");
 
 export const resyncHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -91,7 +94,7 @@ export const resyncHandler = (
 
 			cb?.(true);
 		} catch (err) {
-			console.error("DEV_RESYNC error", err);
+			log.error({ err, code: data?.code }, "DEV_RESYNC error");
 			cb?.(false);
 		}
 	});

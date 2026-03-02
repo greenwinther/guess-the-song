@@ -2,11 +2,13 @@
 import type { Server } from "socket.io";
 import { deleteRoom, iterRooms } from "./store/roomStore";
 import { clearRoomState } from "./roomStateCleanup";
+import { scopedLogger } from "./logger";
 
 let started = false;
+const log = scopedLogger("cleanupScheduler");
 
 export function startCleanupScheduler(io: Server, ms = Number(process.env.CLEANUP_INTERVAL_MS ?? 60_000)) {
-	if (started) return console.warn("cleanupScheduler already started"), undefined;
+	if (started) return log.warn("cleanupScheduler already started"), undefined;
 	started = true;
 
 	setInterval(async () => {
@@ -19,11 +21,11 @@ export function startCleanupScheduler(io: Server, ms = Number(process.env.CLEANU
 				if (socketsInRoom === 0) {
 					deleteRoom(code);
 					clearRoomState(code);
-					console.log(`🧹 Cron: deleted empty room ${code}`);
+					log.info({ code }, "cron deleted empty room");
 				}
 			}
 		} catch (e) {
-			console.error("Cleanup scheduler error:", e);
+			log.error({ err: e }, "cleanup scheduler error");
 		}
 	}, ms);
 }

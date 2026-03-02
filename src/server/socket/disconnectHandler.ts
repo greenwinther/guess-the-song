@@ -3,13 +3,16 @@ import type { Server, Socket } from "socket.io";
 import { getRoom, setPlayerConnected } from "../store/roomStore";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
 import { toPublicRoom } from "../state/publicRoom";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.disconnect");
 
 export const disconnectHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
 	socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>
 ) => {
 	socket.on("disconnect", async (reason) => {
-		console.log("↔️ socket disconnected", socket.id, reason);
+		log.info({ socketId: socket.id, reason }, "socket disconnected");
 
 		const meta = socket.data.roomMeta as { code: string; playerName: string } | undefined;
 		if (!meta) return;
@@ -25,7 +28,7 @@ export const disconnectHandler = (
 				io.to(code).emit("roomData", toPublicRoom(updated));
 			}
 		} catch (err) {
-			console.error("[disconnect] cleanup error", err);
+			log.error({ err, code, playerName }, "disconnect cleanup error");
 		}
 	});
 };

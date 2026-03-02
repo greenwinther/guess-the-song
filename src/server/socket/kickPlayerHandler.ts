@@ -14,6 +14,9 @@ import { toPublicRoom } from "../state/publicRoom";
 import { removePlayerFromRounds } from "@/lib/game";
 import { removePlayerScore } from "@/lib/score";
 import { removePlayerFromThemeState } from "@/lib/theme";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.kickPlayer");
 
 export const kickPlayerHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -55,7 +58,7 @@ export const kickPlayerHandler = (
 
 			cb?.(true);
 		} catch (err) {
-			console.error("kickPlayer error", err);
+			log.error({ err, code: data.code, playerName: data.playerName }, "kickPlayer error");
 			cb?.(false);
 		}
 	});

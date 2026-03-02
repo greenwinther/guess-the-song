@@ -5,6 +5,9 @@ import type { ClientToServerEvents, InterServerEvents, RemoveSongPayload, Server
 import { parseRoomCode, parseIntSafe } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.removeSong");
 
 export const removeSongHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -34,7 +37,7 @@ export const removeSongHandler = (
 				io.to(code).emit("songRemoved", { songId: deletedId });
 				callback({ success: true });
 			} catch (err: unknown) {
-				console.error("removeSong error", err);
+				log.error({ err, code: data.code, songId: data.songId }, "removeSong error");
 				const message = err instanceof Error ? err.message : "Unknown error";
 				callback({ success: false, error: message });
 			}

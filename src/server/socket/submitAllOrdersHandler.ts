@@ -5,6 +5,9 @@ import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, Soc
 import { parseRoomCode } from "../validation";
 import { requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.submitAllOrders");
 
 export const submitAllOrdersHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -34,7 +37,7 @@ export const submitAllOrdersHandler = (
 
 				callback(true);
 			} catch (err) {
-				console.error("submitAllOrders error", err);
+				log.error({ err, code: data.code, playerName: data.playerName }, "submitAllOrders error");
 				callback(false);
 			}
 		}

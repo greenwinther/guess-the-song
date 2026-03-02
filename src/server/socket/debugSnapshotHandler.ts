@@ -9,6 +9,9 @@ import { getRoomGameState } from "../state/gameState";
 import { exportRoundsState } from "@/lib/game";
 import { exportThemeState } from "@/lib/theme";
 import { getRoomScores } from "@/lib/score";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.debugSnapshot");
 
 export const debugSnapshotHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -34,10 +37,10 @@ export const debugSnapshotHandler = (
 				timestamp: Date.now(),
 			};
 
-			console.log("[debug snapshot]", JSON.stringify(snapshot, null, 2));
+			log.info({ code, snapshot }, "debug snapshot");
 			cb?.(true);
 		} catch (err) {
-			console.error("DEV_SNAPSHOT error", err);
+			log.error({ err }, "DEV_SNAPSHOT error");
 			cb?.(false);
 		}
 	});

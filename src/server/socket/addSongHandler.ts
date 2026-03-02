@@ -7,6 +7,9 @@ import { parseName, parseRequiredUrl, parseRoomCode, parseOptionalText } from ".
 import { requireHost, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
 import { getYouTubeID } from "@/lib/youtube";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.addSong");
 
 export const addSongHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -51,13 +54,13 @@ export const addSongHandler = (
 				});
 				const withTitle = { ...song, title };
 
-				console.log("[server] emitting songAdded:", song);
+				log.debug({ code, songId: song.id }, "emitting songAdded");
 				// Broadcast just the new song
 				io.to(code).emit("songAdded", withTitle);
 
 				callback({ success: true, song: withTitle });
 			} catch (err: unknown) {
-				console.error("[server] addSong error", err);
+				log.error({ err, code: data.code }, "addSong handler error");
 				const message = err instanceof Error ? err.message : "Unknown error";
 				callback({ success: false, error: message });
 			}

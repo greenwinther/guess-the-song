@@ -11,6 +11,9 @@ import type {
 } from "@/types/socket";
 import { parseAvatarConfig, parseName, parseOptionalText, parseOptionalUrl } from "../validation";
 import { toPublicRoom } from "../state/publicRoom";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.createRoom");
 
 export const createRoomHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -38,7 +41,7 @@ export const createRoomHandler = (
 
 			io.to(newRoom.code).emit("roomData", toPublicRoom(newRoom)); // includes host in players
 		} catch (err: unknown) {
-			console.error(err);
+			log.error({ err }, "createRoom handler error");
 			const message = err instanceof Error ? err.message : "Unknown error";
 			callback({
 				code: "",

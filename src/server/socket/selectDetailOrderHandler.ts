@@ -11,6 +11,9 @@ import type {
 } from "@/types/socket";
 import { parseIntSafe, parseRoomCode } from "../validation";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.selectDetailOrder");
 
 export const selectDetailOrderHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -29,7 +32,7 @@ export const selectDetailOrderHandler = (
 				void emitAdminDashboardToHosts(io, code);
 				cb?.(true);
 			} catch (e) {
-				console.error("selectDetailOrder error", e);
+				log.error({ err: e, code: data.code, songId: data.songId }, "selectDetailOrder error");
 				cb?.(false);
 			}
 		}

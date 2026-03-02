@@ -10,6 +10,9 @@ import { requireHost, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
 import { setPhase } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.nextSong");
 
 export const nextSongHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -89,7 +92,7 @@ export const nextSongHandler = (
 
 			cb?.(true);
 		} catch (e) {
-			console.error("nextSong error", e);
+			log.error({ err: e, code: data.code }, "nextSong error");
 			cb?.(false);
 		}
 	});

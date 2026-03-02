@@ -11,6 +11,9 @@ import { getRoom } from "@/lib/rooms";
 import { isPhase } from "../logic/phase";
 import { setPhase } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
+import { scopedLogger } from "../logger";
+
+const log = scopedLogger("socket.showResults");
 
 export const showResultHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -49,7 +52,7 @@ export const showResultHandler = (
 			if (updated) io.to(code).emit("roomData", toPublicRoom(updated));
 			callback(true);
 		} catch (err) {
-			console.error("showResults error", err);
+			log.error({ err, code: data.code }, "showResults error");
 			callback(false);
 		}
 	});

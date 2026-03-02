@@ -9,9 +9,11 @@ import { startCleanupScheduler } from "./cleanupScheduler";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
 import { initStatePersistence } from "./state/persistence";
 import { registerHttpRoutes } from "./http/registerHttpRoutes";
+import { scopedLogger } from "./logger";
 
 dotenv.config({ path: ".env.local", quiet: true });
 dotenv.config({ quiet: true });
+const log = scopedLogger("socketServer");
 
 const allowedOrigins = [
 	process.env.CLIENT_URL || "http://localhost:3000",
@@ -21,6 +23,21 @@ const allowedOrigins = [
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "1mb" }));
+app.use((req: Request, res: Response, next: NextFunction) => {
+	const started = Date.now();
+	res.on("finish", () => {
+		log.debug(
+			{
+				method: req.method,
+				url: req.originalUrl || req.url,
+				statusCode: res.statusCode,
+				durationMs: Date.now() - started,
+			},
+			"http request"
+		);
+	});
+	next();
+});
 
 app.use((req: Request, res: Response, next: NextFunction) => {
 	const origin = req.headers.origin;
@@ -47,7 +64,7 @@ registerHttpRoutes(app);
 const httpServer = http.createServer(app);
 
 httpServer.on("error", (err) => {
-	console.error("HTTP server error:", err);
+	log.error({ err }, "HTTP server error");
 });
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(
@@ -71,18 +88,18 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
 const persistence = initStatePersistence();
 
 io.engine.on("connection_error", (err) => {
-	console.error("Engine.IO connection error:", err);
+	log.error({ err }, "Engine.IO connection error");
 });
 
 io.of("/").on("connect_error", (err) => {
-	console.error("Socket.IO connect_error:", err);
+	log.error({ err }, "Socket.IO connect_error");
 });
 
 io.on("connection", (socket) => {
-	console.log("socket connected", socket.id);
+	log.info({ socketId: socket.id }, "socket connected");
 
 	socket.on("error", (err) => {
-		console.error(`Socket ${socket.id} error:`, err);
+		log.error({ err, socketId: socket.id }, "socket error");
 	});
 
 	registerSocketHandlers(io, socket);
@@ -90,16 +107,16 @@ io.on("connection", (socket) => {
 
 const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
 httpServer.listen(PORT, () => {
-	console.log(`Socket.IO + Express server listening on port ${PORT}`);
+	log.info({ port: PORT }, "Socket.IO + Express server listening");
 	startCleanupScheduler(io);
 });
 
 const shutdown = (signal: string) => {
-	console.log(`${signal} received, closing server...`);
+	log.info({ signal }, "shutdown signal received");
 	persistence.flush();
 	io.close(() => {
 		httpServer.close(() => {
-			console.log("Closed Socket.IO, Express, and HTTP server");
+			log.info("Closed Socket.IO, Express, and HTTP server");
 			process.exit(0);
 		});
 	});
