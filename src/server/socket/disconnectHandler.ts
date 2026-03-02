@@ -1,9 +1,13 @@
 // src/server/socket/disconnectHandler.ts
-import { Server, Socket } from "socket.io";
-import { getRoom } from "../../lib/rooms";
-import { prisma } from "../../lib/prisma";
+import type { Server, Socket } from "socket.io";
+import { getRoom, setPlayerConnected } from "../store/roomStore";
+import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
+import { toPublicRoom } from "../state/publicRoom";
 
-export const disconnectHandler = (io: Server, socket: Socket) => {
+export const disconnectHandler = (
+	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
+	socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>
+) => {
 	socket.on("disconnect", async (reason) => {
 		console.log("↔️ socket disconnected", socket.id, reason);
 
@@ -13,34 +17,13 @@ export const disconnectHandler = (io: Server, socket: Socket) => {
 		const { code, playerName } = meta;
 
 		try {
-			const before = await getRoom(code);
-			const leftPlayer = before.players.find((p) => p.name === playerName);
-			if (!leftPlayer) return;
+			const before = getRoom(code);
+			if (!before) return;
 
-			console.log(`🚨 Player "${leftPlayer.name}" (id: ${leftPlayer.id}) left room ${code}`);
-
-			await prisma.player.delete({ where: { id: leftPlayer.id } });
-
-			const socketsInRoom = io.sockets.adapter.rooms.get(code)?.size ?? 0;
-			if (socketsInRoom === 0) {
-				// Inga aktiva connections i rummet -> ta bort hela rummet
-				try {
-					await prisma.room.delete({ where: { code } });
-					console.log(`🧹 Deleted empty room ${code}`);
-				} catch (e) {
-					console.error("Failed deleting empty room", e);
-				}
-			} else {
-				// fortfarande folk kvar → skicka färsk snapshot
-				const after = await getRoom(code);
-				io.to(code).emit("roomData", after);
+			const updated = setPlayerConnected(code, playerName, false);
+			if (updated) {
+				io.to(code).emit("roomData", toPublicRoom(updated));
 			}
-
-			// notify first, then send fresh snapshot
-			io.to(code).emit("playerLeft", leftPlayer.id);
-
-			const after = await getRoom(code);
-			io.to(code).emit("roomData", after);
 		} catch (err) {
 			console.error("[disconnect] cleanup error", err);
 		}

@@ -1,21 +1,32 @@
 // src/server/socket/lockAnswerHandler.ts
-import { Server, Socket } from "socket.io";
+import type { Server, Socket } from "socket.io";
 import { manualLock, lockCounts, tryUndoManualLock } from "../../lib/game";
-import { activeSongByRoom } from "../sharedState";
+import { getRoomGameState } from "../state/gameState";
+import type { ClientToServerEvents, InterServerEvents, LockAnswerPayload, ServerToClientEvents, SocketData } from "@/types/socket";
+import { parseRoomCode, parseIntSafe } from "../validation";
+import { emitAdminDashboardToHosts } from "./adminDashboard";
 
-export const lockAnswerHandler = (io: Server, socket: Socket) => {
+export const lockAnswerHandler = (
+	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
+	socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>
+) => {
 	socket.on(
 		"lockAnswer",
-		(d: { code: string; songId: number; playerName: string }, cb?: (ok: boolean) => void) => {
+		(d: LockAnswerPayload, cb?: (ok: boolean) => void) => {
 			try {
-				if (activeSongByRoom[d.code] !== d.songId) return cb?.(false);
-				const ok = manualLock(d.code, d.songId, d.playerName); // 👈 only this player
+				const code = parseRoomCode(d.code);
+				const songId = parseIntSafe(d.songId);
+				if (!code || songId == null) return cb?.(false);
+				if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
+				const playerName = socket.data.roomMeta?.playerName ?? d.playerName;
+				const ok = manualLock(code, songId, playerName); // 👈 only this player
 				if (ok) {
-					io.to(d.code).emit("playerGuessLocked", {
-						songId: d.songId,
-						playerName: d.playerName,
-						counts: lockCounts(d.code, d.songId),
+					io.to(code).emit("playerGuessLocked", {
+						songId,
+						playerName,
+						counts: lockCounts(code, songId),
 					});
+					void emitAdminDashboardToHosts(io, code);
 				}
 				cb?.(ok);
 			} catch (e) {
@@ -27,16 +38,22 @@ export const lockAnswerHandler = (io: Server, socket: Socket) => {
 
 	socket.on(
 		"undoLock",
-		(data: { code: string; songId: number; playerName: string }, cb?: (ok: boolean) => void) => {
+		(data: LockAnswerPayload, cb?: (ok: boolean) => void) => {
 			try {
-				const ok = tryUndoManualLock(data.code, data.songId, data.playerName);
+				const code = parseRoomCode(data.code);
+				const songId = parseIntSafe(data.songId);
+				if (!code || songId == null) return cb?.(false);
+				if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
+				const playerName = socket.data.roomMeta?.playerName ?? data.playerName;
+				const ok = tryUndoManualLock(code, songId, playerName);
 				if (ok) {
-					const counts = lockCounts(data.code, data.songId);
-					io.to(data.code).emit("playerGuessUndo", {
-						playerName: data.playerName,
-						songId: data.songId,
+					const counts = lockCounts(code, songId);
+					io.to(code).emit("playerGuessUndo", {
+						playerName,
+						songId,
 						counts,
 					});
+					void emitAdminDashboardToHosts(io, code);
 				}
 				cb?.(ok);
 			} catch (e) {

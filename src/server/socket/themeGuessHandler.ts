@@ -1,5 +1,4 @@
-import { Server, Socket } from "socket.io";
-import { prisma } from "../../lib/prisma";
+import type { Server, Socket } from "socket.io";
 import {
 	initThemeState,
 	isRevealed,
@@ -10,25 +9,38 @@ import {
 	normalize,
 } from "../../lib/theme";
 import { addPointsByCodeName } from "../../lib/score";
+import { getRoom as getRoomFromStore } from "../store/roomStore";
+import type {
+	ClientToServerEvents,
+	InterServerEvents,
+	ServerToClientEvents,
+	SocketData,
+	ThemeGuessPayload,
+	ThemeRevealPayload,
+} from "@/types/socket";
+import { parseRoomCode, parseOptionalText } from "../validation";
 
-export const themeGuessHandler = (io: Server, socket: Socket) => {
+export const themeGuessHandler = (
+	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
+	socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>
+) => {
 	// Use playerName to match your lib/game.ts conventions
 	socket.on(
 		"THEME_GUESS",
-		async ({ code, playerName, guess }: { code: string; playerName: string; guess: string }) => {
-			initThemeState(code);
+		async ({ code, playerName, guess }: ThemeGuessPayload) => {
+			const normalizedCode = parseRoomCode(code);
+			if (!normalizedCode) return;
+			initThemeState(normalizedCode);
+			const resolvedName = socket.data.roomMeta?.playerName ?? playerName;
 
-			// Get current theme from DB
-			const room = await prisma.room.findUnique({
-				where: { code },
-				select: { code: true, theme: true },
-			});
+			// Get current theme from in-memory room
+			const room = getRoomFromStore(normalizedCode);
 			if (!room?.theme) return;
 
 			// No more guesses after reveal
-			if (isRevealed(code)) {
+			if (isRevealed(normalizedCode)) {
 				socket.emit("THEME_GUESS_RESULT", {
-					playerName,
+					playerName: resolvedName,
 					correct: false,
 					reason: "revealed",
 				});
@@ -36,9 +48,9 @@ export const themeGuessHandler = (io: Server, socket: Socket) => {
 			}
 
 			// Already solved permanently
-			if (alreadySolved(code, playerName)) {
+			if (alreadySolved(normalizedCode, resolvedName)) {
 				socket.emit("THEME_GUESS_RESULT", {
-					playerName,
+					playerName: resolvedName,
 					correct: true,
 					alreadySolved: true,
 				});
@@ -46,9 +58,9 @@ export const themeGuessHandler = (io: Server, socket: Socket) => {
 			}
 
 			// One guess per round
-			if (hasLockedThisRound(code, playerName)) {
+			if (hasLockedThisRound(normalizedCode, resolvedName)) {
 				socket.emit("THEME_GUESS_RESULT", {
-					playerName,
+					playerName: resolvedName,
 					correct: false,
 					reason: "roundLocked",
 				});
@@ -56,15 +68,16 @@ export const themeGuessHandler = (io: Server, socket: Socket) => {
 			}
 
 			// Consume their single attempt this round
-			lockPlayerThisRound(code, playerName);
+			lockPlayerThisRound(normalizedCode, resolvedName);
 
 			// 👇 NEW: tell everyone that this player has used their theme guess this round
-			io.to(code).emit("THEME_GUESSED_THIS_ROUND", { playerName });
+			io.to(normalizedCode).emit("THEME_GUESSED_THIS_ROUND", { playerName: resolvedName });
 
-			const correct = normalize(guess) === normalize(room.theme);
+			const normalizedGuess = parseOptionalText(guess) ?? "";
+			const correct = normalize(normalizedGuess) === normalize(room.theme);
 			if (!correct) {
 				socket.emit("THEME_GUESS_RESULT", {
-					playerName,
+					playerName: resolvedName,
 					correct: false,
 					lockedForRound: true,
 				});
@@ -72,18 +85,20 @@ export const themeGuessHandler = (io: Server, socket: Socket) => {
 			}
 
 			// First time solved → +1 point, broadcast solved
-			markSolved(code, playerName);
-			const newTotal = addPointsByCodeName(code, playerName, 1);
-			io.to(code).emit("THEME_SOLVED", { playerName });
-			io.to(code).emit("scoreUpdated", { playerName, total: newTotal }); // optional but handy
+			markSolved(normalizedCode, resolvedName);
+			const newTotal = addPointsByCodeName(normalizedCode, resolvedName, 1);
+			io.to(normalizedCode).emit("THEME_SOLVED", { playerName: resolvedName });
+			io.to(normalizedCode).emit("scoreUpdated", { playerName: resolvedName, total: newTotal }); // optional but handy
 		}
 	);
 
 	// Optional: reveal button from host UI
-	socket.on("THEME_REVEAL", async ({ code }: { code: string }) => {
+	socket.on("THEME_REVEAL", async ({ code }: ThemeRevealPayload) => {
+		const normalizedCode = parseRoomCode(code);
+		if (!normalizedCode) return;
 		// we don’t need DB here, just flip the flag and broadcast
 		const { setRevealed } = await import("@/lib/theme");
-		setRevealed(code, true);
-		io.to(code).emit("THEME_REVEALED");
+		setRevealed(normalizedCode, true);
+		io.to(normalizedCode).emit("THEME_REVEALED");
 	});
 };
