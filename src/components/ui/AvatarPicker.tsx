@@ -37,26 +37,31 @@ const resolveOptionalId = (list: { id: string }[], value: string | undefined) =>
 	return list.some((item) => item.id === value) ? value : "empty";
 };
 
+const normalizeAvatar = (parsed: AvatarConfig): AvatarConfig => ({
+	base: resolveId(bases, parsed.base),
+	hair: resolveOptionalId(hair, parsed.hair),
+	eyes: resolveId(eyes, parsed.eyes),
+	mouth: resolveId(mouths, parsed.mouth),
+	headwear: resolveOptionalId(headwears, parsed.headwear),
+});
+
+const getStoredAvatar = (): AvatarConfig => {
+	if (typeof window === "undefined") return defaultAvatar;
+	try {
+		const raw = localStorage.getItem(STORAGE_KEY);
+		if (!raw) return defaultAvatar;
+		const parsed = JSON.parse(raw) as AvatarConfig;
+		if (!parsed?.base) return defaultAvatar;
+		return normalizeAvatar(parsed);
+	} catch {
+		return defaultAvatar;
+	}
+};
+
 type AvatarLayer = "base" | "hair" | "headwear" | "eyes" | "mouth";
 
 export default function AvatarPicker({ onChange }: { onChange?: (cfg: AvatarConfig) => void }) {
-	const [config, setConfig] = useState<AvatarConfig>(defaultAvatar);
-
-	useEffect(() => {
-		try {
-			const raw = localStorage.getItem(STORAGE_KEY);
-			if (!raw) return;
-			const parsed = JSON.parse(raw) as AvatarConfig;
-			if (!parsed?.base) return;
-			setConfig({
-				base: resolveId(bases, parsed.base),
-				hair: resolveOptionalId(hair, parsed.hair),
-				eyes: resolveId(eyes, parsed.eyes),
-				mouth: resolveId(mouths, parsed.mouth),
-				headwear: resolveOptionalId(headwears, parsed.headwear),
-			});
-		} catch {}
-	}, []);
+	const [config, setConfig] = useState<AvatarConfig>(getStoredAvatar);
 
 	useEffect(() => {
 		try {
@@ -107,6 +112,7 @@ export default function AvatarPicker({ onChange }: { onChange?: (cfg: AvatarConf
 
 	const LayerButton = ({ dir, layer, label }: { dir: 1 | -1; layer: AvatarLayer; label: string }) => (
 		<button
+			type="button"
 			onClick={() => cycleLayer(layer, dir)}
 			className="h-8 w-8 rounded-md border border-border bg-card/40 text-base leading-none text-text/80 backdrop-blur hover:bg-card/60"
 			aria-label={`${dir === -1 ? "Previous" : "Next"} ${label}`}
