@@ -25,13 +25,10 @@ export function parseOptionalUrl(input: unknown): string | null {
 	if (input == null) return null;
 	const s = isString(input) ? input.trim() : "";
 	if (!s) return null;
-	try {
-		// eslint-disable-next-line no-new
-		new URL(s);
-		return s;
-	} catch {
+	if (!URL.canParse(s)) {
 		return null;
 	}
+	return s;
 }
 
 export function parseRequiredUrl(input: unknown): string | null {
@@ -53,7 +50,6 @@ export function parseIntSafe(input: unknown): number | null {
 	}
 	return null;
 }
-
 
 export function parseBool(input: unknown, fallback = false): boolean {
 	if (typeof input === "boolean") return input;

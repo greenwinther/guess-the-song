@@ -10,13 +10,7 @@ const normalizeRoomCode = (value: unknown) =>
 		.replace(/[^A-Z0-9]/g, "");
 
 const isValidUrl = (value: string) => {
-	try {
-		// eslint-disable-next-line no-new
-		new URL(value);
-		return true;
-	} catch {
-		return false;
-	}
+	return URL.canParse(value);
 };
 
 export const joinLobbyFormSchema = z.object({
