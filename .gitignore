@@ -15,6 +15,7 @@
 # production
 /build
 /dist
+/data/state.json
 
 # misc
 .DS_Store
