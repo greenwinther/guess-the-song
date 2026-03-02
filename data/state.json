@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "savedAt": 1772472470176,
+  "roomStore": {
+    "rooms": [],
+    "nextRoomId": 123,
+    "nextPlayerId": 402,
+    "nextSongId": 378
+  },
+  "gameState": {},
+  "rounds": {},
+  "theme": {
+    "solvedBy": {},
+    "lockedThisRound": {},
+    "revealed": {},
+    "hint": {}
+  }
+}
