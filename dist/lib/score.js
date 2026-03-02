@@ -2,14 +2,11 @@
 // Minimal in-memory scoreboard keyed by room code + player name.
 // If you later move scores to DB, keep the same function signature.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getScore = getScore;
 exports.addPointsByCodeName = addPointsByCodeName;
 exports.getRoomScores = getRoomScores;
+exports.clearRoomScores = clearRoomScores;
+exports.removePlayerScore = removePlayerScore;
 const scoresByCode = {};
-function getScore(code, playerName) {
-    var _a, _b;
-    return (_b = (_a = scoresByCode[code]) === null || _a === void 0 ? void 0 : _a[playerName]) !== null && _b !== void 0 ? _b : 0;
-}
 function addPointsByCodeName(code, playerName, delta) {
     var _a;
     if (!scoresByCode[code])
@@ -23,4 +20,12 @@ function addPointsByCodeName(code, playerName, delta) {
 function getRoomScores(code) {
     var _a;
     return (_a = scoresByCode[code]) !== null && _a !== void 0 ? _a : {};
+}
+function clearRoomScores(code) {
+    delete scoresByCode[code];
+}
+function removePlayerScore(code, playerName) {
+    if (!scoresByCode[code])
+        return;
+    delete scoresByCode[code][playerName];
 }

@@ -5,63 +5,30 @@ exports.joinRoom = joinRoom;
 exports.getRoom = getRoom;
 exports.addSong = addSong;
 exports.removeSong = removeSong;
-exports.getHardcorePlayerNames = getHardcorePlayerNames;
-// src/lib/rooms.ts
-const nanoid_1 = require("nanoid");
-const prisma_1 = require("./prisma");
-async function createRoom(theme, backgroundUrl, hostName) {
-    const code = (0, nanoid_1.nanoid)(4).toUpperCase();
-    return await prisma_1.prisma.room.create({
-        data: {
-            code,
-            theme,
-            backgroundUrl,
-            players: { create: { name: hostName, isHost: true } },
-        },
-        include: { players: true },
-    });
+exports.getSong = getSong;
+exports.setRoomTheme = setRoomTheme;
+const roomStore_1 = require("@/server/store/roomStore");
+async function createRoom(theme, backgroundUrl, hostName, avatar) {
+    return (0, roomStore_1.createRoom)(theme, backgroundUrl, hostName, avatar);
 }
-async function joinRoom(code, name, hardcore) {
-    const room = await prisma_1.prisma.room.findUnique({
-        where: { code },
-        include: { players: true },
-    });
-    if (!room)
-        throw new Error("Room not found");
-    const existing = room.players.find((p) => p.name === name);
-    if (existing)
-        return { player: existing, created: false };
-    const player = await prisma_1.prisma.player.create({
-        data: { name, isHost: name === "Host", roomId: room.id, hardcore },
-    });
-    return { player, created: true };
+async function joinRoom(code, name, hardcore, avatar) {
+    return (0, roomStore_1.joinRoom)(code, name, hardcore, avatar);
 }
 async function getRoom(code) {
-    const room = await prisma_1.prisma.room.findUnique({
-        where: { code },
-        include: { songs: true, players: true },
-    });
+    const room = (0, roomStore_1.getRoom)(code);
     if (!room)
         throw new Error("Room not found");
     return room;
 }
 async function addSong(code, song) {
-    const room = await prisma_1.prisma.room.findUnique({ where: { code } });
-    if (!room)
-        throw new Error("Room not found");
-    return await prisma_1.prisma.song.create({
-        data: { url: song.url, submitter: song.submitter, title: song.title, roomId: room.id },
-    });
+    return (0, roomStore_1.addSong)(code, song);
 }
 async function removeSong(code, songId) {
-    await prisma_1.prisma.song.delete({ where: { id: songId } });
-    return songId;
+    return (0, roomStore_1.removeSong)(code, songId);
 }
-async function getHardcorePlayerNames(code) {
-    var _a;
-    const room = await prisma_1.prisma.room.findUnique({
-        where: { code },
-        include: { players: { where: { hardcore: true } } },
-    });
-    return (_a = room === null || room === void 0 ? void 0 : room.players.map((p) => p.name)) !== null && _a !== void 0 ? _a : [];
+async function getSong(code, songId) {
+    return (0, roomStore_1.getSong)(code, songId);
+}
+async function setRoomTheme(code, theme) {
+    return (0, roomStore_1.setRoomTheme)(code, theme);
 }

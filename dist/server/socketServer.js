@@ -3,12 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.io = void 0;
 // src/server/socketServer.ts
 const http_1 = __importDefault(require("http"));
 const socket_io_1 = require("socket.io");
 const socket_1 = require("./socket");
 const cleanupScheduler_1 = require("./cleanupScheduler");
+const persistence_1 = require("./state/persistence");
 const httpServer = http_1.default.createServer((req, res) => {
     if (req.url === "/" && req.method === "GET") {
         res.writeHead(200, { "Content-Type": "text/plain" });
@@ -27,7 +27,7 @@ const allowedOrigins = [
     process.env.CLIENT_URL || "http://localhost:3000",
     process.env.CLIENT_URL_2, // e.g. preview URL
 ].filter(Boolean);
-exports.io = new socket_io_1.Server(httpServer, {
+const io = new socket_io_1.Server(httpServer, {
     // Serve only WS, not the bundled client
     serveClient: false,
     transports: ["websocket"],
@@ -45,30 +45,32 @@ exports.io = new socket_io_1.Server(httpServer, {
         maxDisconnectionDuration: 120000, // 2 min
     },
 });
+const persistence = (0, persistence_1.initStatePersistence)();
 // 2) Log Engine.IO connection-level errors
-exports.io.engine.on("connection_error", (err) => {
+io.engine.on("connection_error", (err) => {
     console.error("🚨 Engine.IO connection error:", err);
 });
 // 3) Log top-level Socket.IO errors
-exports.io.of("/").on("connect_error", (err) => {
+io.of("/").on("connect_error", (err) => {
     console.error("🚨 Socket.IO connect_error:", err);
 });
-exports.io.on("connection", (socket) => {
+io.on("connection", (socket) => {
     console.log("↔️ socket connected", socket.id);
     socket.on("error", (err) => {
         console.error(`🚨 Socket ${socket.id} error:`, err);
     });
-    (0, socket_1.registerSocketHandlers)(exports.io, socket);
+    (0, socket_1.registerSocketHandlers)(io, socket);
 });
 const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
 httpServer.listen(PORT, () => {
     console.log(`🚀 Socket.IO server listening on port ${PORT}`);
-    (0, cleanupScheduler_1.startCleanupScheduler)(exports.io);
+    (0, cleanupScheduler_1.startCleanupScheduler)(io);
 });
 // Graceful shutdown (Railway/Node best practice)
 process.on("SIGTERM", () => {
     console.log("🧹 SIGTERM received, closing server...");
-    exports.io.close(() => {
+    persistence.flush();
+    io.close(() => {
         httpServer.close(() => {
             console.log("✅ Closed Socket.IO and HTTP server");
             process.exit(0);

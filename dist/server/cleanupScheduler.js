@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.startCleanupScheduler = startCleanupScheduler;
-const prisma_1 = require("../lib/prisma");
+const roomStore_1 = require("./store/roomStore");
+const roomStateCleanup_1 = require("./roomStateCleanup");
 let started = false;
 function startCleanupScheduler(io, ms) {
     var _a;
@@ -15,11 +16,11 @@ function startCleanupScheduler(io, ms) {
             // ✅ no sockets at all? skip touching the DB.
             if (io.engine.clientsCount === 0)
                 return;
-            const rooms = await prisma_1.prisma.room.findMany({ select: { code: true } });
-            for (const { code } of rooms) {
+            for (const [code] of (0, roomStore_1.iterRooms)()) {
                 const socketsInRoom = (_b = (_a = io.sockets.adapter.rooms.get(code)) === null || _a === void 0 ? void 0 : _a.size) !== null && _b !== void 0 ? _b : 0;
                 if (socketsInRoom === 0) {
-                    await prisma_1.prisma.room.delete({ where: { code } });
+                    (0, roomStore_1.deleteRoom)(code);
+                    (0, roomStateCleanup_1.clearRoomState)(code);
                     console.log(`🧹 Cron: deleted empty room ${code}`);
                 }
             }
