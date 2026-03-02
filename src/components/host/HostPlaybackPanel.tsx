@@ -1,13 +1,14 @@
-// src/components/host/HostPlaybackPanel.tsx
+﻿// src/components/host/HostPlaybackPanel.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import Button from "@/components/ui/Button";
-import type { Song } from "@/types/room";
+import type { Submission } from "@/types/submission";
 import { useGame } from "@/contexts/tempContext";
 import { useThemeSockets } from "@/hooks/useThemeSockets";
 import { useSocket } from "@/contexts/SocketContext";
+import ExportGameReportButton from "@/components/report/ExportGameReportButton";
 
 export default function HostPlaybackPanel({
 	code,
@@ -30,7 +31,7 @@ export default function HostPlaybackPanel({
 	onToggleFastRecap,
 }: {
 	code: string;
-	currentSong: Song | null;
+	currentSong: Submission | null;
 	isPlaying: boolean;
 	setIsPlaying: (v: boolean) => void;
 	onPrev: () => void;
@@ -107,7 +108,7 @@ export default function HostPlaybackPanel({
 
 	// ---------- SAFE EARLY RETURN (after hooks) ----------
 	if (!room) {
-		return <div className="p-4 text-text/70">Loading room…</div>;
+		return <div className="p-4 text-text/70">Loading room...</div>;
 	}
 
 	// ---------- Handlers / helpers ----------
@@ -230,6 +231,7 @@ export default function HostPlaybackPanel({
 					<Button variant="secondary" size="md" onClick={revealNext} disabled={allRevealed}>
 						{revealLabel()}
 					</Button>
+					<ExportGameReportButton code={room.code} scores={scores} theme={theme} />
 				</div>
 			</main>
 		);
@@ -289,7 +291,7 @@ export default function HostPlaybackPanel({
 					aria-label="Play/Pause (Space)"
 					className="w-full sm:flex-1"
 				>
-					{isPlaying ? "Pause" : currentSong ? "Play" : "Play • Start Track 1"}
+							{isPlaying ? "Pause" : "Play"}
 				</Button>
 
 				<Button

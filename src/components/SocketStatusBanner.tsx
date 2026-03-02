@@ -8,13 +8,15 @@ export default function SocketStatusBanner({ delayMs = 250 }: { delayMs?: number
 	const [show, setShow] = useState(false);
 
 	useEffect(() => {
-		let t: any;
+		let t: ReturnType<typeof setTimeout> | null = null;
 		if (status !== "connected") {
 			t = setTimeout(() => setShow(true), delayMs); // avoid flicker for very quick connects
 		} else {
 			setShow(false);
 		}
-		return () => clearTimeout(t);
+		return () => {
+			if (t) clearTimeout(t);
+		};
 	}, [status, delayMs]);
 
 	if (!show || status === "connected") return null;

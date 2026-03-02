@@ -1,11 +1,11 @@
 // src/components/join/RightSidebarPlaylist.tsx
-import type { Song } from "@/types/room";
+import type { Submission } from "@/types/submission";
 
 export default function RightSidebarPlaylist({
 	songs,
 	revealedIds,
 }: {
-	songs: Song[];
+	songs: Submission[];
 	revealedIds: number[];
 }) {
 	return (

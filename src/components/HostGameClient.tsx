@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 // src/components/HostGameClient.tsx
 
-import { useEffect, useMemo, useState, useCallback, use } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 
@@ -14,8 +14,10 @@ import HostGamePlaylist from "./host/HostGamePlaylist";
 import { useReconnectNotice } from "@/hooks/useReconnectNotice";
 import { useHostGameSocket } from "@/hooks/host/useHostGameSocket";
 import { useRevealedSubmittersSync } from "@/hooks/useRevealedSubmittersSync";
+import { useRevealedSongsSync } from "@/hooks/join/useRevealedSongsSync";
 
-import type { Song, Room } from "@/types/room";
+import type { Room } from "@/types/room";
+import type { Submission } from "@/types/submission";
 import { useThemeSockets } from "@/hooks/useThemeSockets";
 
 export default function HostGameClient({ code, initialRoom }: { code: string; initialRoom?: Room }) {
@@ -23,11 +25,11 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 	const {
 		room,
 		setRoom,
-		gameStarted,
 		scores,
 		revealedSongs,
 		setRevealedSongs,
 		currentSong,
+		currentClip,
 		submittedPlayers,
 		bgThumbnail,
 		solvedByTheme,
@@ -41,6 +43,10 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 		// optional persist
 		if (typeof window === "undefined") return false;
 		return localStorage.getItem("gts_fast_recap") === "1";
+	});
+	const [showDebug, setShowDebug] = useState<boolean>(() => {
+		if (typeof window === "undefined") return true;
+		return localStorage.getItem("gts_debug_panel") !== "0";
 	});
 
 	const [lockedBySong, setLockedBySong] = useState<Map<number, Set<string>>>(
@@ -57,11 +63,16 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 
 	// Socket listeners for game (host) lifecycle
 	useHostGameSocket(code);
+	useRevealedSongsSync();
 	useRevealedSubmittersSync();
 
 	useEffect(() => {
 		localStorage.setItem("gts_fast_recap", fastRecap ? "1" : "0");
 	}, [fastRecap]);
+
+	useEffect(() => {
+		localStorage.setItem("gts_debug_panel", showDebug ? "1" : "0");
+	}, [showDebug]);
 
 	const recapSeconds = fastRecap ? 15 : 30;
 
@@ -81,7 +92,7 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 		const onPlayerGuessLocked = ({ songId, playerName }: { songId: number; playerName: string }) => {
 			setLockedBySong((prev) => {
 				const m = new Map(prev);
-				const s = new Set<string>(m.get(songId) ?? new Set<string>()); // 👈
+				const s = new Set<string>(m.get(songId) ?? new Set<string>());
 				s.add(playerName);
 				m.set(songId, s);
 				return m;
@@ -91,7 +102,7 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 		const onPlayerGuessUndo = ({ songId, playerName }: { songId: number; playerName: string }) => {
 			setLockedBySong((prev) => {
 				const m = new Map(prev);
-				const s = new Set<string>(m.get(songId) ?? new Set<string>()); // 👈
+				const s = new Set<string>(m.get(songId) ?? new Set<string>());
 				s.delete(playerName);
 				m.set(songId, s);
 				return m;
@@ -102,7 +113,7 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 			if (!lockedNames?.length) return;
 			setLockedBySong((prev) => {
 				const m = new Map(prev);
-				const s = new Set<string>(m.get(songId) ?? new Set<string>()); // 👈
+				const s = new Set<string>(m.get(songId) ?? new Set<string>());
 				lockedNames.forEach((n) => s.add(n));
 				m.set(songId, s);
 				return m;
@@ -139,7 +150,7 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 
 	// Centralized play helper that mirrors your socket flow + reveal sync
 	const playSong = useCallback(
-		(song: Song) => {
+		(song: Submission) => {
 			socket.emit("playSong", { code, songId: song.id }, () => {
 				if (!revealedSongs.includes(song.id)) {
 					const updated = [...revealedSongs, song.id];
@@ -179,17 +190,19 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 			if (e.code === "ArrowRight" && currentIndex >= 0 && currentIndex < songsLen - 1) {
 				playAtIndex(currentIndex + 1);
 			}
+			if (e.code === "KeyD") {
+				setShowDebug((prev) => !prev);
+			}
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
 	}, [currentIndex, currentSong, songsLen, playAtIndex]);
 
 	const bgImage = bgThumbnail ?? viewRoom?.backgroundUrl ?? null;
-	const nonHostPlayers = (viewRoom?.players ?? []).filter((p) => !p.isHost);
-	const notSubmitted = nonHostPlayers.map((p) => p.name).filter((name) => !submittedPlayers.includes(name));
 	const currentLockedNames = Array.from(
-		lockedBySong.get(currentSong?.id ?? -1) ?? new Set<string>() // 👈 typed
+		lockedBySong.get(currentSong?.id ?? -1) ?? new Set<string>()
 	);
+	const isDev = process.env.NODE_ENV !== "production";
 
 	return (
 		<BackgroundShell bgImage={bgImage} socketError={socketError}>
@@ -202,6 +215,13 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				lockedCounts={lockedCounts}
 				solvedByTheme={solvedByTheme}
 				lockedForThisRound={lockedForThisRound}
+				onKick={(player) => {
+					const ok = window.confirm(`Kick ${player.name}?`);
+					if (!ok) return;
+					socket.emit("kickPlayer", { code: viewRoom?.code ?? code, playerName: player.name }, (success) => {
+						if (!success) alert("Failed to kick player");
+					});
+				}}
 			/>
 
 			<HostPlaybackPanel
@@ -211,8 +231,15 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				setIsPlaying={setIsPlaying}
 				onPrev={() => currentIndex > 0 && playAtIndex(currentIndex - 1)}
 				onPlayPause={() => {
-					if (!currentSong) playAtIndex(0);
-					else setIsPlaying((p) => !p);
+					if (!currentSong) {
+						playAtIndex(0);
+						return;
+					}
+					if (!currentClip || currentClip.songId !== currentSong.id) {
+						playSong(currentSong);
+						return;
+					}
+					setIsPlaying((p) => !p);
 				}}
 				onNext={() => {
 					// 1) ask server to finalize HC + advance round
@@ -259,6 +286,43 @@ export default function HostGameClient({ code, initialRoom }: { code: string; in
 				onSelect={playSong}
 				allPlayed={allPlayed}
 			/>
+
+			{isDev && showDebug && (
+				<div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-xl border border-border bg-card/90 p-3 text-xs text-text shadow-xl backdrop-blur">
+					<div className="mb-2 text-[10px] uppercase tracking-widest text-text/60">Debug</div>
+					<div>Room: {viewRoom?.code ?? code}</div>
+					<div>Phase: {viewRoom?.phase ?? "?"}</div>
+					<div>
+						Active song: {currentSong ? `${currentIndex + 1}/${songs.length}` : "none"}
+					</div>
+					<div>Revealed: {revealedSongs.length}</div>
+					<div>Players: {viewRoom?.players?.length ?? 0}</div>
+					<div>Locked this round: {lockedForThisRound.length}</div>
+					<div className="mt-2">
+						<button
+							className="rounded-md border border-border bg-card/80 px-2 py-1 text-[10px] uppercase tracking-widest text-text/80 hover:bg-card"
+							onClick={() => {
+								socket.emit("DEV_RESYNC", { code: viewRoom?.code ?? code }, (ok) => {
+									if (!ok) alert("Resync failed");
+								});
+							}}
+						>
+							Force resync
+						</button>
+						<button
+							className="ml-2 rounded-md border border-border bg-card/80 px-2 py-1 text-[10px] uppercase tracking-widest text-text/80 hover:bg-card"
+							onClick={() => {
+								socket.emit("DEV_SNAPSHOT", { code: viewRoom?.code ?? code }, (ok) => {
+									if (!ok) alert("Snapshot failed");
+								});
+							}}
+						>
+							Dump snapshot
+						</button>
+					</div>
+					<div className="mt-2 text-[10px] text-text/60">Press D to toggle</div>
+				</div>
+			)}
 		</BackgroundShell>
 	);
 }

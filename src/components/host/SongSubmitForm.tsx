@@ -12,6 +12,7 @@ interface Props {
 	code: string;
 	defaultSubmitter?: string;
 	onUrlChange?: (url: string) => void;
+	disabled?: boolean;
 }
 
 interface VideoResult {
@@ -19,7 +20,12 @@ interface VideoResult {
 	snippet: { title: string; thumbnails: any };
 }
 
-export default function SongSubmitForm({ code, defaultSubmitter = "", onUrlChange }: Props) {
+export default function SongSubmitForm({
+	code,
+	defaultSubmitter = "",
+	onUrlChange,
+	disabled = false,
+}: Props) {
 	const socket = useSocket();
 	const [query, setQuery] = useState("");
 	const [results, setResults] = useState<VideoResult[]>([]);
@@ -27,6 +33,7 @@ export default function SongSubmitForm({ code, defaultSubmitter = "", onUrlChang
 	const [url, setUrl] = useState("");
 	const [title, setTitle] = useState("");
 	const [submitter, setSubmitter] = useState(defaultSubmitter);
+	const [detailAnswer, setDetailAnswer] = useState("");
 
 	useEffect(() => {
 		const handler = setTimeout(() => {
@@ -76,23 +83,26 @@ export default function SongSubmitForm({ code, defaultSubmitter = "", onUrlChang
 
 	const onSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		// emit song URL + title + submitter
-		socket.emit("addSong", { code, url, submitter, title }, () => {
+		// emit song URL + title + submitter + detail answer
+		if (disabled) return;
+		socket.emit("addSong", { code, url, submitter, title, detailAnswer }, () => {
 			setUrl("");
 			setTitle("");
 			setQuery("");
 			setSubmitter(defaultSubmitter);
+			setDetailAnswer("");
 		});
 	};
 
 	return (
-		<form onSubmit={onSubmit} className="relative flex gap-2 items-center">
+		<form onSubmit={onSubmit} className="relative flex flex-wrap gap-2 items-start">
 			{/* 1) Search / URL — twice as wide */}
 			<div className="flex-[2] min-w-0">
 				<Input
 					placeholder="Search or paste YouTube URL"
 					value={title || query || url}
 					onChange={(e) => {
+						if (disabled) return;
 						const v = e.target.value;
 						setTitle("");
 						if (/youtu/.test(v)) {
@@ -112,13 +122,30 @@ export default function SongSubmitForm({ code, defaultSubmitter = "", onUrlChang
 				<Input
 					placeholder="Your name"
 					value={submitter}
-					onChange={(e) => setSubmitter(e.target.value)}
+					onChange={(e) => {
+						if (disabled) return;
+						setSubmitter(e.target.value);
+					}}
 					className="w-full"
 				/>
 			</div>
 
 			{/* 3) Button */}
-			<Button type="submit">Add Song</Button>
+			<Button type="submit" disabled={disabled}>
+				Add Song
+			</Button>
+
+			<div className="w-full">
+				<Input
+					placeholder="Answer for question (optional)"
+					value={detailAnswer}
+					onChange={(e) => {
+						if (disabled) return;
+						setDetailAnswer(e.target.value);
+					}}
+					className="w-full"
+				/>
+			</div>
 
 			{/* 4) Dropdown spanning full form width */}
 			{results.length > 0 && (

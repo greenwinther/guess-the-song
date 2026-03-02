@@ -1,7 +1,16 @@
 // src/components/join/SubmissionOrderList.tsx
 "use client";
 
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from "@dnd-kit/core";
+import {
+	DndContext,
+	closestCenter,
+	PointerSensor,
+	useSensor,
+	useSensors,
+	TouchSensor,
+	type DragEndEvent,
+	type DragStartEvent,
+} from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
@@ -45,9 +54,9 @@ export default function SubmissionOrderList({
 		return () => document.body.removeEventListener("touchmove", disableScroll);
 	}, [activeId]);
 
-	const handleDragStart = (event: any) => setActiveId(Number(event.active.id));
+	const handleDragStart = (event: DragStartEvent) => setActiveId(Number(event.active.id));
 
-	const handleDragEnd = (event: any) => {
+	const handleDragEnd = (event: DragEndEvent) => {
 		if (submitted) return;
 
 		const { active, over } = event;
