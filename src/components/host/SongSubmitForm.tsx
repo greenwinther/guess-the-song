@@ -20,6 +20,9 @@ interface VideoResult {
 	snippet: { title: string; thumbnails: any };
 }
 
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SOCKET_URL || "").replace(/\/$/, "");
+const apiUrl = (path: string) => (API_BASE_URL ? `${API_BASE_URL}${path}` : path);
+
 export default function SongSubmitForm({
 	code,
 	defaultSubmitter = "",
@@ -50,7 +53,7 @@ export default function SongSubmitForm({
 			return;
 		}
 
-		fetch(`/api/youtube-search?q=${encodeURIComponent(debouncedQuery)}`)
+		fetch(apiUrl(`/api/youtube-search?q=${encodeURIComponent(debouncedQuery)}`))
 			.then((r) => r.json())
 			.then((json) => setResults(json.items || []))
 			.catch(() => setResults([]));
@@ -67,7 +70,7 @@ export default function SongSubmitForm({
 	useEffect(() => {
 		const vid = getYouTubeID(url);
 		if (vid) {
-			fetch(`/api/youtube-title?id=${vid}`)
+			fetch(apiUrl(`/api/youtube-title?id=${vid}`))
 				.then((r) => r.json())
 				.then((j) => setTitle(j.title || ""));
 		} else {

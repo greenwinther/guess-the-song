@@ -85,6 +85,8 @@ yarn install
 
 ```bash
 NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+NEXT_PUBLIC_API_URL=http://localhost:4000
+CLIENT_URL=http://localhost:3000
 CLOUDINARY_CLOUD_NAME=<your_cloud_name>
 CLOUDINARY_API_KEY=<your_api_key>
 CLOUDINARY_API_SECRET=<your_api_secret>
@@ -101,7 +103,7 @@ yarn dev
 ```
 
 -   The Next.js app will run at **http://localhost:3000**.
--   The Socket.io backend (for local dev) will run at **http://localhost:4000** by default.
+-   The Express + Socket.io backend (for local dev) will run at **http://localhost:4000** by default.
 
 5. Open your browser
    Navigate to http://localhost:3000 and either create a new room (as host) or join an existing room using the 4-letter code.
@@ -111,6 +113,8 @@ yarn dev
 | Variable Name            | Description                                             | Default               |
 | ------------------------ | ------------------------------------------------------- | --------------------- |
 | `NEXT_PUBLIC_SOCKET_URL` | URL for Socket.io server (e.g. `http://localhost:4000`) | _required for client_ |
+| `NEXT_PUBLIC_API_URL`    | URL for HTTP API calls (falls back to `NEXT_PUBLIC_SOCKET_URL`) | _optional_      |
+| `CLIENT_URL`             | Allowed browser origin for Express/Socket CORS         | `http://localhost:3000` |
 | `PORT`                   | Port for the Next.js web server (if overriding)         | `3000`                |
 | `SOCKET_PORT`            | Port for the Socket.io server (if overriding)           | `4000`                |
 
@@ -121,10 +125,13 @@ Note: All client-facing variables must begin with **NEXT\*PUBLIC** in Next.js.
 From the project root, run:
 
 -   **npm run dev** / **yarn dev**
-    Starts both Next.js (port 3000) and the Socket.io server (port 4000) in development with Hot Module Replacement.
+    Starts both Next.js (port 3000) and the Express + Socket.io server (port 4000) in development with Hot Module Replacement.
 
 -   **npm run build** / **yarn build**
     Builds the Next.js app for production. Outputs optimized JavaScript/HTML in **.next**.
+
+-   **npm run build:server**
+    Compiles the Express + Socket.io backend to **dist/** and rewrites path aliases for Node runtime.
 
 -   **npm run start** / **yarn start**
     Runs the production build of Next.js (after build) on process.env.PORT (defaults to 3000).

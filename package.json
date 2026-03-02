@@ -6,7 +6,7 @@
         "dev:next": "next dev",
         "dev:socket": "tsx src/server/socketServer.ts",
         "dev": "concurrently -k -n next,socket -c auto \"npm:dev:next\" \"npm:dev:socket\"",
-        "build:server": "node -e \"require('fs').rmSync('dist',{ recursive: true, force: true })\" && tsc --project tsconfig.build.json",
+        "build:server": "node -e \"require('fs').rmSync('dist',{ recursive: true, force: true })\" && tsc --project tsconfig.build.json && tsc-alias -p tsconfig.build.json",
         "build": "next build && npm run build:server",
         "build:railway": "npm run build:server",
         "start:railway": "node dist/server/socketServer.js",
@@ -23,6 +23,8 @@
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
         "clsx": "^2.1.1",
+        "dotenv": "^17.3.1",
+        "express": "^5.2.1",
         "nanoid": "^5.1.6",
         "next": "15.3.8",
         "react": "^18",
@@ -34,6 +36,7 @@
     },
     "devDependencies": {
         "@playwright/test": "^1.52.0",
+        "@types/express": "^5.0.6",
         "@types/node": "^20.x",
         "@types/react": "^18.x",
         "@types/react-dom": "^18",
@@ -44,6 +47,7 @@
         "knip": "^5.85.0",
         "postcss": "^8",
         "tailwindcss": "^3",
+        "tsc-alias": "^1.8.16",
         "tsx": "^4.19.4",
         "typescript": "^5.3.0"
     }
