@@ -37,5 +37,3 @@ export const persistedStateSchema = z.object({
 			hint: {},
 		}),
 });
-
-export type PersistedStateSnapshot = z.infer<typeof persistedStateSchema>;

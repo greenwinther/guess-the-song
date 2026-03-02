@@ -6,7 +6,7 @@ export type ZodValidationIssue = {
 	message: string;
 };
 
-export type ZodValidationSuccess<T> = {
+type ZodValidationSuccess<T> = {
 	ok: true;
 	data: T;
 };
@@ -17,14 +17,14 @@ export type ZodValidationFailure = {
 	issues: ZodValidationIssue[];
 };
 
-export type ZodValidationResult<T> = ZodValidationSuccess<T> | ZodValidationFailure;
+type ZodValidationResult<T> = ZodValidationSuccess<T> | ZodValidationFailure;
 
 const pathToString = (path: Array<PropertyKey>) => {
 	if (path.length === 0) return "root";
 	return path.map(String).join(".");
 };
 
-export function zodIssues(error: z.ZodError): ZodValidationIssue[] {
+function zodIssues(error: z.ZodError): ZodValidationIssue[] {
 	return error.issues.map((issue) => ({
 		code: issue.code,
 		path: pathToString(issue.path),

@@ -16,7 +16,7 @@ const transport = isProduction
 			},
 	  });
 
-export const logger = pino(
+const logger = pino(
 	{
 		name: "guess-the-song-server",
 		level,

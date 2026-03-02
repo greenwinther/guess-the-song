@@ -66,5 +66,3 @@ export const serverConfig = {
 	youtubeApiKey: raw.YOUTUBE_API_KEY ?? null,
 	logLevel: raw.LOG_LEVEL ?? (isProduction ? "info" : "debug"),
 } as const;
-
-export type ServerConfig = typeof serverConfig;
