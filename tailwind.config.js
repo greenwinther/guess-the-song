@@ -5,14 +5,14 @@ module.exports = {
 	theme: {
 		extend: {
 			colors: {
-				bg: "#0D0C1F",
-				primary: "#A96CFA",
-				secondary: "#3DAEFF",
-				highlight: "#69F8D6",
-				text: "#E1E1E9",
-				"text-muted": "#A9A9D2",
-				card: "#1B1838",
-				border: "#2A2C48",
+				bg: "rgb(var(--color-bg-rgb) / <alpha-value>)",
+				primary: "rgb(var(--color-primary-rgb) / <alpha-value>)",
+				secondary: "rgb(var(--color-secondary-rgb) / <alpha-value>)",
+				highlight: "rgb(var(--color-highlight-rgb) / <alpha-value>)",
+				text: "rgb(var(--color-text-rgb) / <alpha-value>)",
+				"text-muted": "rgb(var(--color-text-muted-rgb) / <alpha-value>)",
+				card: "rgb(var(--color-card-rgb) / <alpha-value>)",
+				border: "rgb(var(--color-border-rgb) / <alpha-value>)",
 			},
 			fontFamily: {
 				sans: ["Inter", "sans-serif"],

@@ -1,0 +1,12 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
+	"entry": [
+		"src/scripts/**/*.ts",
+		"src/tests/**/*.spec.ts"
+	],
+	"project": [
+		"src/**/*.ts",
+		"src/**/*.tsx",
+		"*.js"
+	]
+}
