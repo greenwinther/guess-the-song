@@ -65,7 +65,7 @@ export default function LeftSidebar({
 			<PlayerList
 				players={players}
 				submittedPlayers={submittedPlayers}
-				className="w-full max-h-56 sm:max-h-72 lg:max-h-none overflow-y-auto"
+				className="w-full"
 				fallbackName={fallbackName}
 				lockedNames={lockedNames}
 				lockedCounts={lockedCounts}
