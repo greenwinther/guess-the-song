@@ -8,7 +8,7 @@ import clsx from "clsx";
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonVariant = "primary" | "secondary" | "danger";
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	/** Button size */
 	size?: ButtonSize;
 	/** Button style variant */
@@ -26,12 +26,13 @@ const sizeStyles: Record<NonNullable<ButtonProps["size"]>, string> = {
 };
 
 const variantStyles: Record<NonNullable<ButtonProps["variant"]>, string> = {
-	primary: "bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 focus:ring-secondary",
-	secondary: "bg-card bg-opacity-20 border border-border text-text hover:bg-opacity-30 focus:ring-primary",
+	primary: "btn-primary bg-gradient-to-r from-primary to-secondary hover:opacity-90 focus:ring-secondary",
+	secondary:
+		"bg-card/40 border border-border/70 text-text hover:bg-card/55 focus:ring-primary backdrop-blur",
 	danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
 };
 
-export const Button: FC<ButtonProps> = ({
+const Button: FC<ButtonProps> = ({
 	variant = "primary",
 	size = "md",
 	className,

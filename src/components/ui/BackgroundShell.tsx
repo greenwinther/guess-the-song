@@ -10,7 +10,7 @@ type Props = {
 export default function BackgroundShell({ bgImage, socketError, children }: Props) {
 	return (
 		<div
-			className="min-h-screen p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center"
+			className="min-h-screen p-4 sm:p-6 lg:p-8 pt-10 sm:pt-12 lg:pt-14 bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center"
 			style={{
 				backgroundImage: bgImage ? `url(${bgImage})` : "none",
 				backgroundBlendMode: "overlay",

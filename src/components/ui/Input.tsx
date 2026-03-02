@@ -5,11 +5,11 @@ import { FC, InputHTMLAttributes } from "react";
 import clsx from "clsx";
 
 // Define explicit size and variant types
-export type InputSize = "sm" | "md" | "lg";
-export type InputVariant = "default" | "error";
+type InputSize = "sm" | "md" | "lg";
+type InputVariant = "default" | "error";
 
 // Omit native HTML `size` attribute to avoid conflict with our `size` prop
-export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
+type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
 	/** Input size */
 	size?: InputSize;
 	/** Variant style */
@@ -32,7 +32,7 @@ const variantStyles: Record<InputVariant, string> = {
 	error: "border border-red-500 focus:border-red-600 focus:ring-red-600",
 };
 
-export const Input: FC<InputProps> = ({ size = "md", variant = "default", className, ...props }) => {
+const Input: FC<InputProps> = ({ size = "md", variant = "default", className, ...props }) => {
 	return (
 		<input className={clsx(baseStyles, sizeStyles[size], variantStyles[variant], className)} {...props} />
 	);

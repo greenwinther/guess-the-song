@@ -2,11 +2,13 @@
 // src/components/ui/HostCard.tsx
 import { FC, FormEvent } from "react";
 import clsx from "clsx";
+import GlassCard from "./GlassCard";
+import AvatarPicker from "./AvatarPicker";
 
 import Button from "./Button";
 import Input from "./Input";
 
-export interface HostCardProps {
+interface HostCardProps {
 	theme: string;
 	onThemeChange: (val: string) => void;
 	backgroundUrl: string;
@@ -17,7 +19,7 @@ export interface HostCardProps {
 	isLoading?: boolean;
 }
 
-export const HostCard: FC<HostCardProps> = ({
+const HostCard: FC<HostCardProps> = ({
 	theme,
 	onThemeChange,
 	backgroundUrl,
@@ -29,13 +31,11 @@ export const HostCard: FC<HostCardProps> = ({
 }) => {
 	const lock = disabled || isLoading;
 	return (
-		<div
-			className={clsx(
-				"w-80 bg-card bg-opacity-20 border border-border rounded-2xl p-6 backdrop-blur-lg",
-				className
-			)}
-		>
-			<h2 className="text-2xl font-semibold mb-4 text-text">Create Lobby</h2>
+		<GlassCard className={clsx("w-80", className)}>
+			<h2 className="text-2xl font-semibold mb-2 text-text">Create Lobby</h2>
+			<div className="mb-4">
+				<AvatarPicker />
+			</div>
 			<form onSubmit={onCreate} className="flex flex-col gap-4">
 				<Input
 					type="text"
@@ -66,7 +66,7 @@ export const HostCard: FC<HostCardProps> = ({
 					Create Lobby
 				</Button>
 			</form>
-		</div>
+		</GlassCard>
 	);
 };
 

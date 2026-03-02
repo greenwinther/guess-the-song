@@ -1,6 +1,8 @@
 // src/components/ui/JoinCard.tsx
 "use client";
 import clsx from "clsx";
+import GlassCard from "./GlassCard";
+import AvatarPicker from "./AvatarPicker";
 import Input from "./Input";
 import Button from "./Button";
 
@@ -10,8 +12,6 @@ interface JoinCardProps {
 	code: string;
 	onRoomCodeChange: (val: string) => void;
 	onJoin: (e: React.FormEvent) => void;
-	hardcore: boolean;
-	onHardcoreChange: (val: boolean) => void;
 	className?: string;
 	disabled?: boolean;
 	isLoading?: boolean;
@@ -23,22 +23,21 @@ export default function JoinCard({
 	code,
 	onRoomCodeChange,
 	onJoin,
-	hardcore,
-	onHardcoreChange,
 	className,
 	disabled,
 	isLoading,
 }: JoinCardProps) {
 	const lock = disabled || isLoading;
+	const nameOk = Boolean(name.trim());
+	const codeOk = Boolean(code.trim());
+	const canSubmit = !lock && nameOk && codeOk;
 
 	return (
-		<div
-			className={clsx(
-				"w-80 bg-card bg-opacity-20 border border-border rounded-2xl p-6 backdrop-blur-lg",
-				className
-			)}
-		>
-			<h2 className="text-2xl font-semibold mb-4 text-text">Join Lobby</h2>
+		<GlassCard className={clsx("w-80", className)}>
+			<h2 className="text-2xl font-semibold mb-2 text-text">Join Lobby</h2>
+			<div className="mb-4">
+				<AvatarPicker />
+			</div>
 			<form onSubmit={onJoin} className="flex flex-col gap-4">
 				<Input
 					type="text"
@@ -62,29 +61,17 @@ export default function JoinCard({
 					disabled={lock}
 				/>
 
-				{/* Hardcore toggle */}
-				<label className="flex items-center gap-2 text-sm text-text/90">
-					<input
-						type="checkbox"
-						className="h-4 w-4 accent-pink-500"
-						checked={hardcore}
-						onChange={(e) => onHardcoreChange(e.target.checked)}
-						disabled={lock}
-					/>
-					<span>Play Hardcore</span>
-				</label>
-
 				<Button
 					type="submit"
 					variant="primary"
 					size="md"
 					className="w-full"
 					loading={isLoading}
-					disabled={lock}
+					disabled={!canSubmit}
 				>
 					Join Lobby
 				</Button>
 			</form>
-		</div>
+		</GlassCard>
 	);
 }
