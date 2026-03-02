@@ -1,0 +1,245 @@
+import type { AvatarConfig } from "@/types/avatar";
+import type { Member } from "@/types/member";
+import type { Room } from "@/types/room";
+import type { Submission } from "@/types/submission";
+
+export type SocketRoomMeta = { code: string; playerName: string };
+
+export interface SocketData {
+	roomMeta?: SocketRoomMeta;
+}
+
+export type CreateRoomPayload = {
+	theme?: string;
+	backgroundUrl?: string | null;
+	hostName: string;
+	avatar?: AvatarConfig;
+};
+
+export type CreateRoomResponse = {
+	code: string;
+	theme?: string | null;
+	backgroundUrl?: string;
+	hostName: string;
+	error?: string;
+};
+
+export type JoinRoomPayload = {
+	code: string;
+	name: string;
+	hardcore?: boolean;
+	clientId?: string;
+	avatar?: AvatarConfig;
+};
+
+export type AddSongPayload = {
+	code: string;
+	url: string;
+	submitter: string;
+	title: string;
+	detailAnswer?: string;
+};
+
+export type RemoveSongPayload = { code: string; songId: number };
+export type StartGamePayload = { code: string };
+export type PlaySongPayload = { code: string; songId: number };
+export type NextSongPayload = { code: string };
+export type ShowResultsPayload = { code: string };
+
+export type SelectOrderPayload = {
+	code: string;
+	songId: number;
+	playerName: string;
+	order: string[];
+};
+export type SelectDetailOrderPayload = {
+	code: string;
+	songId: number;
+	playerName: string;
+	order: string[];
+};
+
+export type SubmitAllOrdersPayload = {
+	code: string;
+	playerName: string;
+	guesses: Record<string, string[]>;
+};
+
+export type LockAnswerPayload = { code: string; songId: number; playerName: string };
+export type LockDetailPayload = { code: string; songId: number; playerName: string };
+export type ThemeEditPayload = { code: string; theme: string };
+export type DetailQuestionPayload = { code: string; question: string };
+export type ThemeGuessPayload = { code: string; playerName: string; guess: string };
+export type ThemeRevealPayload = { code: string };
+export type HardcoreRequiredPayload = { code: string; required: boolean };
+export type PlayerHardcorePayload = { code: string; hardcore: boolean };
+export type PlayerReadyPayload = { code: string; ready: boolean };
+export type RevealedSongsPayload = { code: string; revealed: number[] };
+export type RevealSubmitterPayload = { code: string; songId: number };
+export type RevealSubmitterAllPayload = { code: string };
+export type DevSeedPayload = { code: string; players?: number; songs?: number; ready?: boolean };
+export type DevResyncPayload = { code: string };
+export type KickPlayerPayload = { code: string; playerName: string };
+export type DebugSnapshotPayload = { code: string };
+export type AdminDashboardPayload = {
+	code: string;
+	phase: Room["phase"] | null;
+	activeSongId: number | null;
+	activeSongIndex: number | null;
+	currentSongTitle: string | null;
+	hasDetailLane: boolean;
+	detailQuestion: string | null;
+	theme: {
+		enabled: boolean;
+		hint: string | null;
+		revealed: boolean;
+		solvedBy: string[];
+		guessedThisRound: string[];
+	};
+	players: Array<{
+		id: number;
+		name: string;
+		isHost: boolean;
+		ready: boolean;
+		hardcore: boolean;
+		connected: boolean;
+		avatar?: AvatarConfig;
+	}>;
+	currentSongRows: Array<{
+		playerName: string;
+		guessOrder: string[];
+		guessLabel: string;
+		locked: boolean;
+		lockedAt: number | null;
+		detailOrder: string[];
+		detailLabel: string;
+		detailLocked: boolean;
+		detailLockedAt: number | null;
+		themeSolved: boolean;
+		themeGuessedThisRound: boolean;
+	}>;
+	playerHistories: Array<{
+		playerName: string;
+		rounds: Array<{
+			songId: number;
+			songIndex: number;
+			songTitle: string;
+			guessOrder: string[];
+			guessLabel: string;
+			correctAnswer: string;
+			locked: boolean;
+			lockedAt: number | null;
+			detailGuessOrder: string[];
+			detailGuessLabel: string;
+			detailCorrectAnswer: string | null;
+			detailLocked: boolean;
+			detailLockedAt: number | null;
+		}>;
+	}>;
+	updatedAt: number;
+};
+export type AdminGetDashboardPayload = { code: string };
+export type AdminGetDashboardResponse =
+	| { ok: true; dashboard: AdminDashboardPayload }
+	| { ok: false; error: "NOT_AUTHORIZED" | "ROOM_NOT_FOUND" | "BAD_REQUEST" };
+
+export type ClientToServerEvents = {
+	createRoom: (data: CreateRoomPayload, cb: (resp: CreateRoomResponse) => void) => void;
+	joinRoom: (data: JoinRoomPayload, cb?: (ok: boolean) => void) => void;
+	addSong: (
+		data: AddSongPayload,
+		cb: (res: { success: boolean; song?: Submission; error?: string }) => void
+	) => void;
+	removeSong: (data: RemoveSongPayload, cb: (res: { success: boolean; error?: string }) => void) => void;
+	startGame: (data: StartGamePayload, cb: (ok: boolean) => void) => void;
+	playSong: (
+		data: PlaySongPayload,
+		cb: (res: { success: boolean; error?: string }) => void
+	) => void;
+	nextSong: (data: NextSongPayload, cb?: (ok: boolean) => void) => void;
+	showResults: (data: ShowResultsPayload, cb: (ok: boolean) => void) => void;
+	selectOrder: (data: SelectOrderPayload, cb?: (ok: boolean) => void) => void;
+	selectDetailOrder: (data: SelectDetailOrderPayload, cb?: (ok: boolean) => void) => void;
+	submitAllOrders: (data: SubmitAllOrdersPayload, cb: (ok: boolean) => void) => void;
+	lockAnswer: (data: LockAnswerPayload, cb?: (ok: boolean) => void) => void;
+	undoLock: (data: LockAnswerPayload, cb?: (ok: boolean) => void) => void;
+	lockDetailAnswer: (data: LockDetailPayload, cb?: (ok: boolean) => void) => void;
+	undoDetailLock: (data: LockDetailPayload, cb?: (ok: boolean) => void) => void;
+	THEME_EDIT: (data: ThemeEditPayload) => void;
+	DETAIL_QUESTION: (data: DetailQuestionPayload) => void;
+	THEME_GUESS: (data: ThemeGuessPayload) => void;
+	THEME_REVEAL: (data: ThemeRevealPayload) => void;
+	HARDCORE_REQUIRED: (data: HardcoreRequiredPayload, cb?: (ok: boolean) => void) => void;
+	PLAYER_HARDCORE: (data: PlayerHardcorePayload, cb?: (ok: boolean) => void) => void;
+	PLAYER_READY: (data: PlayerReadyPayload, cb?: (ok: boolean) => void) => void;
+	revealedSongs: (data: RevealedSongsPayload) => void;
+	revealSubmitter: (data: RevealSubmitterPayload) => void;
+	revealSubmitterAll: (data: RevealSubmitterAllPayload) => void;
+	DEV_SEED: (data: DevSeedPayload, cb?: (ok: boolean) => void) => void;
+	DEV_RESYNC: (data: DevResyncPayload, cb?: (ok: boolean) => void) => void;
+	DEV_SNAPSHOT: (data: DebugSnapshotPayload, cb?: (ok: boolean) => void) => void;
+	kickPlayer: (data: KickPlayerPayload, cb?: (ok: boolean) => void) => void;
+	ADMIN_GET_DASHBOARD: (
+		data: AdminGetDashboardPayload,
+		cb: (res: AdminGetDashboardResponse) => void
+	) => void;
+};
+
+export type ServerToClientEvents = {
+	roomData: (room: Room) => void;
+	playerJoined: (player: Member) => void;
+	playerLeft: (playerId: number) => void;
+	songAdded: (song: Submission) => void;
+	songRemoved: (data: { songId: number }) => void;
+	gameStarted: (room: Room) => void;
+	playSong: (data: { songId: number; clipUrl: string }) => void;
+	revealedSongs: (revealed: number[]) => void;
+	songChanged: (data: { songId: number | null }) => void;
+	lockSnapshot: (data: { songId: number | null; locked: string[] }) => void;
+	detailLockSnapshot: (data: { songId: number | null; locked: string[] }) => void;
+	playerGuessLocked: (data: {
+		songId: number;
+		playerName: string;
+		counts: { locked: number; total: number };
+	}) => void;
+	playerGuessUndo: (data: {
+		songId: number;
+		playerName: string;
+		counts: { locked: number; total: number };
+	}) => void;
+	songFinalized: (data: {
+		songId: number;
+		mode: "hardcoreOnly" | "snapshot";
+		counts: { locked: number; total: number };
+		lockedNames: string[];
+	}) => void;
+	detailFinalized: (data: {
+		songId: number;
+		mode: "hardcoreOnly" | "snapshot";
+		counts: { locked: number; total: number };
+		lockedNames: string[];
+	}) => void;
+	playerSubmitted: (data: { playerName: string }) => void;
+	gameOver: (data: { scores: Record<string, number> }) => void;
+	scoreUpdated: (data: { playerName: string; total: number }) => void;
+	THEME_UPDATED: (data: { theme?: string }) => void;
+	THEME_SOLVED: (data: { playerName: string }) => void;
+	THEME_ROUND_RESET: () => void;
+	THEME_GUESS_RESULT: (data: {
+		playerName: string;
+		correct: boolean;
+		reason?: "revealed" | "roundLocked";
+		lockedForRound?: boolean;
+		alreadySolved?: boolean;
+	}) => void;
+	THEME_HINT_READY: (data: { obfuscated: string }) => void;
+	THEME_REVEALED: () => void;
+	THEME_GUESSED_THIS_ROUND: (data: { playerName: string }) => void;
+	HARDCORE_REQUIRED_UPDATED: (data: { required: boolean }) => void;
+	submitterRevealed: (data: { songId: number }) => void;
+	submitterRevealedAll: (data: { songIds: number[] }) => void;
+	joinDenied: (data: { reason: "kicked" | "closed" | "not_found" | "error" }) => void;
+	ADMIN_DASHBOARD: (data: { dashboard: AdminDashboardPayload }) => void;
+};
+
+export type InterServerEvents = Record<string, never>;

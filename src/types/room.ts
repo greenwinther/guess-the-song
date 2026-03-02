@@ -1,24 +1,14 @@
-export type Player = {
-	id: number;
-	name: string;
-	isHost: boolean;
-	roomId: number;
-	hardcore?: boolean;
-};
-
-export type Song = {
-	id: number;
-	url: string;
-	submitter: string;
-	roomId: number;
-	title: string;
-};
+import type { Member } from "@/types/member";
+import type { Submission } from "@/types/submission";
 
 export type Room = {
 	id: number;
 	code: string;
+	phase?: "LOBBY" | "GUESSING" | "RECAP" | "RESULTS";
 	theme?: string;
+	detailQuestion?: string;
 	backgroundUrl?: string | null;
-	players: Player[];
-	songs: Song[];
+	hardcoreRequired?: boolean;
+	players: Member[];
+	songs: Submission[];
 };
