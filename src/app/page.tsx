@@ -3,10 +3,12 @@
 
 import HostCard from "@/components/ui/HostCard";
 import JoinCard from "@/components/ui/JoinCard";
+import GlassCard from "@/components/ui/GlassCard";
 import { useGame } from "@/contexts/tempContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import type { AvatarConfig } from "@/types/avatar";
 import Button from "@/components/ui/Button";
 
 export default function HomePage() {
@@ -20,38 +22,43 @@ export default function HomePage() {
 	const [mode, setMode] = useState<"host" | "player">("player");
 	const [error, setError] = useState<string | null>(null);
 
-	const { theme, setTheme, backgroundUrl, setBackgroundUrl, playerHardcore, setPlayerHardcore } = useGame();
+	const { theme, setTheme, backgroundUrl, setBackgroundUrl } = useGame();
+	const getStoredAvatar = (): AvatarConfig | null => {
+		try {
+			const raw = localStorage.getItem("gts-avatar-v2");
+			if (!raw) return null;
+			const parsed = JSON.parse(raw) as AvatarConfig;
+			return parsed?.base ? parsed : null;
+		} catch {
+			return null;
+		}
+	};
 
-	// Create lobby: send theme + background URL directly
+	// Create lobby: send theme + background URL via socket
 	const handleCreate = async (e: FormEvent) => {
 		e.preventDefault();
 		if (creating) return;
 		setCreating(true);
 
-		try {
-			const res = await fetch("/api/rooms", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					theme,
-					backgroundUrl: backgroundUrl.trim() ? backgroundUrl : null,
-				}),
-			});
+		const themeValue = theme?.trim() ?? "";
+		const bgValue = backgroundUrl.trim() ? backgroundUrl : null;
 
-			if (!res.ok) {
-				const err = await res.json();
-				setError(err.error || "Could not create room");
+		const avatar = getStoredAvatar();
+		socket.emit(
+			"createRoom",
+			{ theme: themeValue, backgroundUrl: bgValue, hostName: "Host", avatar: avatar ?? undefined },
+			(resp) => {
+			if (!resp?.code) {
+				setError(resp?.error || "Could not create room");
 				setCreating(false);
 				return;
 			}
-
-			const { code } = await res.json();
-			router.push(`/host/${code}`);
-		} catch (err) {
-			console.error("Lobby creation failed", err);
-			setError("Something went wrong while creating the room");
+			try {
+				localStorage.setItem(`gts-host-room-${resp.code}`, JSON.stringify({ name: "Host" }));
+			} catch {}
+			router.push(`/host/${resp.code}`);
 			setCreating(false);
-		}
+		});
 	};
 
 	// Join lobby
@@ -62,7 +69,8 @@ export default function HomePage() {
 		setJoining(true);
 		const code = roomCode.trim().toUpperCase();
 
-		socket.emit("joinRoom", { code, name, hardcore: playerHardcore }, (ok: boolean) => {
+		const avatar = getStoredAvatar();
+		socket.emit("joinRoom", { code, name, avatar: avatar ?? undefined }, (ok: boolean) => {
 			if (ok) {
 				router.push(`/join/${code}?name=${encodeURIComponent(name)}`);
 			} else {
@@ -85,12 +93,12 @@ export default function HomePage() {
 				<div className="relative z-20 overflow-visible w-full">
 					<h1
 						className="
-						text-center
-						text-5xl sm:text-5xl font-extrabold tracking-tight
-						text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400
-						drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
-						leading-[1.15] overflow-visible pb-10
-						"
+								text-center
+								text-5xl sm:text-5xl font-extrabold tracking-tight
+								text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary
+								drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
+								leading-[1.15] overflow-visible pb-10
+								"
 					>
 						Guess the Song
 					</h1>
@@ -158,8 +166,6 @@ export default function HomePage() {
 							code={roomCode}
 							onRoomCodeChange={setRoomCode}
 							onJoin={handleJoin}
-							hardcore={playerHardcore}
-							onHardcoreChange={setPlayerHardcore}
 							disabled={joining}
 							isLoading={joining}
 							className="space-y-4"

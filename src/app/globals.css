@@ -1,7 +1,5 @@
 @tailwind base;
 @tailwind components;
-@tailwind base;
-@tailwind components;
 @tailwind utilities;
 
 :root {
@@ -10,7 +8,7 @@
 	--background-start-rgb: 214, 219, 220;
 	--background-end-rgb: 255, 255, 255;
 
-	/* theme colors from tailwind.config.js */
+	/* theme colors (default: midnight) */
 	--color-bg: #0d0c1f;
 	--color-primary: #a96cfa;
 	--color-secondary: #3daeff;
@@ -19,6 +17,99 @@
 	--color-text-muted: #a9a9d2;
 	--color-card: #1b1838;
 	--color-border: #2a2c48;
+	--color-bg-rgb: 13 12 31;
+	--color-primary-rgb: 169 108 250;
+	--color-secondary-rgb: 61 174 255;
+	--color-highlight-rgb: 105 248 214;
+	--color-text-rgb: 225 225 233;
+	--color-text-muted-rgb: 169 169 210;
+	--color-card-rgb: 27 24 56;
+	--color-border-rgb: 42 44 72;
+	--color-on-primary: #f3f0ea;
+}
+
+/* Theme: Sunset */
+html[data-theme="sunset"] {
+	--color-bg: #1b0f14;
+	--color-primary: #ff8a5b;
+	--color-secondary: #ff4f81;
+	--color-highlight: #ffd166;
+	--color-text: #ffeef2;
+	--color-text-muted: #e1b6c2;
+	--color-card: #2a1620;
+	--color-border: #3b2230;
+	--color-bg-rgb: 27 15 20;
+	--color-primary-rgb: 255 138 91;
+	--color-secondary-rgb: 255 79 129;
+	--color-highlight-rgb: 255 209 102;
+	--color-text-rgb: 255 238 242;
+	--color-text-muted-rgb: 225 182 194;
+	--color-card-rgb: 42 22 32;
+	--color-border-rgb: 59 34 48;
+	--color-on-primary: #f3f0ea;
+}
+
+/* Theme: Rose Gold */
+html[data-theme="rose-gold"] {
+	--color-bg: #1c1115;
+	--color-primary: #e8a1b2;
+	--color-secondary: #f2c6a0;
+	--color-highlight: #ffd8a8;
+	--color-text: #fff4f7;
+	--color-text-muted: #d6b0b8;
+	--color-card: #2a161c;
+	--color-border: #3a232c;
+	--color-bg-rgb: 28 17 21;
+	--color-primary-rgb: 232 161 178;
+	--color-secondary-rgb: 242 198 160;
+	--color-highlight-rgb: 255 216 168;
+	--color-text-rgb: 255 244 247;
+	--color-text-muted-rgb: 214 176 184;
+	--color-card-rgb: 42 22 28;
+	--color-border-rgb: 58 35 44;
+	--color-on-primary: #3d3d3d;
+}
+
+/* Theme: Citrus */
+html[data-theme="citrus"] {
+	--color-bg: #121a17;
+	--color-primary: #9dff6b;
+	--color-secondary: #ffb347;
+	--color-highlight: #ffe66d;
+	--color-text: #f2fff0;
+	--color-text-muted: #b9d7b5;
+	--color-card: #18231f;
+	--color-border: #24352e;
+	--color-bg-rgb: 18 26 23;
+	--color-primary-rgb: 157 255 107;
+	--color-secondary-rgb: 255 179 71;
+	--color-highlight-rgb: 255 230 109;
+	--color-text-rgb: 242 255 240;
+	--color-text-muted-rgb: 185 215 181;
+	--color-card-rgb: 24 35 31;
+	--color-border-rgb: 36 53 46;
+	--color-on-primary: #3d3d3d;
+}
+
+/* Theme: Violet Storm */
+html[data-theme="violet-storm"] {
+	--color-bg: #140f1e;
+	--color-primary: #b36cff;
+	--color-secondary: #ff6fb1;
+	--color-highlight: #7fd7ff;
+	--color-text: #f3ecff;
+	--color-text-muted: #c8b7e6;
+	--color-card: #1f1630;
+	--color-border: #2c2342;
+	--color-bg-rgb: 20 15 30;
+	--color-primary-rgb: 179 108 255;
+	--color-secondary-rgb: 255 111 177;
+	--color-highlight-rgb: 127 215 255;
+	--color-text-rgb: 243 236 255;
+	--color-text-muted-rgb: 200 183 230;
+	--color-card-rgb: 31 22 48;
+	--color-border-rgb: 44 35 66;
+	--color-on-primary: #f3f0ea;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,7 +121,53 @@
 }
 
 body {
-	color: rgb(var(--foreground-rgb));
-	background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
-		rgb(var(--background-start-rgb));
+	color: var(--color-text);
+	background: var(--color-bg);
+}
+
+@keyframes raise-hand {
+	0% {
+		transform: translateY(0) rotate(0deg);
+	}
+	50% {
+		transform: translateY(-6px) rotate(-6deg);
+	}
+	100% {
+		transform: translateY(0) rotate(0deg);
+	}
+}
+
+@keyframes ready-pulse {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.03);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.ready-hand {
+	display: inline-flex;
+	animation: raise-hand 1.2s ease-in-out infinite;
+}
+
+.ready-pulse {
+	animation: ready-pulse 1.2s ease-in-out infinite;
+}
+
+.glass-card {
+	background: color-mix(in srgb, var(--color-card) 40%, transparent);
+	border: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+	box-shadow:
+		0 20px 50px rgba(0, 0, 0, 0.35),
+		inset 0 1px 0 color-mix(in srgb, var(--color-text) 12%, transparent);
+	backdrop-filter: blur(22px) saturate(140%);
+}
+
+.btn-primary {
+	color: var(--color-on-primary);
+	text-shadow: none;
 }

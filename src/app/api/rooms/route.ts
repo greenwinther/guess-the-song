@@ -1,4 +1,5 @@
 // src/app/api/rooms/route.ts
+// Legacy/fallback HTTP endpoint (currently unused by the app).
 
 import { NextResponse } from "next/server";
 import { createRoom } from "@/lib/rooms";
@@ -11,7 +12,8 @@ export async function POST(req: Request) {
 		const newRoom = await createRoom(
 			theme?.trim() || "", // fallback to empty string
 			backgroundUrl?.trim() || null,
-			"Host" // ✅ default host name hardcoded here
+			"Host",
+			undefined
 		);
 
 		return NextResponse.json({ code: newRoom.code });
@@ -20,3 +22,4 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: "Failed to create room" }, { status: 500 });
 	}
 }
+

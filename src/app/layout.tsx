@@ -4,6 +4,8 @@ import { GameProvider } from "@/contexts/tempContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 import "./globals.css";
 import SocketStatusBanner from "@/components/SocketStatusBanner";
+import { Toaster } from "react-hot-toast";
+import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
 
 export const metadata = {
 	title: "Guess the Song",
@@ -27,6 +29,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<SocketProvider>
 					<GameProvider>
 						<SocketStatusBanner />
+						<ThemeSwitcher />
+						<Toaster
+							position="top-center"
+							toastOptions={{
+								duration: 2000,
+								style: {
+									background: "var(--color-card)",
+									color: "var(--color-text)",
+									border: "1px solid var(--color-border)",
+								},
+							}}
+						/>
 						{children}
 					</GameProvider>
 				</SocketProvider>
