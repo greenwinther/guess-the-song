@@ -5,75 +5,85 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // src/server/socketServer.ts
 const http_1 = __importDefault(require("http"));
+const express_1 = __importDefault(require("express"));
+const dotenv_1 = __importDefault(require("dotenv"));
 const socket_io_1 = require("socket.io");
 const socket_1 = require("./socket");
 const cleanupScheduler_1 = require("./cleanupScheduler");
 const persistence_1 = require("./state/persistence");
-const httpServer = http_1.default.createServer((req, res) => {
-    if (req.url === "/" && req.method === "GET") {
-        res.writeHead(200, { "Content-Type": "text/plain" });
-        res.end("Socket server is running");
-    }
-    else {
-        res.writeHead(404);
-        res.end();
-    }
-});
-// 1) Log any HTTP-level server errors
-httpServer.on("error", (err) => {
-    console.error("🚨 HTTP server error:", err);
-});
+const registerHttpRoutes_1 = require("./http/registerHttpRoutes");
+dotenv_1.default.config({ path: ".env.local", quiet: true });
+dotenv_1.default.config({ quiet: true });
 const allowedOrigins = [
     process.env.CLIENT_URL || "http://localhost:3000",
-    process.env.CLIENT_URL_2, // e.g. preview URL
+    process.env.CLIENT_URL_2,
 ].filter(Boolean);
+const app = (0, express_1.default)();
+app.disable("x-powered-by");
+app.use(express_1.default.json({ limit: "1mb" }));
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allow = !origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin);
+    if (allow && origin) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Vary", "Origin");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    }
+    if (req.method === "OPTIONS") {
+        res.sendStatus(allow ? 204 : 403);
+        return;
+    }
+    next();
+});
+(0, registerHttpRoutes_1.registerHttpRoutes)(app);
+const httpServer = http_1.default.createServer(app);
+httpServer.on("error", (err) => {
+    console.error("HTTP server error:", err);
+});
 const io = new socket_io_1.Server(httpServer, {
-    // Serve only WS, not the bundled client
     serveClient: false,
     transports: ["websocket"],
-    // If you deploy behind a reverse proxy, consider a custom path:
-    // path: process.env.SOCKET_PATH || "/socket.io",
     cors: {
         origin: allowedOrigins,
         credentials: true,
         methods: ["GET", "POST"],
     },
-    // Connection liveness (a lite more forgiving than 5s)
     pingInterval: 20000,
     pingTimeout: 15000,
     connectionStateRecovery: {
-        maxDisconnectionDuration: 120000, // 2 min
+        maxDisconnectionDuration: 120000,
     },
 });
 const persistence = (0, persistence_1.initStatePersistence)();
-// 2) Log Engine.IO connection-level errors
 io.engine.on("connection_error", (err) => {
-    console.error("🚨 Engine.IO connection error:", err);
+    console.error("Engine.IO connection error:", err);
 });
-// 3) Log top-level Socket.IO errors
 io.of("/").on("connect_error", (err) => {
-    console.error("🚨 Socket.IO connect_error:", err);
+    console.error("Socket.IO connect_error:", err);
 });
 io.on("connection", (socket) => {
-    console.log("↔️ socket connected", socket.id);
+    console.log("socket connected", socket.id);
     socket.on("error", (err) => {
-        console.error(`🚨 Socket ${socket.id} error:`, err);
+        console.error(`Socket ${socket.id} error:`, err);
     });
     (0, socket_1.registerSocketHandlers)(io, socket);
 });
 const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
 httpServer.listen(PORT, () => {
-    console.log(`🚀 Socket.IO server listening on port ${PORT}`);
+    console.log(`Socket.IO + Express server listening on port ${PORT}`);
     (0, cleanupScheduler_1.startCleanupScheduler)(io);
 });
-// Graceful shutdown (Railway/Node best practice)
-process.on("SIGTERM", () => {
-    console.log("🧹 SIGTERM received, closing server...");
+const shutdown = (signal) => {
+    console.log(`${signal} received, closing server...`);
     persistence.flush();
     io.close(() => {
         httpServer.close(() => {
-            console.log("✅ Closed Socket.IO and HTTP server");
+            console.log("Closed Socket.IO, Express, and HTTP server");
             process.exit(0);
         });
     });
-});
+};
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

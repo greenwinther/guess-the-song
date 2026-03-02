@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.detailQuestionHandler = void 0;
 const validation_1 = require("../validation");
-const roomStore_1 = require("@/server/store/roomStore");
+const roomStore_1 = require("../../server/store/roomStore");
 const publicRoom_1 = require("../state/publicRoom");
 const detailQuestionHandler = (io, socket) => {
     socket.on("DETAIL_QUESTION", (data) => {

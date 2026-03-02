@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearRoomState = clearRoomState;
 // src/server/roomStateCleanup.ts
-const game_1 = require("@/lib/game");
-const score_1 = require("@/lib/score");
-const theme_1 = require("@/lib/theme");
+const game_1 = require("../lib/game");
+const score_1 = require("../lib/score");
+const theme_1 = require("../lib/theme");
 const gameState_1 = require("./state/gameState");
 function clearRoomState(code) {
     (0, game_1.clearRoomRounds)(code);

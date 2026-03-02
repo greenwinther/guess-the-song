@@ -20,7 +20,7 @@ exports.importThemeState = importThemeState;
 exports.obfuscateTheme = obfuscateTheme;
 exports.normalize = normalize;
 // Minimal in-memory helpers; keyed by room code (same as lib/game.ts style)
-const saveBus_1 = require("@/server/state/saveBus");
+const saveBus_1 = require("../server/state/saveBus");
 const solvedBy = {}; // code -> Set(playerName)
 const lockedThisRound = {}; // code -> Set(playerName)
 const revealed = {}; // code -> revealed?

@@ -21,7 +21,7 @@ exports.exportRoomStoreState = exportRoomStoreState;
 exports.importRoomStoreState = importRoomStoreState;
 // src/server/store/roomStore.ts
 const nanoid_1 = require("nanoid");
-const saveBus_1 = require("@/server/state/saveBus");
+const saveBus_1 = require("../../server/state/saveBus");
 const rooms = new Map();
 let nextRoomId = 1;
 let nextPlayerId = 1;

@@ -1,122 +1,32 @@
 {
   "version": 1,
-  "savedAt": 1772476117461,
+  "savedAt": 1772479091844,
   "roomStore": {
     "rooms": [
       {
-        "id": 127,
-        "code": "8MLP",
+        "id": 131,
+        "code": "HWUJ",
         "phase": "LOBBY",
-        "detailQuestion": "Which year was this song made?",
         "backgroundUrl": null,
         "players": [
           {
-            "id": 415,
+            "id": 429,
             "name": "Host",
             "isHost": true,
-            "roomId": 127,
-            "avatar": {
-              "base": "base-09",
-              "hair": "hair-21",
-              "eyes": "eyes-02",
-              "mouth": "mouth-03",
-              "headwear": "headwear-03"
-            },
-            "connected": true
-          },
-          {
-            "id": 416,
-            "name": "Player1",
-            "isHost": false,
-            "roomId": 127,
-            "hardcore": false,
-            "ready": true,
-            "connected": true,
-            "avatar": {
-              "base": "base-01",
-              "eyes": "eyes-01",
-              "mouth": "mouth-01",
-              "hair": "hair-01",
-              "headwear": "headwear-01"
-            }
-          },
-          {
-            "id": 417,
-            "name": "Player2",
-            "isHost": false,
-            "roomId": 127,
-            "hardcore": false,
-            "ready": true,
-            "connected": true,
-            "avatar": {
-              "base": "base-02",
-              "eyes": "eyes-02",
-              "mouth": "mouth-02",
-              "hair": "hair-02",
-              "headwear": "headwear-02"
-            }
-          },
-          {
-            "id": 418,
-            "name": "Player3",
-            "isHost": false,
-            "roomId": 127,
-            "hardcore": false,
-            "ready": true,
-            "connected": true,
+            "roomId": 131,
             "avatar": {
               "base": "base-03",
+              "hair": "empty",
               "eyes": "eyes-03",
-              "mouth": "mouth-03",
-              "hair": "hair-03",
-              "headwear": "headwear-03"
-            }
+              "mouth": "mouth-06",
+              "headwear": "headwear-05"
+            },
+            "connected": false
           }
         ],
-        "songs": [
-          {
-            "id": 394,
-            "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "submitter": "Player1",
-            "title": "Never Gonna Give You Up",
-            "roomId": 127,
-            "detailAnswer": "1980"
-          },
-          {
-            "id": 395,
-            "url": "https://www.youtube.com/watch?v=3JZ4pnNtyxQ",
-            "submitter": "Player2",
-            "title": "Take On Me",
-            "roomId": 127,
-            "detailAnswer": "1981"
-          },
-          {
-            "id": 396,
-            "url": "https://www.youtube.com/watch?v=fJ9rUzIMcZQ",
-            "submitter": "Player3",
-            "title": "Bohemian Rhapsody",
-            "roomId": 127,
-            "detailAnswer": "1982"
-          },
-          {
-            "id": 397,
-            "url": "https://www.youtube.com/watch?v=ktvTqknDobU",
-            "submitter": "Player1",
-            "title": "Radioactive",
-            "roomId": 127,
-            "detailAnswer": "1983"
-          },
-          {
-            "id": 398,
-            "url": "https://www.youtube.com/watch?v=Zi_XLOBDo_Y",
-            "submitter": "Player2",
-            "title": "Billie Jean",
-            "roomId": 127,
-            "detailAnswer": "1984"
-          }
-        ],
-        "createdAt": 1772475500537,
-        "updatedAt": 1772476116951,
+        "songs": [],
+        "createdAt": 1772479036145,
+        "updatedAt": 1772479062324,
         "kicked": {},
         "rules": {
           "hardcoreMultiplier": 1.5,
@@ -124,12 +34,12 @@
         }
       }
     ],
-    "nextRoomId": 128,
-    "nextPlayerId": 419,
-    "nextSongId": 399
+    "nextRoomId": 132,
+    "nextPlayerId": 430,
+    "nextSongId": 410
   },
   "gameState": {
-    "8MLP": {
+    "HWUJ": {
       "activeSongId": null,
       "revealedSongs": [],
       "finalScores": null,
@@ -139,16 +49,16 @@
   "rounds": {},
   "theme": {
     "solvedBy": {
-      "8MLP": []
+      "HWUJ": []
     },
     "lockedThisRound": {
-      "8MLP": []
+      "HWUJ": []
     },
     "revealed": {
-      "8MLP": false
+      "HWUJ": false
     },
     "hint": {
-      "8MLP": ""
+      "HWUJ": ""
     }
   }
 }

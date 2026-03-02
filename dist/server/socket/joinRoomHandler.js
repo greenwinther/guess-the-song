@@ -7,7 +7,7 @@ const rooms_1 = require("../../lib/rooms");
 const gameState_1 = require("../state/gameState");
 const validation_1 = require("../validation");
 const publicRoom_1 = require("../state/publicRoom");
-const theme_1 = require("@/lib/theme");
+const theme_1 = require("../../lib/theme");
 const joinRoomHandler = (io, socket) => {
     const emitLockSnapshots = (code) => {
         const roundsForCode = game_1.activeRounds[code];

@@ -7,10 +7,10 @@ exports.initStatePersistence = initStatePersistence;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const saveBus_1 = require("./saveBus");
-const roomStore_1 = require("@/server/store/roomStore");
+const roomStore_1 = require("../../server/store/roomStore");
 const gameState_1 = require("./gameState");
-const game_1 = require("@/lib/game");
-const theme_1 = require("@/lib/theme");
+const game_1 = require("../../lib/game");
+const theme_1 = require("../../lib/theme");
 const DEFAULT_STATE_PATH = path_1.default.join(process.cwd(), "data", "state.json");
 const ROOM_TTL_MS = 1000 * 60 * 60 * 24; // 24h
 const normalizeCode = (code) => code.trim().toUpperCase();

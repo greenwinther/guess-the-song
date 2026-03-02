@@ -7,7 +7,7 @@ exports.addSong = addSong;
 exports.removeSong = removeSong;
 exports.getSong = getSong;
 exports.setRoomTheme = setRoomTheme;
-const roomStore_1 = require("@/server/store/roomStore");
+const roomStore_1 = require("../server/store/roomStore");
 async function createRoom(theme, backgroundUrl, hostName, avatar) {
     return (0, roomStore_1.createRoom)(theme, backgroundUrl, hostName, avatar);
 }

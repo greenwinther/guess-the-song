@@ -20,7 +20,7 @@ exports.removePlayerFromRounds = removePlayerFromRounds;
 exports.exportRoundsState = exportRoundsState;
 exports.importRoundsState = importRoundsState;
 // src/lib/game.ts
-const saveBus_1 = require("@/server/state/saveBus");
+const saveBus_1 = require("../server/state/saveBus");
 const HARDCORE_UNDO_MS = 2000;
 // In-memory map: roomCode → songId → RoundData
 const rounds = {};

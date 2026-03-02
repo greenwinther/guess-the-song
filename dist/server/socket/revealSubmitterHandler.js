@@ -5,7 +5,7 @@ const validation_1 = require("../validation");
 const guards_1 = require("../logic/guards");
 const gameState_1 = require("../state/gameState");
 const phase_1 = require("../logic/phase");
-const rooms_1 = require("@/lib/rooms");
+const rooms_1 = require("../../lib/rooms");
 const revealSubmitterHandler = (io, socket) => {
     socket.on("revealSubmitter", (data) => {
         const code = (0, validation_1.parseRoomCode)(data.code);

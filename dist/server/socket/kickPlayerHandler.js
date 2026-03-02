@@ -5,9 +5,9 @@ const validation_1 = require("../validation");
 const guards_1 = require("../logic/guards");
 const roomStore_1 = require("../store/roomStore");
 const publicRoom_1 = require("../state/publicRoom");
-const game_1 = require("@/lib/game");
-const score_1 = require("@/lib/score");
-const theme_1 = require("@/lib/theme");
+const game_1 = require("../../lib/game");
+const score_1 = require("../../lib/score");
+const theme_1 = require("../../lib/theme");
 const kickPlayerHandler = (io, socket) => {
     socket.on("kickPlayer", async (data, cb) => {
         var _a;

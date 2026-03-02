@@ -7,7 +7,7 @@ const game_1 = require("../../lib/game");
 const validation_1 = require("../validation");
 const guards_1 = require("../logic/guards");
 const publicRoom_1 = require("../state/publicRoom");
-const theme_1 = require("@/lib/theme");
+const theme_1 = require("../../lib/theme");
 const resyncHandler = (io, socket) => {
     const emitLockSnapshots = (code) => {
         const roundsForCode = game_1.activeRounds[code];

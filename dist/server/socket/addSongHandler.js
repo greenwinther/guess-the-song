@@ -5,7 +5,7 @@ const rooms_1 = require("../../lib/rooms");
 const validation_1 = require("../validation");
 const guards_1 = require("../logic/guards");
 const phase_1 = require("../logic/phase");
-const youtube_1 = require("@/lib/youtube");
+const youtube_1 = require("../../lib/youtube");
 const addSongHandler = (io, socket) => {
     socket.on("addSong", async (data, callback) => {
         var _a;

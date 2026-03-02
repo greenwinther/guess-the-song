@@ -6,9 +6,9 @@ const guards_1 = require("../logic/guards");
 const rooms_1 = require("../../lib/rooms");
 const publicRoom_1 = require("../state/publicRoom");
 const gameState_1 = require("../state/gameState");
-const game_1 = require("@/lib/game");
-const theme_1 = require("@/lib/theme");
-const score_1 = require("@/lib/score");
+const game_1 = require("../../lib/game");
+const theme_1 = require("../../lib/theme");
+const score_1 = require("../../lib/score");
 const debugSnapshotHandler = (io, socket) => {
     socket.on("DEV_SNAPSHOT", async (data, cb) => {
         var _a, _b, _c, _d;

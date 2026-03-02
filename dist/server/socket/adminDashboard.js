@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildAdminDashboard = buildAdminDashboard;
 exports.emitAdminDashboardToHosts = emitAdminDashboardToHosts;
-const game_1 = require("@/lib/game");
-const theme_1 = require("@/lib/theme");
-const roomStore_1 = require("@/server/store/roomStore");
-const gameState_1 = require("@/server/state/gameState");
+const game_1 = require("../../lib/game");
+const theme_1 = require("../../lib/theme");
+const roomStore_1 = require("../../server/store/roomStore");
+const gameState_1 = require("../../server/state/gameState");
 const toGuessLabel = (order) => {
     if (!(order === null || order === void 0 ? void 0 : order.length))
         return "—";

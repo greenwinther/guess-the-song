@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.devSeedHandler = void 0;
 const validation_1 = require("../validation");
 const guards_1 = require("../logic/guards");
-const rooms_1 = require("@/lib/rooms");
+const rooms_1 = require("../../lib/rooms");
 const roomStore_1 = require("../store/roomStore");
 const publicRoom_1 = require("../state/publicRoom");
 const demoUrls = [

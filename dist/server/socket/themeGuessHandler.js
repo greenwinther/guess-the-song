@@ -104,7 +104,7 @@ const themeGuessHandler = (io, socket) => {
         if (!normalizedCode)
             return;
         // we don’t need DB here, just flip the flag and broadcast
-        const { setRevealed } = await Promise.resolve().then(() => __importStar(require("@/lib/theme")));
+        const { setRevealed } = await Promise.resolve().then(() => __importStar(require("../../lib/theme")));
         setRevealed(normalizedCode, true);
         io.to(normalizedCode).emit("THEME_REVEALED");
     });
