@@ -3,10 +3,6 @@
 
 const scoresByCode: Record<string, Record<string, number>> = {};
 
-export function getScore(code: string, playerName: string): number {
-	return scoresByCode[code]?.[playerName] ?? 0;
-}
-
 export function addPointsByCodeName(code: string, playerName: string, delta: number): number {
 	if (!scoresByCode[code]) scoresByCode[code] = {};
 	const prev = scoresByCode[code][playerName] ?? 0;
@@ -18,4 +14,13 @@ export function addPointsByCodeName(code: string, playerName: string, delta: num
 // Optional: get whole board for a room if you need it elsewhere
 export function getRoomScores(code: string): Record<string, number> {
 	return scoresByCode[code] ?? {};
+}
+
+export function clearRoomScores(code: string) {
+	delete scoresByCode[code];
+}
+
+export function removePlayerScore(code: string, playerName: string) {
+	if (!scoresByCode[code]) return;
+	delete scoresByCode[code][playerName];
 }
