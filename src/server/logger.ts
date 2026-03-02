@@ -1,7 +1,8 @@
 import pino from "pino";
+import { serverConfig } from "./config";
 
-const isProduction = process.env.NODE_ENV === "production";
-const level = process.env.LOG_LEVEL ?? (isProduction ? "info" : "debug");
+const isProduction = serverConfig.isProduction;
+const level = serverConfig.logLevel;
 
 const transport = isProduction
 	? undefined

@@ -6,6 +6,7 @@ import { exportGameState, importGameState } from "./gameState";
 import { exportRoundsState, importRoundsState } from "@/lib/game";
 import { exportThemeState, importThemeState } from "@/lib/theme";
 import { scopedLogger } from "../logger";
+import { persistedStateSchema, validateWithZod } from "@/server/schemas";
 
 const DEFAULT_STATE_PATH = path.join(process.cwd(), "data", "state.json");
 const ROOM_TTL_MS = 1000 * 60 * 60 * 24; // 24h
@@ -68,15 +69,54 @@ const ensureDir = (filePath: string) => {
 	if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 };
 
+const quarantineStateFile = (filePath: string, reason: string) => {
+	if (!fs.existsSync(filePath)) return;
+	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+	const quarantinedPath = `${filePath}.invalid.${reason}.${stamp}`;
+	try {
+		fs.renameSync(filePath, quarantinedPath);
+		log.warn({ filePath, quarantinedPath, reason }, "quarantined invalid persisted state file");
+	} catch (err) {
+		log.warn({ err, filePath, quarantinedPath, reason }, "failed to quarantine persisted state file");
+	}
+};
+
 const readStateFile = (filePath: string): PersistedState | null => {
 	if (!fs.existsSync(filePath)) return null;
+
 	try {
 		const raw = fs.readFileSync(filePath, "utf8");
-		const parsed = JSON.parse(raw) as PersistedState;
-		if (!parsed || parsed.version !== 1) return null;
-		return parsed;
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(raw);
+		} catch (err) {
+			log.warn({ err, filePath }, "failed to parse persisted state JSON");
+			quarantineStateFile(filePath, "json");
+			return null;
+		}
+
+		const version = typeof parsed === "object" && parsed !== null ? (parsed as { version?: unknown }).version : undefined;
+		if (version !== 1) {
+			log.warn({ filePath, version }, "unsupported persisted state version");
+			quarantineStateFile(filePath, "version");
+			return null;
+		}
+
+		const validated = validateWithZod(persistedStateSchema, parsed, {
+			errorMessage: "Invalid persisted state snapshot",
+		});
+		if (!validated.ok) {
+			log.warn(
+				{ filePath, issues: validated.issues.slice(0, 8) },
+				"persisted state failed schema validation"
+			);
+			quarantineStateFile(filePath, "schema");
+			return null;
+		}
+
+		return validated.data as PersistedState;
 	} catch (err) {
-		log.warn({ err }, "failed to read persisted state");
+		log.warn({ err, filePath }, "failed to read persisted state");
 		return null;
 	}
 };

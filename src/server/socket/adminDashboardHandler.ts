@@ -7,9 +7,9 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { parseRoomCode } from "../validation";
 import { requireMember, requireRoom } from "../logic/guards";
 import { buildAdminDashboard } from "./adminDashboard";
+import { adminGetDashboardPayloadSchema, validateWithZod } from "../schemas";
 
 export const adminDashboardHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -18,8 +18,11 @@ export const adminDashboardHandler = (
 	socket.on(
 		"ADMIN_GET_DASHBOARD",
 		(data: AdminGetDashboardPayload, cb: (res: AdminGetDashboardResponse) => void) => {
-			const code = parseRoomCode(data?.code);
-			if (!code) return cb({ ok: false, error: "BAD_REQUEST" });
+			const payload = validateWithZod(adminGetDashboardPayloadSchema, data, {
+				errorMessage: "Invalid ADMIN_GET_DASHBOARD payload",
+			});
+			if (!payload.ok) return cb({ ok: false, error: "BAD_REQUEST" });
+			const { code } = payload.data;
 
 			const room = requireRoom(socket, () => cb({ ok: false, error: "NOT_AUTHORIZED" }));
 			if (!room || room.code !== code) return cb({ ok: false, error: "NOT_AUTHORIZED" });

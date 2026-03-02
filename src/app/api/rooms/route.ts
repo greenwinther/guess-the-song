@@ -3,23 +3,29 @@
 
 import { NextResponse } from "next/server";
 import { createRoom } from "@/lib/rooms";
+import { createRoomBodySchema, validateWithZod } from "@/server/schemas";
 
 export async function POST(req: Request) {
 	try {
 		const body = await req.json();
-		const { theme, backgroundUrl } = body;
+		const parsedBody = validateWithZod(createRoomBodySchema, body, {
+			errorMessage: "Invalid request body",
+		});
+		if (!parsedBody.ok) {
+			return NextResponse.json({ error: parsedBody.error, issues: parsedBody.issues }, { status: 400 });
+		}
 
 		const newRoom = await createRoom(
-			theme?.trim() || "", // fallback to empty string
-			backgroundUrl?.trim() || null,
-			"Host",
+			parsedBody.data.theme,
+			parsedBody.data.backgroundUrl,
+			parsedBody.data.hostName,
 			undefined
 		);
 
 		return NextResponse.json({ code: newRoom.code });
 	} catch (err) {
-		console.error(err);
-		return NextResponse.json({ error: "Failed to create room" }, { status: 500 });
+		const message = err instanceof Error ? err.message : "Failed to create room";
+		return NextResponse.json({ error: message }, { status: 500 });
 	}
 }
 

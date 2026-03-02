@@ -4,11 +4,11 @@ import { getRoom } from "../../lib/rooms";
 import type { Server, Socket } from "socket.io";
 import { setActiveSong, setGameStarted } from "../state/gameState";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, StartGamePayload } from "@/types/socket";
-import { parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { toPublicRoom } from "../state/publicRoom";
 import { setPhase } from "../store/roomStore";
 import { scopedLogger } from "../logger";
+import { startGamePayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.startGame");
 
@@ -18,8 +18,11 @@ export const startGameHandler = (
 ) => {
 	socket.on("startGame", async (data: StartGamePayload, callback: (ok: boolean) => void) => {
 		try {
-			const code = parseRoomCode(data.code);
-			if (!code) return callback(false);
+			const payload = validateWithZod(startGamePayloadSchema, data, {
+				errorMessage: "Invalid startGame payload",
+			});
+			if (!payload.ok) return callback(false);
+			const { code } = payload.data;
 
 			const boundRoom = requireRoom(socket, () => callback(false));
 			if (!boundRoom) return;

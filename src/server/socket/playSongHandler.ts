@@ -3,10 +3,10 @@ import type { Server, Socket } from "socket.io";
 import { addRevealedSong, getRoomGameState, setActiveSong, setRevealedSongs } from "../state/gameState";
 import { getSong } from "../../lib/rooms";
 import type { ClientToServerEvents, InterServerEvents, PlaySongPayload, ServerToClientEvents, SocketData } from "@/types/socket";
-import { parseRoomCode, parseIntSafe } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
 import { scopedLogger } from "../logger";
+import { playSongPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.playSong");
 
@@ -21,9 +21,16 @@ export const playSongHandler = (
 			callback: (res: { success: boolean; error?: string }) => void
 		) => {
 			try {
-				const code = parseRoomCode(data.code);
-				const songId = parseIntSafe(data.songId);
-				if (!code || songId == null) return callback({ success: false, error: "Invalid input" });
+				const payload = validateWithZod(playSongPayloadSchema, data, {
+					errorMessage: "Invalid playSong payload",
+				});
+				if (!payload.ok) {
+					return callback({
+						success: false,
+						error: payload.issues[0]?.message ?? payload.error,
+					});
+				}
+				const { code, songId } = payload.data;
 
 				const room = requireRoom(socket, () => callback({ success: false, error: "No room" }));
 				if (!room || room.code !== code) return;

@@ -12,6 +12,8 @@ interface JoinCardProps {
 	code: string;
 	onRoomCodeChange: (val: string) => void;
 	onJoin: (e: React.FormEvent) => void;
+	nameError?: string | null;
+	codeError?: string | null;
 	className?: string;
 	disabled?: boolean;
 	isLoading?: boolean;
@@ -23,6 +25,8 @@ export default function JoinCard({
 	code,
 	onRoomCodeChange,
 	onJoin,
+	nameError,
+	codeError,
 	className,
 	disabled,
 	isLoading,
@@ -41,7 +45,7 @@ export default function JoinCard({
 			<form onSubmit={onJoin} className="flex flex-col gap-4">
 				<Input
 					type="text"
-					variant="default"
+					variant={nameError ? "error" : "default"}
 					placeholder="Your Name"
 					value={name}
 					onChange={(e) => onNameChange(e.target.value)}
@@ -49,9 +53,10 @@ export default function JoinCard({
 					className="w-full"
 					disabled={lock}
 				/>
+				{nameError && <p className="-mt-2 text-xs text-red-400">{nameError}</p>}
 				<Input
 					type="text"
-					variant="default"
+					variant={codeError ? "error" : "default"}
 					placeholder="Room Code"
 					value={code}
 					onChange={(e) => onRoomCodeChange(e.target.value.toUpperCase())}
@@ -60,6 +65,7 @@ export default function JoinCard({
 					className="w-full"
 					disabled={lock}
 				/>
+				{codeError && <p className="-mt-2 text-xs text-red-400">{codeError}</p>}
 
 				<Button
 					type="submit"

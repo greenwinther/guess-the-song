@@ -2,7 +2,6 @@
 import http from "http";
 import express from "express";
 import type { NextFunction, Request, Response } from "express";
-import dotenv from "dotenv";
 import { Server } from "socket.io";
 import { registerSocketHandlers } from "./socket";
 import { startCleanupScheduler } from "./cleanupScheduler";
@@ -10,15 +9,10 @@ import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, Soc
 import { initStatePersistence } from "./state/persistence";
 import { registerHttpRoutes } from "./http/registerHttpRoutes";
 import { scopedLogger } from "./logger";
-
-dotenv.config({ path: ".env.local", quiet: true });
-dotenv.config({ quiet: true });
+import { serverConfig } from "./config";
 const log = scopedLogger("socketServer");
 
-const allowedOrigins = [
-	process.env.CLIENT_URL || "http://localhost:3000",
-	process.env.CLIENT_URL_2,
-].filter(Boolean) as string[];
+const allowedOrigins = serverConfig.allowedOrigins;
 
 const app = express();
 app.disable("x-powered-by");
@@ -105,10 +99,9 @@ io.on("connection", (socket) => {
 	registerSocketHandlers(io, socket);
 });
 
-const PORT = parseInt(process.env.SOCKET_PORT || "4000", 10);
-httpServer.listen(PORT, () => {
-	log.info({ port: PORT }, "Socket.IO + Express server listening");
-	startCleanupScheduler(io);
+httpServer.listen(serverConfig.socketPort, () => {
+	log.info({ port: serverConfig.socketPort }, "Socket.IO + Express server listening");
+	startCleanupScheduler(io, serverConfig.cleanupIntervalMs);
 });
 
 const shutdown = (signal: string) => {

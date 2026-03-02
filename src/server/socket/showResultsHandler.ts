@@ -3,7 +3,6 @@ import { getRoundsForCode } from "../../lib/game";
 import type { Server, Socket } from "socket.io";
 import { setFinalScores } from "../state/gameState";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, ShowResultsPayload, SocketData } from "@/types/socket";
-import { parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { computeScoreBoard } from "../logic/score";
 import { getRoomScores } from "@/lib/score";
@@ -12,6 +11,7 @@ import { isPhase } from "../logic/phase";
 import { setPhase } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
 import { scopedLogger } from "../logger";
+import { showResultsPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.showResults");
 
@@ -21,8 +21,11 @@ export const showResultHandler = (
 ) => {
 	socket.on("showResults", async (data: ShowResultsPayload, callback: (ok: boolean) => void) => {
 		try {
-			const code = parseRoomCode(data.code);
-			if (!code) return callback(false);
+			const payload = validateWithZod(showResultsPayloadSchema, data, {
+				errorMessage: "Invalid showResults payload",
+			});
+			if (!payload.ok) return callback(false);
+			const { code } = payload.data;
 
 			const boundRoom = requireRoom(socket, () => callback(false));
 			if (!boundRoom) return;

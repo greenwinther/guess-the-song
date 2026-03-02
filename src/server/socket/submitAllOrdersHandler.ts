@@ -2,10 +2,10 @@
 import type { Server, Socket } from "socket.io";
 import { storeOrder } from "../../lib/game";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, SubmitAllOrdersPayload } from "@/types/socket";
-import { parseRoomCode } from "../validation";
 import { requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
 import { scopedLogger } from "../logger";
+import { submitAllOrdersPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.submitAllOrders");
 
@@ -20,15 +20,18 @@ export const submitAllOrdersHandler = (
 			callback: (ok: boolean) => void
 		) => {
 			try {
-				const code = parseRoomCode(data.code);
-				if (!code) return callback(false);
+				const payload = validateWithZod(submitAllOrdersPayloadSchema, data, {
+					errorMessage: "Invalid submitAllOrders payload",
+				});
+				if (!payload.ok) return callback(false);
+				const { code, guesses, playerName: fallbackPlayerName } = payload.data;
 
 				const room = requireRoom(socket, () => callback(false));
 				if (!room || room.code !== code) return;
 				if (!isPhase(room, ["GUESSING", "RECAP"])) return callback(false);
 
-				const playerName = socket.data.roomMeta?.playerName ?? data.playerName;
-				for (const [sid, order] of Object.entries(data.guesses)) {
+				const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
+				for (const [sid, order] of Object.entries(guesses)) {
 					storeOrder(code, parseInt(sid, 10), playerName, order);
 				}
 

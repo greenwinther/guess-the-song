@@ -7,7 +7,7 @@ import { scopedLogger } from "./logger";
 let started = false;
 const log = scopedLogger("cleanupScheduler");
 
-export function startCleanupScheduler(io: Server, ms = Number(process.env.CLEANUP_INTERVAL_MS ?? 60_000)) {
+export function startCleanupScheduler(io: Server, ms = 60_000) {
 	if (started) return log.warn("cleanupScheduler already started"), undefined;
 	started = true;
 

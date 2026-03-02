@@ -9,9 +9,9 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { parseIntSafe, parseRoomCode } from "../validation";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
 import { scopedLogger } from "../logger";
+import { lockDetailPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.lockDetailAnswer");
 
@@ -21,11 +21,13 @@ export const lockDetailAnswerHandler = (
 ) => {
 	socket.on("lockDetailAnswer", (d: LockDetailPayload, cb?: (ok: boolean) => void) => {
 		try {
-			const code = parseRoomCode(d.code);
-			const songId = parseIntSafe(d.songId);
-			if (!code || songId == null) return cb?.(false);
+			const payload = validateWithZod(lockDetailPayloadSchema, d, {
+				errorMessage: "Invalid lockDetailAnswer payload",
+			});
+			if (!payload.ok) return cb?.(false);
+			const { code, songId, playerName: fallbackPlayerName } = payload.data;
 			if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-			const playerName = socket.data.roomMeta?.playerName ?? d.playerName;
+			const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
 			const ok = manualDetailLock(code, songId, playerName);
 			if (ok) {
 				const locked = getDetailLockedPlayers(code, songId);
@@ -41,11 +43,13 @@ export const lockDetailAnswerHandler = (
 
 	socket.on("undoDetailLock", (d: LockDetailPayload, cb?: (ok: boolean) => void) => {
 		try {
-			const code = parseRoomCode(d.code);
-			const songId = parseIntSafe(d.songId);
-			if (!code || songId == null) return cb?.(false);
+			const payload = validateWithZod(lockDetailPayloadSchema, d, {
+				errorMessage: "Invalid undoDetailLock payload",
+			});
+			if (!payload.ok) return cb?.(false);
+			const { code, songId, playerName: fallbackPlayerName } = payload.data;
 			if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-			const playerName = socket.data.roomMeta?.playerName ?? d.playerName;
+			const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
 			const ok = tryUndoDetailLock(code, songId, playerName);
 			if (ok) {
 				const locked = getDetailLockedPlayers(code, songId);

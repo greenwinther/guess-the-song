@@ -1,10 +1,26 @@
 import type { Express, Request, Response } from "express";
 import { addSong, createRoom, getRoom } from "@/lib/rooms";
 import { toPublicRoom } from "@/server/state/publicRoom";
-import { parseName, parseOptionalText, parseRequiredUrl, parseRoomCode } from "@/server/validation";
+import {
+	addSongBodySchema,
+	createRoomBodySchema,
+	roomCodeParamsSchema,
+	validateWithZod,
+	youtubeSearchQuerySchema,
+	youtubeTitleQuerySchema,
+} from "@/server/schemas";
+import type { ZodValidationFailure } from "@/server/schemas";
+import { serverConfig } from "@/server/config";
 
 function jsonError(res: Response, status: number, message: string) {
 	return res.status(status).json({ error: message });
+}
+
+function jsonValidationError(
+	res: Response,
+	result: ZodValidationFailure
+) {
+	return res.status(400).json({ error: result.error, issues: result.issues });
 }
 
 export function registerHttpRoutes(app: Express) {
@@ -18,10 +34,12 @@ export function registerHttpRoutes(app: Express) {
 
 	app.get("/api/youtube-search", async (req, res) => {
 		try {
-			const q = parseOptionalText(req.query.q) ?? "";
+			const query = validateWithZod(youtubeSearchQuerySchema, req.query);
+			if (!query.ok) return jsonValidationError(res, query);
+			const q = query.data.q ?? "";
 			if (!q) return res.json({ items: [] });
 
-			const key = process.env.YOUTUBE_API_KEY;
+			const key = serverConfig.youtubeApiKey;
 			if (!key) return jsonError(res, 500, "Missing YOUTUBE_API_KEY");
 
 			const url = new URL("https://www.googleapis.com/youtube/v3/search");
@@ -45,10 +63,12 @@ export function registerHttpRoutes(app: Express) {
 
 	app.get("/api/youtube-title", async (req, res) => {
 		try {
-			const id = parseOptionalText(req.query.id);
+			const query = validateWithZod(youtubeTitleQuerySchema, req.query);
+			if (!query.ok) return jsonValidationError(res, query);
+			const id = query.data.id;
 			if (!id) return res.json({ title: "" });
 
-			const key = process.env.YOUTUBE_API_KEY;
+			const key = serverConfig.youtubeApiKey;
 			if (!key) return jsonError(res, 500, "Missing YOUTUBE_API_KEY");
 
 			const url = new URL("https://www.googleapis.com/youtube/v3/videos");
@@ -72,10 +92,9 @@ export function registerHttpRoutes(app: Express) {
 
 	app.post("/api/rooms", async (req: Request, res: Response) => {
 		try {
-			const theme = parseOptionalText(req.body?.theme) ?? "";
-			const backgroundUrl = parseOptionalText(req.body?.backgroundUrl);
-			const hostName = parseName(req.body?.hostName, "Host");
-			const room = await createRoom(theme, backgroundUrl, hostName, undefined);
+			const body = validateWithZod(createRoomBodySchema, req.body, { errorMessage: "Invalid request body" });
+			if (!body.ok) return jsonValidationError(res, body);
+			const room = await createRoom(body.data.theme, body.data.backgroundUrl, body.data.hostName, undefined);
 			return res.json({ code: room.code });
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Failed to create room";
@@ -84,8 +103,9 @@ export function registerHttpRoutes(app: Express) {
 	});
 
 	app.get("/api/rooms/:code", async (req: Request, res: Response) => {
-		const code = parseRoomCode(req.params.code);
-		if (!code) return jsonError(res, 400, "Invalid room code");
+		const params = validateWithZod(roomCodeParamsSchema, req.params, { errorMessage: "Invalid room code" });
+		if (!params.ok) return jsonValidationError(res, params);
+		const code = params.data.code;
 
 		try {
 			const room = await getRoom(code);
@@ -97,17 +117,18 @@ export function registerHttpRoutes(app: Express) {
 	});
 
 	app.post("/api/rooms/:code/songs", async (req: Request, res: Response) => {
-		const code = parseRoomCode(req.params.code);
-		if (!code) return jsonError(res, 400, "Invalid room code");
-
-		const url = parseRequiredUrl(req.body?.url);
-		if (!url) return jsonError(res, 400, "Invalid URL");
+		const params = validateWithZod(roomCodeParamsSchema, req.params, { errorMessage: "Invalid room code" });
+		if (!params.ok) return jsonValidationError(res, params);
+		const body = validateWithZod(addSongBodySchema, req.body, { errorMessage: "Invalid request body" });
+		if (!body.ok) return jsonValidationError(res, body);
 
 		try {
-			const submitter = parseName(req.body?.submitter, "Player");
-			const title = parseOptionalText(req.body?.title) ?? "";
-			const detailAnswer = parseOptionalText(req.body?.detailAnswer);
-			const song = await addSong(code, { url, submitter, title, detailAnswer });
+			const song = await addSong(params.data.code, {
+				url: body.data.url,
+				submitter: body.data.submitter,
+				title: body.data.title,
+				detailAnswer: body.data.detailAnswer,
+			});
 			return res.json(song);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Failed to add song";

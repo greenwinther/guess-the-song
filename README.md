@@ -115,11 +115,15 @@ yarn dev
 | `NEXT_PUBLIC_SOCKET_URL` | URL for Socket.io server (e.g. `http://localhost:4000`) | _required for client_ |
 | `NEXT_PUBLIC_API_URL`    | URL for HTTP API calls (falls back to `NEXT_PUBLIC_SOCKET_URL`) | _optional_      |
 | `CLIENT_URL`             | Allowed browser origin for Express/Socket CORS         | `http://localhost:3000` |
+| `CLIENT_URL_2`           | Secondary allowed origin for Express/Socket CORS       | _optional_ |
 | `LOG_LEVEL`              | Server log level used by Pino (`debug`, `info`, `warn`, `error`) | `debug` (dev), `info` (prod) |
+| `NODE_ENV`               | Runtime mode used for config validation                | `development` |
 | `PORT`                   | Port for the Next.js web server (if overriding)         | `3000`                |
 | `SOCKET_PORT`            | Port for the Socket.io server (if overriding)           | `4000`                |
+| `CLEANUP_INTERVAL_MS`    | Interval for room cleanup scheduler (milliseconds)      | `60000` |
 
 Note: All client-facing variables must begin with **NEXT\*PUBLIC** in Next.js.
+In production, the backend validates env vars at startup and requires `CLIENT_URL` and `YOUTUBE_API_KEY`.
 
 ## Available Scripts
 
@@ -140,6 +144,9 @@ From the project root, run:
 -   **npm run lint** / **yarn lint**
     Lints TypeScript and JSX/TSX files using ESLint. Configured to follow project conventions.
 
+-   **npm run test:unit**
+    Runs the unit test suite for Zod schemas and validation helpers using Node's test runner via `tsx --test`.
+
 -   **npm run test** / **yarn test**
     Runs Jest unit tests and React component tests.
 
@@ -148,6 +155,14 @@ From the project root, run:
 
 -   **npm run format** / **yarn format**
     Formats codebase using Prettier (configurable in .prettierrc).
+
+## CI
+
+GitHub Actions runs on every push and pull request and executes:
+
+-   `npm run lint`
+-   `npm run test:unit`
+-   `npm run build`
 
 ## Folder Structure
 

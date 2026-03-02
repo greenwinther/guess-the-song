@@ -3,11 +3,11 @@ import type { Submission } from "../../types/submission";
 import type { Server, Socket } from "socket.io";
 import { addSong, getRoom } from "../../lib/rooms";
 import type { AddSongPayload, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
-import { parseName, parseRequiredUrl, parseRoomCode, parseOptionalText } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
 import { getYouTubeID } from "@/lib/youtube";
 import { scopedLogger } from "../logger";
+import { addSongPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.addSong");
 
@@ -22,13 +22,16 @@ export const addSongHandler = (
 			callback: (res: { success: boolean; song?: Submission; error?: string }) => void
 		) => {
 			try {
-				const code = parseRoomCode(data.code);
-				if (!code) return callback({ success: false, error: "Invalid room code" });
-				const url = parseRequiredUrl(data.url);
-				if (!url) return callback({ success: false, error: "Invalid URL" });
-				const submitter = parseName(data.submitter, "Player");
-				const title = parseOptionalText(data.title) ?? "";
-				const detailAnswer = parseOptionalText((data as { detailAnswer?: string }).detailAnswer);
+				const payload = validateWithZod(addSongPayloadSchema, data, {
+					errorMessage: "Invalid addSong payload",
+				});
+				if (!payload.ok) {
+					return callback({
+						success: false,
+						error: payload.issues[0]?.message ?? payload.error,
+					});
+				}
+				const { code, url, submitter, title, detailAnswer } = payload.data;
 
 				const room = requireRoom(socket, () => callback({ success: false, error: "No room" }));
 				if (!room || room.code !== code) return;

@@ -7,12 +7,13 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { parseBool, parseIntSafe, parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { addSong, getRoom, joinRoom } from "@/lib/rooms";
 import { setDetailQuestion, setPlayerReady } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
 import type { AvatarConfig } from "@/types/avatar";
+import { devSeedPayloadSchema, validateWithZod } from "../schemas";
+import { serverConfig } from "../config";
 
 const demoUrls = [
 	{ url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "Never Gonna Give You Up" },
@@ -33,7 +34,7 @@ const makeAvatar = (index: number): AvatarConfig => ({
 });
 
 async function fetchPopularMusic(count: number) {
-	const key = process.env.YOUTUBE_API_KEY;
+	const key = serverConfig.youtubeApiKey;
 	if (!key) return null;
 	const url = new URL("https://www.googleapis.com/youtube/v3/videos");
 	url.searchParams.set("part", "snippet");
@@ -61,18 +62,21 @@ export const devSeedHandler = (
 	socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>
 ) => {
 	socket.on("DEV_SEED", async (data: DevSeedPayload, cb?: (ok: boolean) => void) => {
-		if (process.env.NODE_ENV === "production") return cb?.(false);
+		if (serverConfig.isProduction) return cb?.(false);
 
-		const code = parseRoomCode(data.code);
-		if (!code) return cb?.(false);
+		const payload = validateWithZod(devSeedPayloadSchema, data, {
+			errorMessage: "Invalid DEV_SEED payload",
+		});
+		if (!payload.ok) return cb?.(false);
+		const { code } = payload.data;
 
 		const room = requireRoom(socket, () => cb?.(false));
 		if (!room || room.code !== code) return;
 		if (!requireHost(socket, room, () => cb?.(false))) return;
 
-		const players = parseIntSafe(data.players) ?? 3;
-		const songs = parseIntSafe(data.songs) ?? 5;
-		const ready = parseBool(data.ready, true);
+		const players = payload.data.players ?? 3;
+		const songs = payload.data.songs ?? 5;
+		const ready = payload.data.ready ?? true;
 		const ensureQuestion = !room.detailQuestion;
 		if (ensureQuestion) {
 			setDetailQuestion(code, "Which year was this song made?");

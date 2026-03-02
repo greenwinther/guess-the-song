@@ -8,20 +8,26 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { parseIntSafe, parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { addRevealedSong, getRoomGameState } from "../state/gameState";
 import { isPhase } from "../logic/phase";
 import { getRoom } from "@/lib/rooms";
+import {
+	revealSubmitterAllPayloadSchema,
+	revealSubmitterPayloadSchema,
+	validateWithZod,
+} from "../schemas";
 
 export const revealSubmitterHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
 	socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>
 ) => {
 	socket.on("revealSubmitter", (data: RevealSubmitterPayload) => {
-		const code = parseRoomCode(data.code);
-		const songId = parseIntSafe(data.songId);
-		if (!code || songId == null) return;
+		const payload = validateWithZod(revealSubmitterPayloadSchema, data, {
+			errorMessage: "Invalid revealSubmitter payload",
+		});
+		if (!payload.ok) return;
+		const { code, songId } = payload.data;
 
 		const room = requireRoom(socket);
 		if (!room || room.code !== code) return;
@@ -36,8 +42,11 @@ export const revealSubmitterHandler = (
 	});
 
 	socket.on("revealSubmitterAll", async (data: RevealSubmitterAllPayload) => {
-		const code = parseRoomCode(data.code);
-		if (!code) return;
+		const payload = validateWithZod(revealSubmitterAllPayloadSchema, data, {
+			errorMessage: "Invalid revealSubmitterAll payload",
+		});
+		if (!payload.ok) return;
+		const { code } = payload.data;
 
 		const room = requireRoom(socket);
 		if (!room || room.code !== code) return;

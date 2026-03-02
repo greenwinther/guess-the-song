@@ -7,6 +7,7 @@ import Input from "../ui/Input";
 import Button from "../ui/Button";
 import { getYouTubeID } from "@/lib/youtube";
 import Image from "next/image";
+import { firstFieldIssue, songSubmitFormSchema } from "@/shared/schemas";
 
 interface Props {
 	code: string;
@@ -37,6 +38,11 @@ export default function SongSubmitForm({
 	const [title, setTitle] = useState("");
 	const [submitter, setSubmitter] = useState(defaultSubmitter);
 	const [detailAnswer, setDetailAnswer] = useState("");
+	const [urlError, setUrlError] = useState<string | null>(null);
+	const [submitterError, setSubmitterError] = useState<string | null>(null);
+	const [detailError, setDetailError] = useState<string | null>(null);
+	const [submitError, setSubmitError] = useState<string | null>(null);
+	const [searchError, setSearchError] = useState<string | null>(null);
 
 	useEffect(() => {
 		const handler = setTimeout(() => {
@@ -47,16 +53,31 @@ export default function SongSubmitForm({
 
 	// 1) autocomplete search
 	useEffect(() => {
-		// if they cleared out the field, clear results immediately
 		if (!debouncedQuery) {
 			setResults([]);
+			setSearchError(null);
 			return;
 		}
 
-		fetch(apiUrl(`/api/youtube-search?q=${encodeURIComponent(debouncedQuery)}`))
-			.then((r) => r.json())
-			.then((json) => setResults(json.items || []))
-			.catch(() => setResults([]));
+		const controller = new AbortController();
+		fetch(apiUrl(`/api/youtube-search?q=${encodeURIComponent(debouncedQuery)}`), {
+			signal: controller.signal,
+		})
+			.then(async (r) => {
+				const json = await r.json();
+				if (!r.ok) {
+					throw new Error(json?.error || "Search failed");
+				}
+				setResults(json.items || []);
+				setSearchError(null);
+			})
+			.catch((err: unknown) => {
+				if ((err as { name?: string })?.name === "AbortError") return;
+				setResults([]);
+				setSearchError("Could not load search results. Try again.");
+			});
+
+		return () => controller.abort();
 	}, [debouncedQuery]);
 
 	// 2) when host picks a suggestion
@@ -64,6 +85,8 @@ export default function SongSubmitForm({
 		setUrl(`https://www.youtube.com/watch?v=${video.id.videoId}`);
 		setTitle(video.snippet.title);
 		setResults([]);
+		setUrlError(null);
+		setSubmitError(null);
 	};
 
 	// 3) when host manually pastes a URL
@@ -72,7 +95,8 @@ export default function SongSubmitForm({
 		if (vid) {
 			fetch(apiUrl(`/api/youtube-title?id=${vid}`))
 				.then((r) => r.json())
-				.then((j) => setTitle(j.title || ""));
+				.then((j) => setTitle(j.title || ""))
+				.catch(() => setTitle(""));
 		} else {
 			setTitle("");
 		}
@@ -86,28 +110,67 @@ export default function SongSubmitForm({
 
 	const onSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		// emit song URL + title + submitter + detail answer
 		if (disabled) return;
-		socket.emit("addSong", { code, url, submitter, title, detailAnswer }, () => {
-			setUrl("");
-			setTitle("");
-			setQuery("");
-			setSubmitter(defaultSubmitter);
-			setDetailAnswer("");
+
+		setUrlError(null);
+		setSubmitterError(null);
+		setDetailError(null);
+		setSubmitError(null);
+
+		const validation = songSubmitFormSchema.safeParse({
+			url,
+			submitter,
+			detailAnswer,
 		});
+
+		if (!validation.success) {
+			setUrlError(firstFieldIssue(validation.error, "url"));
+			setSubmitterError(firstFieldIssue(validation.error, "submitter"));
+			setDetailError(firstFieldIssue(validation.error, "detailAnswer"));
+			setSubmitError("Please fix the highlighted fields.");
+			return;
+		}
+
+		socket.emit(
+			"addSong",
+			{
+				code,
+				url: validation.data.url,
+				submitter: validation.data.submitter,
+				title,
+				detailAnswer: validation.data.detailAnswer,
+			},
+			(res) => {
+				if (!res?.success) {
+					setSubmitError(res?.error || "Could not add song");
+					return;
+				}
+				setUrl("");
+				setTitle("");
+				setQuery("");
+				setSubmitter(defaultSubmitter);
+				setDetailAnswer("");
+				setUrlError(null);
+				setSubmitterError(null);
+				setDetailError(null);
+				setSubmitError(null);
+			}
+		);
 	};
 
 	return (
 		<form onSubmit={onSubmit} className="relative flex flex-wrap gap-2 items-start">
-			{/* 1) Search / URL — twice as wide */}
 			<div className="flex-[2] min-w-0">
 				<Input
 					placeholder="Search or paste YouTube URL"
 					value={title || query || url}
+					variant={urlError ? "error" : "default"}
 					onChange={(e) => {
 						if (disabled) return;
 						const v = e.target.value;
 						setTitle("");
+						setUrlError(null);
+						setSubmitError(null);
 						if (/youtu/.test(v)) {
 							setUrl(v);
 							setQuery("");
@@ -120,20 +183,21 @@ export default function SongSubmitForm({
 				/>
 			</div>
 
-			{/* 2) Name — half the width of search */}
 			<div className="flex-1 min-w-0">
 				<Input
 					placeholder="Your name"
 					value={submitter}
+					variant={submitterError ? "error" : "default"}
 					onChange={(e) => {
 						if (disabled) return;
 						setSubmitter(e.target.value);
+						setSubmitterError(null);
+						setSubmitError(null);
 					}}
 					className="w-full"
 				/>
 			</div>
 
-			{/* 3) Button */}
 			<Button type="submit" disabled={disabled}>
 				Add Song
 			</Button>
@@ -142,15 +206,23 @@ export default function SongSubmitForm({
 				<Input
 					placeholder="Answer for question (optional)"
 					value={detailAnswer}
+					variant={detailError ? "error" : "default"}
 					onChange={(e) => {
 						if (disabled) return;
 						setDetailAnswer(e.target.value);
+						setDetailError(null);
+						setSubmitError(null);
 					}}
 					className="w-full"
 				/>
 			</div>
 
-			{/* 4) Dropdown spanning full form width */}
+			{(urlError || submitterError || detailError || submitError || searchError) && (
+				<div className="w-full text-xs text-red-400" aria-live="polite">
+					{urlError || submitterError || detailError || submitError || searchError}
+				</div>
+			)}
+
 			{results.length > 0 && (
 				<ul
 					className={`

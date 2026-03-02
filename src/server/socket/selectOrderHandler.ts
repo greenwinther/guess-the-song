@@ -9,9 +9,9 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { parseRoomCode, parseIntSafe } from "../validation";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
 import { scopedLogger } from "../logger";
+import { selectOrderPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.selectOrder");
 
@@ -23,14 +23,16 @@ export const selectOrderHandler = (
 		"selectOrder",
 		(data: SelectOrderPayload, cb?: (ok: boolean) => void) => {
 			try {
-				const code = parseRoomCode(data.code);
-				const songId = parseIntSafe(data.songId);
-				if (!code || songId == null) return cb?.(false);
+				const payload = validateWithZod(selectOrderPayloadSchema, data, {
+					errorMessage: "Invalid selectOrder payload",
+				});
+				if (!payload.ok) return cb?.(false);
+				const { code, songId, order, playerName: fallbackPlayerName } = payload.data;
 
 				// accept only for active song
 				if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-				const playerName = socket.data.roomMeta?.playerName ?? data.playerName;
-				storeOrder(code, songId, playerName, data.order);
+				const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
+				storeOrder(code, songId, playerName, order);
 				void emitAdminDashboardToHosts(io, code);
 				cb?.(true);
 			} catch (e) {

@@ -3,13 +3,13 @@
 
 import HostCard from "@/components/ui/HostCard";
 import JoinCard from "@/components/ui/JoinCard";
-import GlassCard from "@/components/ui/GlassCard";
 import { useGame } from "@/contexts/tempContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import type { AvatarConfig } from "@/types/avatar";
 import Button from "@/components/ui/Button";
+import { createLobbyFormSchema, firstFieldIssue, joinLobbyFormSchema } from "@/shared/schemas";
 
 export default function HomePage() {
 	const router = useRouter();
@@ -21,6 +21,10 @@ export default function HomePage() {
 	const [creating, setCreating] = useState(false);
 	const [mode, setMode] = useState<"host" | "player">("player");
 	const [error, setError] = useState<string | null>(null);
+	const [joinNameError, setJoinNameError] = useState<string | null>(null);
+	const [joinCodeError, setJoinCodeError] = useState<string | null>(null);
+	const [createThemeError, setCreateThemeError] = useState<string | null>(null);
+	const [createBgError, setCreateBgError] = useState<string | null>(null);
 
 	const { theme, setTheme, backgroundUrl, setBackgroundUrl } = useGame();
 	const getStoredAvatar = (): AvatarConfig | null => {
@@ -34,47 +38,74 @@ export default function HomePage() {
 		}
 	};
 
-	// Create lobby: send theme + background URL via socket
-	const handleCreate = async (e: FormEvent) => {
+	// Create lobby: validate first, then send theme + background URL via socket
+	const handleCreate = (e: FormEvent) => {
 		e.preventDefault();
 		if (creating) return;
+
+		setCreateThemeError(null);
+		setCreateBgError(null);
+		setError(null);
+
+		const validation = createLobbyFormSchema.safeParse({ theme, backgroundUrl });
+		if (!validation.success) {
+			setCreateThemeError(firstFieldIssue(validation.error, "theme"));
+			setCreateBgError(firstFieldIssue(validation.error, "backgroundUrl"));
+			setError("Please fix the highlighted fields.");
+			return;
+		}
+
 		setCreating(true);
-
-		const themeValue = theme?.trim() ?? "";
-		const bgValue = backgroundUrl.trim() ? backgroundUrl : null;
-
 		const avatar = getStoredAvatar();
 		socket.emit(
 			"createRoom",
-			{ theme: themeValue, backgroundUrl: bgValue, hostName: "Host", avatar: avatar ?? undefined },
+			{
+				theme: validation.data.theme,
+				backgroundUrl: validation.data.backgroundUrl,
+				hostName: "Host",
+				avatar: avatar ?? undefined,
+			},
 			(resp) => {
-			if (!resp?.code) {
-				setError(resp?.error || "Could not create room");
+				if (!resp?.code) {
+					setError(resp?.error || "Could not create room");
+					setCreating(false);
+					return;
+				}
+				try {
+					localStorage.setItem(`gts-host-room-${resp.code}`, JSON.stringify({ name: "Host" }));
+				} catch {}
+				router.push(`/host/${resp.code}`);
 				setCreating(false);
-				return;
 			}
-			try {
-				localStorage.setItem(`gts-host-room-${resp.code}`, JSON.stringify({ name: "Host" }));
-			} catch {}
-			router.push(`/host/${resp.code}`);
-			setCreating(false);
-		});
+		);
 	};
 
 	// Join lobby
 	const handleJoin = (e: FormEvent) => {
 		e.preventDefault();
-		if (!name.trim() || !roomCode.trim() || joining) return;
+		if (joining) return;
+
+		setJoinNameError(null);
+		setJoinCodeError(null);
+		setError(null);
+
+		const validation = joinLobbyFormSchema.safeParse({ name, roomCode });
+		if (!validation.success) {
+			setJoinNameError(firstFieldIssue(validation.error, "name"));
+			setJoinCodeError(firstFieldIssue(validation.error, "roomCode"));
+			setError("Please fix the highlighted fields.");
+			return;
+		}
 
 		setJoining(true);
-		const code = roomCode.trim().toUpperCase();
-
+		const code = validation.data.roomCode;
+		const playerName = validation.data.name;
 		const avatar = getStoredAvatar();
-		socket.emit("joinRoom", { code, name, avatar: avatar ?? undefined }, (ok: boolean) => {
+		socket.emit("joinRoom", { code, name: playerName, avatar: avatar ?? undefined }, (ok: boolean) => {
 			if (ok) {
-				router.push(`/join/${code}?name=${encodeURIComponent(name)}`);
+				router.push(`/join/${code}?name=${encodeURIComponent(playerName)}`);
 			} else {
-				setError("Failed to join—check the room code and try again.");
+				setError("Failed to join - check the room code and try again.");
 				setJoining(false);
 			}
 		});
@@ -87,24 +118,21 @@ export default function HomePage() {
 			bg-gradient-to-br from-bg to-secondary
 			"
 		>
-			{/* Shared container for heading + card */}
 			<div className="w-full max-w-sm flex flex-col items-center">
-				{/* Container for heading */}
 				<div className="relative z-20 overflow-visible w-full">
 					<h1
 						className="
-								text-center
-								text-5xl sm:text-5xl font-extrabold tracking-tight
-								text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary
-								drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
-								leading-[1.15] overflow-visible pb-10
-								"
+							text-center
+							text-5xl sm:text-5xl font-extrabold tracking-tight
+							text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary
+							drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
+							leading-[1.15] overflow-visible pb-10
+							"
 					>
 						Guess the Song
 					</h1>
 				</div>
 
-				{/* Single card with toggle and conditional form */}
 				<div
 					className="
 					relative z-10 w-full border border-border rounded-2xl p-8
@@ -112,7 +140,6 @@ export default function HomePage() {
 					flex flex-col items-center
 					"
 				>
-					{/* Toggle buttons */}
 					<div role="tablist" aria-label="Mode" className="flex w-full mb-6 gap-4">
 						<Button
 							type="button"
@@ -121,6 +148,8 @@ export default function HomePage() {
 							onClick={() => {
 								setMode("host");
 								if (error) setError(null);
+								setJoinNameError(null);
+								setJoinCodeError(null);
 							}}
 							variant={mode === "host" ? "primary" : "secondary"}
 							size="md"
@@ -135,6 +164,8 @@ export default function HomePage() {
 							onClick={() => {
 								setMode("player");
 								if (error) setError(null);
+								setCreateThemeError(null);
+								setCreateBgError(null);
 							}}
 							variant={mode === "player" ? "primary" : "secondary"}
 							size="md"
@@ -143,11 +174,9 @@ export default function HomePage() {
 							Player
 						</Button>
 					</div>
-					{/* Error message slot (prevents layout jump) */}
 					<div className="w-full" aria-live="polite">
 						{error && <p className="text-sm text-red-400 text-center">{error}</p>}
 					</div>
-					{/* Conditionally render based on mode */}
 					{mode === "host" ? (
 						<HostCard
 							theme={theme}
@@ -155,6 +184,8 @@ export default function HomePage() {
 							backgroundUrl={backgroundUrl}
 							onBackgroundChange={setBackgroundUrl}
 							onCreate={handleCreate}
+							themeError={createThemeError}
+							backgroundUrlError={createBgError}
 							disabled={creating}
 							isLoading={creating}
 							className="space-y-4"
@@ -166,6 +197,8 @@ export default function HomePage() {
 							code={roomCode}
 							onRoomCodeChange={setRoomCode}
 							onJoin={handleJoin}
+							nameError={joinNameError}
+							codeError={joinCodeError}
 							disabled={joining}
 							isLoading={joining}
 							className="space-y-4"

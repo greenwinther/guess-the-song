@@ -3,9 +3,9 @@ import type { Server, Socket } from "socket.io";
 import { manualLock, lockCounts, tryUndoManualLock } from "../../lib/game";
 import { getRoomGameState } from "../state/gameState";
 import type { ClientToServerEvents, InterServerEvents, LockAnswerPayload, ServerToClientEvents, SocketData } from "@/types/socket";
-import { parseRoomCode, parseIntSafe } from "../validation";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
 import { scopedLogger } from "../logger";
+import { lockAnswerPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.lockAnswer");
 
@@ -17,12 +17,14 @@ export const lockAnswerHandler = (
 		"lockAnswer",
 		(d: LockAnswerPayload, cb?: (ok: boolean) => void) => {
 			try {
-				const code = parseRoomCode(d.code);
-				const songId = parseIntSafe(d.songId);
-				if (!code || songId == null) return cb?.(false);
+				const payload = validateWithZod(lockAnswerPayloadSchema, d, {
+					errorMessage: "Invalid lockAnswer payload",
+				});
+				if (!payload.ok) return cb?.(false);
+				const { code, songId, playerName: fallbackPlayerName } = payload.data;
 				if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-				const playerName = socket.data.roomMeta?.playerName ?? d.playerName;
-				const ok = manualLock(code, songId, playerName); // 👈 only this player
+				const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
+				const ok = manualLock(code, songId, playerName);
 				if (ok) {
 					io.to(code).emit("playerGuessLocked", {
 						songId,
@@ -43,11 +45,13 @@ export const lockAnswerHandler = (
 		"undoLock",
 		(data: LockAnswerPayload, cb?: (ok: boolean) => void) => {
 			try {
-				const code = parseRoomCode(data.code);
-				const songId = parseIntSafe(data.songId);
-				if (!code || songId == null) return cb?.(false);
+				const payload = validateWithZod(lockAnswerPayloadSchema, data, {
+					errorMessage: "Invalid undoLock payload",
+				});
+				if (!payload.ok) return cb?.(false);
+				const { code, songId, playerName: fallbackPlayerName } = payload.data;
 				if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-				const playerName = socket.data.roomMeta?.playerName ?? data.playerName;
+				const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
 				const ok = tryUndoManualLock(code, songId, playerName);
 				if (ok) {
 					const counts = lockCounts(code, songId);

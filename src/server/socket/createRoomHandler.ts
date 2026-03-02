@@ -9,9 +9,9 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { parseAvatarConfig, parseName, parseOptionalText, parseOptionalUrl } from "../validation";
 import { toPublicRoom } from "../state/publicRoom";
 import { scopedLogger } from "../logger";
+import { createRoomPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.createRoom");
 
@@ -21,10 +21,20 @@ export const createRoomHandler = (
 ) => {
 	socket.on("createRoom", async (data: CreateRoomPayload, callback: (resp: CreateRoomResponse) => void) => {
 		try {
-			const theme = parseOptionalText(data.theme) ?? "";
-			const backgroundUrl = parseOptionalUrl(data.backgroundUrl);
-			const hostName = parseName(data.hostName, "Host");
-			const avatar = parseAvatarConfig(data.avatar) ?? undefined;
+			const payload = validateWithZod(createRoomPayloadSchema, data, {
+				errorMessage: "Invalid createRoom payload",
+			});
+			if (!payload.ok) {
+				return callback({
+					code: "",
+					theme: null,
+					backgroundUrl: undefined,
+					hostName: "Host",
+					error: payload.issues[0]?.message ?? payload.error,
+				});
+			}
+
+			const { theme, backgroundUrl, hostName, avatar } = payload.data;
 
 			const newRoom = await createRoom(theme, backgroundUrl, hostName, avatar);
 

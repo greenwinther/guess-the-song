@@ -5,12 +5,12 @@ import { getRoom } from "../../lib/rooms";
 import { getRoomGameState, setActiveSong } from "../state/gameState";
 import { clearRoundLocks, obfuscateTheme, setHint } from "../../lib/theme";
 import type { ClientToServerEvents, InterServerEvents, NextSongPayload, ServerToClientEvents, SocketData } from "@/types/socket";
-import { parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
 import { setPhase } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
 import { scopedLogger } from "../logger";
+import { nextSongPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.nextSong");
 
@@ -20,8 +20,11 @@ export const nextSongHandler = (
 ) => {
 	socket.on("nextSong", async (data: NextSongPayload, cb?: (ok: boolean) => void) => {
 		try {
-			const code = parseRoomCode(data.code);
-			if (!code) return cb?.(false);
+			const payload = validateWithZod(nextSongPayloadSchema, data, {
+				errorMessage: "Invalid nextSong payload",
+			});
+			if (!payload.ok) return cb?.(false);
+			const { code } = payload.data;
 
 			const boundRoom = requireRoom(socket, () => cb?.(false));
 			if (!boundRoom) return;

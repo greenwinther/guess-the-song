@@ -10,11 +10,11 @@ import {
 	getLockedPlayers,
 	lockCounts,
 } from "../../lib/game";
-import { parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { toPublicRoom } from "../state/publicRoom";
 import { getHint, getLockedThisRoundList, getSolvedList, isRevealed } from "@/lib/theme";
 import { scopedLogger } from "../logger";
+import { devResyncPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.resync");
 
@@ -47,7 +47,11 @@ export const resyncHandler = (
 
 	socket.on("DEV_RESYNC", async (data, cb) => {
 		try {
-			const code = parseRoomCode(data?.code ?? socket.data.roomMeta?.code ?? "");
+			const payload = validateWithZod(devResyncPayloadSchema, data, {
+				errorMessage: "Invalid DEV_RESYNC payload",
+			});
+			if (!payload.ok) return cb?.(false);
+			const code = payload.data.code ?? socket.data.roomMeta?.code ?? "";
 			if (!code) return cb?.(false);
 
 			const boundRoom = requireRoom(socket, () => cb?.(false));

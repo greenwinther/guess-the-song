@@ -4,10 +4,10 @@ import { getRoom, joinRoom } from "../../lib/rooms";
 import type { Server, Socket } from "socket.io";
 import { getRoomGameState } from "../state/gameState";
 import type { ClientToServerEvents, InterServerEvents, JoinRoomPayload, ServerToClientEvents, SocketData } from "@/types/socket";
-import { parseAvatarConfig, parseBool, parseName, parseRoomCode } from "../validation";
 import { toPublicRoom } from "../state/publicRoom";
 import { getHint, getLockedThisRoundList, getSolvedList, isRevealed } from "@/lib/theme";
 import { scopedLogger } from "../logger";
+import { joinRoomPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.joinRoom");
 
@@ -45,11 +45,12 @@ export const joinRoomHandler = (
 			callback?: (ok: boolean) => void
 		) => {
 			try {
-				const code = parseRoomCode(data.code);
-				if (!code) return callback?.(false);
-				const name = parseName(data.name, "Player");
-				const hardcore = parseBool(data.hardcore, false);
-				const avatar = parseAvatarConfig(data.avatar) ?? undefined;
+				const payload = validateWithZod(joinRoomPayloadSchema, data, {
+					errorMessage: "Invalid joinRoom payload",
+				});
+				if (!payload.ok) return callback?.(false);
+
+				const { code, name, hardcore, avatar } = payload.data;
 				const normalizeName = (value: string) => value.trim().toLowerCase();
 
 				// prevent duplicate joins from same socket, but still send snapshot

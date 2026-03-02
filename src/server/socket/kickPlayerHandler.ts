@@ -7,7 +7,6 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { parseName, parseRoomCode } from "../validation";
 import { requireHost, requireRoom } from "../logic/guards";
 import { removePlayerByName, getRoom, setPlayerKicked } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
@@ -15,6 +14,7 @@ import { removePlayerFromRounds } from "@/lib/game";
 import { removePlayerScore } from "@/lib/score";
 import { removePlayerFromThemeState } from "@/lib/theme";
 import { scopedLogger } from "../logger";
+import { kickPlayerPayloadSchema, validateWithZod } from "../schemas";
 
 const log = scopedLogger("socket.kickPlayer");
 
@@ -24,9 +24,11 @@ export const kickPlayerHandler = (
 ) => {
 	socket.on("kickPlayer", async (data: KickPlayerPayload, cb?: (ok: boolean) => void) => {
 		try {
-			const code = parseRoomCode(data.code);
-			if (!code) return cb?.(false);
-			const playerName = parseName(data.playerName, "Player");
+			const payload = validateWithZod(kickPlayerPayloadSchema, data, {
+				errorMessage: "Invalid kickPlayer payload",
+			});
+			if (!payload.ok) return cb?.(false);
+			const { code, playerName } = payload.data;
 
 			const room = requireRoom(socket, () => cb?.(false));
 			if (!room || room.code !== code) return;
