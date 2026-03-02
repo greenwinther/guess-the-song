@@ -1,9 +1,12 @@
 // src/hooks/join/useJoinRoomSocket.ts
 import { useEffect, useRef } from "react";
+import toast from "react-hot-toast";
 import { useGame } from "@/contexts/tempContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { getYouTubeID } from "@/lib/youtube";
-import type { Player, Room } from "@/types/room";
+import type { Room } from "@/types/room";
+import type { Member } from "@/types/member";
+import type { AvatarConfig } from "@/types/avatar";
 
 const getClientId = () => {
 	const k = "gts-client-id";
@@ -13,6 +16,17 @@ const getClientId = () => {
 		localStorage.setItem(k, v);
 	}
 	return v;
+};
+
+const getStoredAvatar = (): AvatarConfig | null => {
+	try {
+		const raw = localStorage.getItem("gts-avatar-v2");
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as AvatarConfig;
+		return parsed?.base ? parsed : null;
+	} catch {
+		return null;
+	}
 };
 
 export function useJoinRoomSocket(code: string, playerName: string) {
@@ -34,6 +48,16 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 	useEffect(() => {
 		if (!socket || !code || !playerName || joinedRef.current) return;
 
+		const emitJoinDenied = (reason: "kicked" | "closed" | "not_found" | "error") => {
+			try {
+				localStorage.setItem(
+					"gts-join-denied",
+					JSON.stringify({ reason, at: Date.now() })
+				);
+				window.dispatchEvent(new Event("gts-join-denied"));
+			} catch {}
+		};
+
 		// listeners FIRST (prevents missing fast server emits)
 		const onRoomData = (room: Room) => {
 			setRoom(room);
@@ -45,7 +69,7 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 			setBgThumbnail(null);
 		};
 
-		const onPlayerJoined = (player: Player) => {
+		const onPlayerJoined = (player: Member) => {
 			if (player.name === nameRef.current) return;
 			setRoom((prev) =>
 				!prev || prev.players.some((p) => p.id === player.id)
@@ -77,18 +101,50 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 		socket.on("playerJoined", onPlayerJoined);
 		socket.on("playSong", onPlaySong);
 		socket.on("revealedSongs", onRevealed);
+		const onJoinDenied = ({ reason }: { reason: "kicked" | "closed" | "not_found" | "error" }) => {
+			if (reason === "kicked") {
+				toast.error("You were kicked from this room.");
+				emitJoinDenied("kicked");
+				return;
+			}
+			if (reason === "closed") {
+				toast.error("This room is closed.");
+				emitJoinDenied("closed");
+				return;
+			}
+			if (reason === "not_found") {
+				toast.error("Room not found.");
+				emitJoinDenied("not_found");
+				return;
+			}
+			toast.error("Unable to join room.");
+			emitJoinDenied("error");
+		};
+
+		const onSocketSynced = () => {
+			toast.success("Synced.");
+		};
+
 		socket.on("playerSubmitted", onPlayerSubmitted);
 		socket.on("gameOver", onGameOver);
 		socket.on("playerLeft", onPlayerLeft);
+		socket.on("joinDenied", onJoinDenied);
+		window.addEventListener("gts-socket-synced", onSocketSynced);
 
 		// ---- idempotent join bound to connect ----
 		const clientId = getClientId();
 		const doJoin = () => {
 			if (joinedRef.current) return;
 			joinedRef.current = true;
+			const avatar = getStoredAvatar();
 			socket.emit(
 				"joinRoom",
-				{ code: codeRef.current, name: nameRef.current, clientId },
+				{
+					code: codeRef.current,
+					name: nameRef.current,
+					clientId,
+					avatar: avatar ?? undefined,
+				},
 				(ok: boolean) => {
 					if (!ok) joinedRef.current = false;
 				}
@@ -108,6 +164,8 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 			socket.off("playerSubmitted", onPlayerSubmitted);
 			socket.off("gameOver", onGameOver);
 			socket.off("playerLeft", onPlayerLeft);
+			socket.off("joinDenied", onJoinDenied);
+			window.removeEventListener("gts-socket-synced", onSocketSynced);
 			joinedRef.current = false;
 		};
 	}, [

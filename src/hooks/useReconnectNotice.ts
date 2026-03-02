@@ -6,17 +6,41 @@ import { useSocket } from "@/contexts/SocketContext";
 export function useReconnectNotice() {
 	const socket = useSocket();
 	const [msg, setMsg] = useState<string | null>(null);
+	const [suppress, setSuppress] = useState(false);
 
 	useEffect(() => {
 		if (!socket) return;
 
-		const onConnect = () => setMsg(null);
-		const onDisconnect = () => setMsg("Connection lost. Reconnecting…");
+		const onConnect = () => {
+			if (!suppress) {
+				try {
+					window.dispatchEvent(new Event("gts-socket-synced"));
+				} catch {}
+			}
+			setMsg(null);
+		};
+		const onDisconnect = () => {
+			if (suppress) return;
+			setMsg("Connection lost. Reconnecting...");
+		};
 
 		// Manager-level signals are optional but nice for UX
-		const onReconnectAttempt = () => setMsg("Reconnecting…");
-		const onReconnect = () => setMsg(null);
-		const onReconnectFailed = () => setMsg("Reconnection failed. Retrying…");
+		const onReconnectAttempt = () => {
+			if (suppress) return;
+			setMsg("Reconnecting...");
+		};
+		const onReconnect = () => {
+			if (!suppress) {
+				try {
+					window.dispatchEvent(new Event("gts-socket-synced"));
+				} catch {}
+			}
+			setMsg(null);
+		};
+		const onReconnectFailed = () => {
+			if (suppress) return;
+			setMsg("Reconnection failed. Retrying...");
+		};
 
 		socket.on("connect", onConnect);
 		socket.on("disconnect", onDisconnect);
@@ -25,6 +49,27 @@ export function useReconnectNotice() {
 		socket.io.on("reconnect", onReconnect);
 		socket.io.on("reconnect_failed", onReconnectFailed);
 
+		const onJoinDenied = () => {
+			setSuppress(true);
+			setMsg(null);
+		};
+		const onSocketSynced = () => {
+			setSuppress(false);
+		};
+		const onStorage = () => {
+			try {
+				const raw = localStorage.getItem("gts-join-denied");
+				if (!raw) return;
+				const parsed = JSON.parse(raw) as { reason?: string; at?: number };
+				if (parsed?.reason === "kicked") {
+					onJoinDenied();
+				}
+			} catch {}
+		};
+		window.addEventListener("gts-join-denied", onJoinDenied);
+		window.addEventListener("gts-socket-synced", onSocketSynced);
+		window.addEventListener("storage", onStorage);
+
 		return () => {
 			socket.off("connect", onConnect);
 			socket.off("disconnect", onDisconnect);
@@ -32,8 +77,11 @@ export function useReconnectNotice() {
 			socket.io.off("reconnect_attempt", onReconnectAttempt);
 			socket.io.off("reconnect", onReconnect);
 			socket.io.off("reconnect_failed", onReconnectFailed);
+			window.removeEventListener("gts-join-denied", onJoinDenied);
+			window.removeEventListener("gts-socket-synced", onSocketSynced);
+			window.removeEventListener("storage", onStorage);
 		};
-	}, [socket]);
+	}, [socket, suppress]);
 
 	return msg;
 }

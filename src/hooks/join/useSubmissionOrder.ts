@@ -5,9 +5,10 @@ import type { Room } from "@/types/room";
 import type { OrderItem } from "@/components/join/SubmissionOrderList";
 import { useLocalStorageState } from "./useLocalStorageState";
 
-export function useSubmissionOrder(code: string, room: Room | null) {
-	const [order, setOrder] = useLocalStorageState<OrderItem[]>(`order-${code}`, []);
-	const [submitted, setSubmitted] = useLocalStorageState<boolean>(`submitted-${code}`, false);
+export function useSubmissionOrder(code: string, room: Room | null, playerName: string) {
+	const safeName = (playerName?.trim() || "player").toLowerCase();
+	const [order, setOrder] = useLocalStorageState<OrderItem[]>(`order-${code}-${safeName}`, []);
+	const [submitted, setSubmitted] = useLocalStorageState<boolean>(`submitted-${code}-${safeName}`, false);
 
 	// initialize once when room arrives & never shuffled before
 	useEffect(() => {

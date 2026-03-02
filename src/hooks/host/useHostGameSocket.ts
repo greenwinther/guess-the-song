@@ -1,9 +1,10 @@
 // src/hooks/host/useHostGameSocket.ts
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
 import { getYouTubeID } from "@/lib/youtube";
-import type { Player, Room } from "@/types/room";
+import type { Room } from "@/types/room";
+import type { Member } from "@/types/member";
 import { useJoined } from "../useJoined";
 
 /**
@@ -17,6 +18,7 @@ import { useJoined } from "../useJoined";
 export function useHostGameSocket(code: string) {
 	const socket = useSocket();
 	useJoined(code, "Host");
+	const requestedRef = useRef(false);
 	const {
 		room,
 		setRoom,
@@ -38,10 +40,31 @@ export function useHostGameSocket(code: string) {
 			setBgThumbnail(null);
 		};
 		socket.on("gameStarted", onGameStarted);
+		const onRoomData = (roomData: Room) => {
+			setRoom(roomData);
+		};
+		socket.on("roomData", onRoomData);
 		return () => {
 			socket.off("gameStarted", onGameStarted);
+			socket.off("roomData", onRoomData);
 		};
 	}, [socket, setRoom, setGameStarted, setBgThumbnail]);
+
+	// Ensure we get a fresh room snapshot after listeners are attached
+	useEffect(() => {
+		if (!socket) return;
+		const request = () => {
+			if (requestedRef.current) return;
+			requestedRef.current = true;
+			socket.emit("joinRoom", { code, name: "Host" }, () => {});
+		};
+		if (socket.connected) request();
+		socket.on("connect", request);
+		return () => {
+			socket.off("connect", request);
+			requestedRef.current = false;
+		};
+	}, [socket, code]);
 
 	// playSong → set current clip, currentSong, bg thumb
 	useEffect(() => {
@@ -59,9 +82,22 @@ export function useHostGameSocket(code: string) {
 		};
 	}, [socket, room, setCurrentClip, setCurrentSong, setBgThumbnail]);
 
+	// songChanged -> sync currentSong from active id
+	useEffect(() => {
+		const onSongChanged = ({ songId }: { songId: number | null }) => {
+			const nextSong = songId ? room?.songs.find((x) => x.id === songId) || null : null;
+			setCurrentSong(nextSong);
+			if (!songId) setCurrentClip(null);
+		};
+		socket.on("songChanged", onSongChanged);
+		return () => {
+			socket.off("songChanged", onSongChanged);
+		};
+	}, [socket, room, setCurrentSong, setCurrentClip]);
+
 	// playerJoined / playerLeft
 	useEffect(() => {
-		const onPlayerJoined = (player: Player) => addPlayer(player);
+		const onPlayerJoined = (player: Member) => addPlayer(player);
 		const onPlayerLeft = (playerId: number) => {
 			setRoom((prev) => {
 				if (!prev) return prev;

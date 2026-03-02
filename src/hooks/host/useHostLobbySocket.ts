@@ -2,7 +2,9 @@
 import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGame } from "@/contexts/tempContext";
-import type { Player, Room, Song } from "@/types/room";
+import type { Room } from "@/types/room";
+import type { Member } from "@/types/member";
+import type { Submission } from "@/types/submission";
 import { useJoined } from "../useJoined";
 
 export function useHostLobbySocket(initialRoom: Room) {
@@ -17,8 +19,9 @@ export function useHostLobbySocket(initialRoom: Room) {
 		setRoom(initialRoom);
 		if (!socket) return;
 
-		const onPlayerJoined = (player: Player) => addPlayer(player);
-		const onSongAdded = (song: Song) => addSong(song);
+		const onPlayerJoined = (player: Member) => addPlayer(player);
+		const onRoomData = (room: Room) => setRoom(room);
+		const onSongAdded = (song: Submission) => addSong(song);
 		const onSongRemoved = ({ songId }: { songId: number }) => removeSong(songId);
 		const onPlayerLeft = (playerId: number) =>
 			setRoom((prev) =>
@@ -26,12 +29,14 @@ export function useHostLobbySocket(initialRoom: Room) {
 			);
 
 		socket.on("playerJoined", onPlayerJoined);
+		socket.on("roomData", onRoomData);
 		socket.on("songAdded", onSongAdded);
 		socket.on("songRemoved", onSongRemoved);
 		socket.on("playerLeft", onPlayerLeft);
 
 		return () => {
 			socket.off("playerJoined", onPlayerJoined);
+			socket.off("roomData", onRoomData);
 			socket.off("songAdded", onSongAdded);
 			socket.off("songRemoved", onSongRemoved);
 			socket.off("playerLeft", onPlayerLeft);
