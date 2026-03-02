@@ -1,18 +1,161 @@
 {
   "version": 1,
-  "savedAt": 1772472470176,
+  "savedAt": 1772474673539,
   "roomStore": {
-    "rooms": [],
-    "nextRoomId": 123,
-    "nextPlayerId": 402,
-    "nextSongId": 378
+    "rooms": [
+      {
+        "id": 124,
+        "code": "NK9T",
+        "phase": "LOBBY",
+        "detailQuestion": "Which year was this song made?",
+        "backgroundUrl": null,
+        "players": [
+          {
+            "id": 403,
+            "name": "Host",
+            "isHost": true,
+            "roomId": 124,
+            "avatar": {
+              "base": "base-01",
+              "hair": "empty",
+              "eyes": "eyes-01",
+              "mouth": "mouth-01",
+              "headwear": "empty"
+            },
+            "connected": true
+          },
+          {
+            "id": 404,
+            "name": "Player1",
+            "isHost": false,
+            "roomId": 124,
+            "hardcore": false,
+            "ready": true,
+            "connected": true,
+            "avatar": {
+              "base": "base-01",
+              "eyes": "eyes-01",
+              "mouth": "mouth-01",
+              "hair": "hair-01",
+              "headwear": "headwear-01"
+            }
+          },
+          {
+            "id": 405,
+            "name": "Player2",
+            "isHost": false,
+            "roomId": 124,
+            "hardcore": false,
+            "ready": true,
+            "connected": true,
+            "avatar": {
+              "base": "base-02",
+              "eyes": "eyes-02",
+              "mouth": "mouth-02",
+              "hair": "hair-02",
+              "headwear": "headwear-02"
+            }
+          },
+          {
+            "id": 406,
+            "name": "Player3",
+            "isHost": false,
+            "roomId": 124,
+            "hardcore": false,
+            "ready": true,
+            "connected": true,
+            "avatar": {
+              "base": "base-03",
+              "eyes": "eyes-03",
+              "mouth": "mouth-03",
+              "hair": "hair-03",
+              "headwear": "headwear-03"
+            }
+          }
+        ],
+        "songs": [
+          {
+            "id": 378,
+            "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "submitter": "Player1",
+            "title": "Never Gonna Give You Up",
+            "roomId": 124,
+            "detailAnswer": "1980"
+          },
+          {
+            "id": 379,
+            "url": "https://www.youtube.com/watch?v=3JZ4pnNtyxQ",
+            "submitter": "Player2",
+            "title": "Take On Me",
+            "roomId": 124,
+            "detailAnswer": "1981"
+          },
+          {
+            "id": 380,
+            "url": "https://www.youtube.com/watch?v=fJ9rUzIMcZQ",
+            "submitter": "Player3",
+            "title": "Bohemian Rhapsody",
+            "roomId": 124,
+            "detailAnswer": "1982"
+          },
+          {
+            "id": 381,
+            "url": "https://www.youtube.com/watch?v=ktvTqknDobU",
+            "submitter": "Player1",
+            "title": "Radioactive",
+            "roomId": 124,
+            "detailAnswer": "1983"
+          },
+          {
+            "id": 382,
+            "url": "https://www.youtube.com/watch?v=Zi_XLOBDo_Y",
+            "submitter": "Player2",
+            "title": "Billie Jean",
+            "roomId": 124,
+            "detailAnswer": "1984"
+          },
+          {
+            "id": 383,
+            "url": "https://www.youtube.com/watch?v=yKNxeF4KMsY",
+            "submitter": "yellow",
+            "title": "Coldplay - Yellow (Official Video)",
+            "roomId": 124
+          }
+        ],
+        "createdAt": 1772474618842,
+        "updatedAt": 1772474673038,
+        "kicked": {},
+        "rules": {
+          "hardcoreMultiplier": 1.5,
+          "hardcoreRequired": false
+        }
+      }
+    ],
+    "nextRoomId": 125,
+    "nextPlayerId": 407,
+    "nextSongId": 384
   },
-  "gameState": {},
+  "gameState": {
+    "NK9T": {
+      "activeSongId": null,
+      "revealedSongs": [],
+      "finalScores": null,
+      "gameStarted": false
+    }
+  },
   "rounds": {},
   "theme": {
-    "solvedBy": {},
-    "lockedThisRound": {},
-    "revealed": {},
-    "hint": {}
+    "solvedBy": {
+      "NK9T": []
+    },
+    "lockedThisRound": {
+      "NK9T": []
+    },
+    "revealed": {
+      "NK9T": false
+    },
+    "hint": {
+      "NK9T": ""
+    }
   }
 }

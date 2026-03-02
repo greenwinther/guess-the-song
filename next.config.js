@@ -4,10 +4,13 @@ const nextConfig = {
 	reactStrictMode: true,
 
 	images: {
-		domains: [
-			"i.ytimg.com", // for YouTube thumbnails
+		remotePatterns: [
+			{
+				protocol: "https",
+				hostname: "i.ytimg.com",
+			},
 			// add any other external hosts here, e.g.:
-			// "example.com",
+			// { protocol: "https", hostname: "example.com" },
 		],
 	},
 };
