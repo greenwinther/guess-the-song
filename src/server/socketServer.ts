@@ -3,6 +3,8 @@ import http from "http";
 import { Server } from "socket.io";
 import { registerSocketHandlers } from "./socket";
 import { startCleanupScheduler } from "./cleanupScheduler";
+import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
+import { initStatePersistence } from "./state/persistence";
 
 const httpServer = http.createServer((req, res) => {
 	if (req.url === "/" && req.method === "GET") {
@@ -24,7 +26,9 @@ const allowedOrigins = [
 	process.env.CLIENT_URL_2, // e.g. preview URL
 ].filter(Boolean) as string[];
 
-export const io = new Server(httpServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(
+	httpServer,
+	{
 	// Serve only WS, not the bundled client
 	serveClient: false,
 	transports: ["websocket"],
@@ -42,10 +46,13 @@ export const io = new Server(httpServer, {
 	pingInterval: 20_000,
 	pingTimeout: 15_000,
 
-	connectionStateRecovery: {
-		maxDisconnectionDuration: 120_000, // 2 min
-	},
-});
+		connectionStateRecovery: {
+			maxDisconnectionDuration: 120_000, // 2 min
+		},
+	}
+);
+
+const persistence = initStatePersistence();
 
 // 2) Log Engine.IO connection-level errors
 io.engine.on("connection_error", (err) => {
@@ -76,6 +83,7 @@ httpServer.listen(PORT, () => {
 // Graceful shutdown (Railway/Node best practice)
 process.on("SIGTERM", () => {
 	console.log("🧹 SIGTERM received, closing server...");
+	persistence.flush();
 	io.close(() => {
 		httpServer.close(() => {
 			console.log("✅ Closed Socket.IO and HTTP server");

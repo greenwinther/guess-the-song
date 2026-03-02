@@ -1,6 +1,7 @@
 // src/server/cleanupScheduler.ts
 import type { Server } from "socket.io";
-import { prisma } from "../lib/prisma";
+import { deleteRoom, iterRooms } from "./store/roomStore";
+import { clearRoomState } from "./roomStateCleanup";
 
 let started = false;
 
@@ -13,11 +14,11 @@ export function startCleanupScheduler(io: Server, ms = Number(process.env.CLEANU
 			// ✅ no sockets at all? skip touching the DB.
 			if (io.engine.clientsCount === 0) return;
 
-			const rooms = await prisma.room.findMany({ select: { code: true } });
-			for (const { code } of rooms) {
+			for (const [code] of iterRooms()) {
 				const socketsInRoom = io.sockets.adapter.rooms.get(code)?.size ?? 0;
 				if (socketsInRoom === 0) {
-					await prisma.room.delete({ where: { code } });
+					deleteRoom(code);
+					clearRoomState(code);
 					console.log(`🧹 Cron: deleted empty room ${code}`);
 				}
 			}
