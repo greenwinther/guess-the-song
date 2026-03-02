@@ -1,29 +1,30 @@
 // contexts/gameContext/useGameState.ts
 import { useState, useCallback } from "react";
 import { GameContextType, Clip } from "./types";
-import { Player, Room, Song } from "@/types/room";
+import { Room } from "@/types/room";
+import type { Member } from "@/types/member";
+import type { Submission } from "@/types/submission";
 
 export const useGameState = (): GameContextType => {
 	const [room, setRoom] = useState<Room | null>(null);
 	const [gameStarted, setGameStarted] = useState(false);
 	const [currentClip, setCurrentClip] = useState<Clip | null>(null);
-	const [currentSong, setCurrentSong] = useState<Song | null>(null);
+	const [currentSong, setCurrentSong] = useState<Submission | null>(null);
 	const [bgThumbnail, setBgThumbnail] = useState<string | null>(null);
 	const [guesses, setGuesses] = useState<Record<number, string[]>>({});
 	const [scores, setScores] = useState<Record<string, number> | null>(null);
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
 	const [revealedSubmitters, setRevealedSubmitters] = useState<number[]>([]);
+	const [revealedDetailAnswers, setRevealedDetailAnswers] = useState<number[]>([]);
 	const [theme, setTheme] = useState<string>("");
 	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
-	const [hardcore, setHardcore] = useState(false);
-	const [playerHardcore, setPlayerHardcore] = useState(false);
 	const [solvedByTheme, setSolvedByTheme] = useState<string[]>([]);
 	const [lockedForThisRound, setLockedForThisRound] = useState<string[]>([]);
 	const [themeHint, setThemeHint] = useState<string | null>(null);
 	const [themeRevealed, setThemeRevealed] = useState(false);
 
-	const addPlayer = useCallback((player: Player) => {
+	const addPlayer = useCallback((player: Member) => {
 		setRoom((prev) => {
 			if (!prev) return prev;
 			if (prev.players.find((p) => p.id === player.id)) return prev;
@@ -31,7 +32,7 @@ export const useGameState = (): GameContextType => {
 		});
 	}, []);
 
-	const addSong = useCallback((song: Song) => {
+	const addSong = useCallback((song: Submission) => {
 		setRoom((prev) => {
 			if (!prev) return prev;
 			return { ...prev, songs: [...prev.songs, song] };
@@ -73,10 +74,8 @@ export const useGameState = (): GameContextType => {
 		setBackgroundUrl,
 		revealedSubmitters,
 		setRevealedSubmitters,
-		hardcore,
-		setHardcore,
-		playerHardcore,
-		setPlayerHardcore,
+		revealedDetailAnswers,
+		setRevealedDetailAnswers,
 		solvedByTheme,
 		setSolvedByTheme,
 		lockedForThisRound,

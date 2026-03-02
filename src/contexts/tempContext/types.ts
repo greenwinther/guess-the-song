@@ -1,5 +1,7 @@
 // contexts/gameContext/types.ts
-import { Room, Player, Song } from "@/types/room";
+import { Room } from "@/types/room";
+import type { Member } from "@/types/member";
+import type { Submission } from "@/types/submission";
 
 export type Clip = {
 	songId: number;
@@ -16,8 +18,8 @@ export type GameContextType = {
 	currentClip: Clip | null;
 	setCurrentClip: (clip: Clip | null) => void;
 
-	currentSong: Song | null;
-	setCurrentSong: React.Dispatch<React.SetStateAction<Song | null>>;
+	currentSong: Submission | null;
+	setCurrentSong: React.Dispatch<React.SetStateAction<Submission | null>>;
 
 	bgThumbnail: string | null;
 	setBgThumbnail: React.Dispatch<React.SetStateAction<string | null>>;
@@ -34,8 +36,8 @@ export type GameContextType = {
 	submittedPlayers: string[];
 	setSubmittedPlayers: React.Dispatch<React.SetStateAction<string[]>>;
 
-	addPlayer: (player: Player) => void;
-	addSong: (song: Song) => void;
+	addPlayer: (player: Member) => void;
+	addSong: (song: Submission) => void;
 	removeSong: (songId: number) => void;
 
 	theme: string;
@@ -47,11 +49,8 @@ export type GameContextType = {
 	revealedSubmitters: number[];
 	setRevealedSubmitters: React.Dispatch<React.SetStateAction<number[]>>;
 
-	hardcore: boolean;
-	setHardcore: React.Dispatch<React.SetStateAction<boolean>>;
-
-	playerHardcore: boolean;
-	setPlayerHardcore: React.Dispatch<React.SetStateAction<boolean>>;
+	revealedDetailAnswers: number[];
+	setRevealedDetailAnswers: React.Dispatch<React.SetStateAction<number[]>>;
 
 	solvedByTheme: string[];
 	setSolvedByTheme: React.Dispatch<React.SetStateAction<string[]>>;
