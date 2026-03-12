@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: guess-the-song-socket
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build:render
+    startCommand: npm run start:render
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        sync: false
+      - key: CLIENT_URL_2
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: CLEANUP_INTERVAL_MS
+        value: "60000"

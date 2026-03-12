@@ -20,16 +20,20 @@ const optionalTextSchema = z.preprocess((value) => {
 
 const envSchema = z.object({
 	NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+	PORT: z.preprocess(
+		(value) => (value == null || value === "" ? undefined : value),
+		z.coerce.number().int().min(1).max(65535).optional()
+	),
 	SOCKET_PORT: z.preprocess(
-		(value) => (value == null || value === "" ? 4000 : value),
-		z.coerce.number().int().min(1).max(65535)
+		(value) => (value == null || value === "" ? undefined : value),
+		z.coerce.number().int().min(1).max(65535).optional()
 	),
 	CLIENT_URL: optionalUrlSchema,
 	CLIENT_URL_2: optionalUrlSchema,
 	YOUTUBE_API_KEY: optionalTextSchema,
 	CLEANUP_INTERVAL_MS: z.preprocess(
 		(value) => (value == null || value === "" ? 60_000 : value),
-		z.coerce.number().int().min(1)
+		z.coerce.number().int().min(1).max(65535)
 	),
 	LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).optional(),
 });
@@ -46,6 +50,7 @@ if (!parsed.success) {
 const raw = parsed.data;
 const isProduction = raw.NODE_ENV === "production";
 const clientUrl = raw.CLIENT_URL ?? (isProduction ? undefined : "http://localhost:3000");
+const socketPort = raw.PORT ?? raw.SOCKET_PORT ?? 4000;
 
 if (isProduction && !clientUrl) {
 	throw new Error("Missing CLIENT_URL in production");
@@ -58,7 +63,7 @@ if (isProduction && !raw.YOUTUBE_API_KEY) {
 export const serverConfig = {
 	nodeEnv: raw.NODE_ENV,
 	isProduction,
-	socketPort: raw.SOCKET_PORT,
+	socketPort,
 	cleanupIntervalMs: raw.CLEANUP_INTERVAL_MS,
 	clientUrl: clientUrl ?? "http://localhost:3000",
 	clientUrl2: raw.CLIENT_URL_2 ?? null,

@@ -151,6 +151,62 @@ These are served by the Express server:
 - `GET /api/rooms/:code`
 - `POST /api/rooms/:code/songs`
 
+## Deploying For Free
+
+Recommended setup for this repo:
+
+- frontend on Vercel Hobby
+- socket/Express server on Render Free
+
+Why this split:
+
+- the frontend is a normal Next.js app and fits Vercel well
+- the backend needs a long-running Socket.io server, which belongs on Render rather than Vercel Functions
+
+### Backend On Render
+
+This repo includes [render.yaml](./render.yaml) for the socket server.
+
+Required Render environment variables:
+
+- `CLIENT_URL`
+  Your deployed frontend URL, for example `https://your-app.vercel.app`
+- `YOUTUBE_API_KEY`
+  Your YouTube Data API key
+
+Optional Render environment variables:
+
+- `CLIENT_URL_2`
+  Secondary allowed origin if you want an extra frontend domain
+- `CLEANUP_INTERVAL_MS`
+- `LOG_LEVEL`
+
+Notes:
+
+- Render sets `PORT` automatically; the server now supports that directly
+- the health check endpoint is `GET /health`
+
+### Frontend On Vercel
+
+Required Vercel environment variables:
+
+- `NEXT_PUBLIC_SOCKET_URL`
+  Your Render backend URL, for example `https://guess-the-song-socket.onrender.com`
+- `NEXT_PUBLIC_API_URL`
+  The same Render backend URL
+
+### Deployment Order
+
+1. Deploy the backend to Render.
+2. Copy the public Render service URL.
+3. Deploy the frontend to Vercel with `NEXT_PUBLIC_SOCKET_URL` and `NEXT_PUBLIC_API_URL` set to that backend URL.
+4. Set `CLIENT_URL` on Render to the final Vercel frontend URL.
+5. Redeploy Render once more so CORS matches the live frontend.
+
+### Important Limitation
+
+On free hosting, the backend may sleep or restart, and persisted state may not survive like a dedicated production server would. This setup is fine for hobby use and testing, but it is not a durable production environment.
+
 ## How The Flows Work
 
 ### Player Flow
