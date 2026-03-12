@@ -2,11 +2,12 @@
 "use client";
 import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { useGame } from "@/contexts/tempContext";
+import { useGameRuntime } from "@/contexts/gameContext";
 
 export function useThemeSockets() {
 	const socket = useSocket();
-	const { setTheme, setSolvedByTheme, setLockedForThisRound, setThemeHint, setThemeRevealed } = useGame();
+	const { setTheme, setSolvedByTheme, setLockedForThisRound, setThemeHint, setThemeRevealed } =
+		useGameRuntime();
 
 	useEffect(() => {
 		if (!socket) return;

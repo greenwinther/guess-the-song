@@ -7,7 +7,7 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { requireMember, requireRoom } from "../logic/guards";
+import { requireHost, requireRoom } from "../logic/guards";
 import { buildAdminDashboard } from "./adminDashboard";
 import { adminGetDashboardPayloadSchema, validateWithZod } from "../schemas";
 
@@ -26,12 +26,7 @@ export const adminDashboardHandler = (
 
 			const room = requireRoom(socket, () => cb({ ok: false, error: "NOT_AUTHORIZED" }));
 			if (!room || room.code !== code) return cb({ ok: false, error: "NOT_AUTHORIZED" });
-			const member = requireMember(socket, room, () => cb({ ok: false, error: "NOT_AUTHORIZED" }));
-			if (!member) return;
-			if (!member.isHost && room.phase !== "RESULTS") {
-				cb({ ok: false, error: "NOT_AUTHORIZED" });
-				return;
-			}
+			if (!requireHost(socket, room, () => cb({ ok: false, error: "NOT_AUTHORIZED" }))) return;
 
 			const dashboard = buildAdminDashboard(code);
 			if (!dashboard) return cb({ ok: false, error: "ROOM_NOT_FOUND" });

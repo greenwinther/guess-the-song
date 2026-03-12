@@ -9,6 +9,8 @@ import type {
 } from "@/types/socket";
 import { setDetailQuestion, getRoom } from "@/server/store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
+import { requireHost, requireRoom } from "../logic/guards";
+import { isPhase } from "../logic/phase";
 import { detailQuestionPayloadSchema, validateWithZod } from "../schemas";
 
 export const detailQuestionHandler = (
@@ -21,9 +23,15 @@ export const detailQuestionHandler = (
 		});
 		if (!payload.ok) return;
 		const { code, question } = payload.data;
+
+		const room = requireRoom(socket);
+		if (!room || room.code !== code) return;
+		if (!requireHost(socket, room)) return;
+		if (!isPhase(room, "LOBBY")) return;
+
 		setDetailQuestion(code, question);
-		const room = getRoom(code);
-		if (!room) return;
-		io.to(code).emit("roomData", toPublicRoom(room));
+		const updated = getRoom(code);
+		if (!updated) return;
+		io.to(code).emit("roomData", toPublicRoom(updated));
 	});
 };

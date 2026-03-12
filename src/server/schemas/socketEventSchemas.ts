@@ -93,6 +93,27 @@ export const addSongPayloadSchema = z
 		detailAnswer: input.detailAnswer,
 	}));
 
+export const updateSongPayloadSchema = z
+	.object({
+		songId: songIdSchema,
+		code: roomCodeSchema,
+		url: z.preprocess(
+			(value) => parseRequiredUrl(value),
+			z.string().min(1, { message: "Invalid URL" })
+		),
+		submitter: z.preprocess((value) => parseName(value, "Player"), z.string()),
+		title: z.preprocess((value) => parseOptionalText(value) ?? "", z.string()),
+		detailAnswer: z.preprocess((value) => parseOptionalText(value), z.string().nullable()),
+	})
+	.transform((input) => ({
+		songId: input.songId,
+		code: input.code,
+		url: input.url,
+		submitter: input.submitter,
+		title: input.title,
+		detailAnswer: input.detailAnswer,
+	}));
+
 export const startGamePayloadSchema = z.object({
 	code: roomCodeSchema,
 });

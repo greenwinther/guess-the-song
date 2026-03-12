@@ -39,6 +39,9 @@ export type AddSongPayload = {
 	title: string;
 	detailAnswer?: string;
 };
+export type UpdateSongPayload = AddSongPayload & {
+	songId: number;
+};
 
 export type RemoveSongPayload = { code: string; songId: number };
 export type StartGamePayload = { code: string };
@@ -49,27 +52,45 @@ export type ShowResultsPayload = { code: string };
 export type SelectOrderPayload = {
 	code: string;
 	songId: number;
+	// Legacy field kept for client compatibility; server resolves the acting player from socket roomMeta.
 	playerName: string;
 	order: string[];
 };
 export type SelectDetailOrderPayload = {
 	code: string;
 	songId: number;
+	// Legacy field kept for client compatibility; server resolves the acting player from socket roomMeta.
 	playerName: string;
 	order: string[];
 };
 
 export type SubmitAllOrdersPayload = {
 	code: string;
+	// Legacy field kept for client compatibility; server resolves the acting player from socket roomMeta.
 	playerName: string;
 	guesses: Record<string, string[]>;
 };
 
-export type LockAnswerPayload = { code: string; songId: number; playerName: string };
-export type LockDetailPayload = { code: string; songId: number; playerName: string };
+export type LockAnswerPayload = {
+	code: string;
+	songId: number;
+	// Legacy field kept for client compatibility; server resolves the acting player from socket roomMeta.
+	playerName: string;
+};
+export type LockDetailPayload = {
+	code: string;
+	songId: number;
+	// Legacy field kept for client compatibility; server resolves the acting player from socket roomMeta.
+	playerName: string;
+};
 export type ThemeEditPayload = { code: string; theme: string };
 export type DetailQuestionPayload = { code: string; question: string };
-export type ThemeGuessPayload = { code: string; playerName: string; guess: string };
+export type ThemeGuessPayload = {
+	code: string;
+	// Legacy field kept for client compatibility; server resolves the acting player from socket roomMeta.
+	playerName: string;
+	guess: string;
+};
 export type ThemeRevealPayload = { code: string };
 export type HardcoreRequiredPayload = { code: string; required: boolean };
 export type PlayerHardcorePayload = { code: string; hardcore: boolean };
@@ -148,6 +169,10 @@ export type ClientToServerEvents = {
 	joinRoom: (data: JoinRoomPayload, cb?: (ok: boolean) => void) => void;
 	addSong: (
 		data: AddSongPayload,
+		cb: (res: { success: boolean; song?: Submission; error?: string }) => void
+	) => void;
+	updateSong: (
+		data: UpdateSongPayload,
 		cb: (res: { success: boolean; song?: Submission; error?: string }) => void
 	) => void;
 	removeSong: (data: RemoveSongPayload, cb: (res: { success: boolean; error?: string }) => void) => void;

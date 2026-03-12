@@ -7,8 +7,9 @@ import type { Room } from "@/types/room";
 import BackgroundShell from "@/components/ui/BackgroundShell";
 import { useReconnectNotice } from "@/hooks/useReconnectNotice";
 import type { AvatarConfig } from "@/types/avatar";
-import LeftSidebar from "@/components/ui/LeftSidebar";
 import { getYouTubeID } from "@/lib/youtube";
+import type { Submission } from "@/types/submission";
+import AdminSetupPanel from "@/components/admin/AdminSetupPanel";
 
 type AccessState = "checking" | "authorized" | "unauthorized" | "not_found";
 
@@ -35,11 +36,11 @@ const getStoredAvatar = (): AvatarConfig | null => {
 
 const hostKey = (code: string) => `gts-host-room-${code}`;
 
-export default function AdminViewClient({ roomId }: { roomId: string }) {
+export default function AdminViewClient({ roomCode }: { roomCode: string }) {
 	const socket = useSocket();
 	const { status } = useSocketStatus();
 	const socketError = useReconnectNotice();
-	const code = String(roomId || "").toUpperCase();
+	const code = String(roomCode || "").toUpperCase();
 
 	const [hostName, setHostName] = useState("Host");
 	const [room, setRoom] = useState<Room | null>(null);
@@ -82,6 +83,21 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 			}
 			setAccess("authorized");
 		};
+		const onSongAdded = (song: Submission) => {
+			setRoom((prev) => (!prev ? prev : { ...prev, songs: [...prev.songs, song] }));
+		};
+		const onSongRemoved = ({ songId }: { songId: number }) => {
+			setRoom((prev) =>
+				!prev ? prev : { ...prev, songs: prev.songs.filter((song) => song.id !== songId) }
+			);
+		};
+		const onThemeUpdated = ({ theme }: { theme?: string }) => {
+			setRoom((prev) => (!prev ? prev : { ...prev, theme: theme ?? "" }));
+		};
+		const onGameStarted = (nextRoom: Room) => {
+			setRoom(nextRoom);
+			setAccess("authorized");
+		};
 
 		const onJoinDenied = ({ reason }: { reason: "kicked" | "closed" | "not_found" | "error" }) => {
 			joinDeniedRef.current = reason;
@@ -106,12 +122,20 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 		};
 
 		socket.on("roomData", onRoomData);
+		socket.on("songAdded", onSongAdded);
+		socket.on("songRemoved", onSongRemoved);
+		socket.on("THEME_UPDATED", onThemeUpdated);
+		socket.on("gameStarted", onGameStarted);
 		socket.on("joinDenied", onJoinDenied);
 		if (socket.connected) doJoin();
 		socket.on("connect", doJoin);
 
 		return () => {
 			socket.off("roomData", onRoomData);
+			socket.off("songAdded", onSongAdded);
+			socket.off("songRemoved", onSongRemoved);
+			socket.off("THEME_UPDATED", onThemeUpdated);
+			socket.off("gameStarted", onGameStarted);
 			socket.off("joinDenied", onJoinDenied);
 			socket.off("connect", doJoin);
 		};
@@ -158,6 +182,9 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 		socket.on("THEME_HINT_READY", refresh);
 		socket.on("gameStarted", refresh);
 		socket.on("gameOver", refresh);
+		socket.on("songAdded", refresh);
+		socket.on("songRemoved", refresh);
+		socket.on("THEME_UPDATED", refresh);
 
 		const interval = window.setInterval(requestDashboard, 5000);
 
@@ -176,6 +203,9 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 			socket.off("THEME_HINT_READY", refresh);
 			socket.off("gameStarted", refresh);
 			socket.off("gameOver", refresh);
+			socket.off("songAdded", refresh);
+			socket.off("songRemoved", refresh);
+			socket.off("THEME_UPDATED", refresh);
 		};
 	}, [socket, access, requestDashboard]);
 
@@ -196,7 +226,9 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 	if (access === "unauthorized") {
 		return (
 			<main className="min-h-screen grid place-items-center bg-gradient-to-br from-bg to-secondary p-6">
-				<div className="rounded-xl border border-border bg-card/70 p-6 text-text">Not authorized.</div>
+				<div className="rounded-xl border border-border bg-card/70 p-6 text-text">
+					You do not have editor access for this room.
+				</div>
 			</main>
 		);
 	}
@@ -204,7 +236,9 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 	if (access === "not_found") {
 		return (
 			<main className="min-h-screen grid place-items-center bg-gradient-to-br from-bg to-secondary p-6">
-				<div className="rounded-xl border border-border bg-card/70 p-6 text-text">Room not found.</div>
+				<div className="rounded-xl border border-border bg-card/70 p-6 text-text">
+					This room could not be found.
+				</div>
 			</main>
 		);
 	}
@@ -212,18 +246,13 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 	if (access === "checking" || !dashboard) {
 		return (
 			<main className="min-h-screen grid place-items-center bg-gradient-to-br from-bg to-secondary p-6">
-				<div className="rounded-xl border border-border bg-card/70 p-6 text-text">Loading admin view...</div>
+				<div className="rounded-xl border border-border bg-card/70 p-6 text-text">
+					Loading room editor...
+				</div>
 			</main>
 		);
 	}
 
-	const sidebarPlayers = dashboard.players.map((player) => ({ ...player, roomId: room?.id ?? 0 }));
-	const submittedPlayers = dashboard.currentSongRows
-		.filter((row) => row.locked || row.guessOrder.length > 0)
-		.map((row) => row.playerName);
-	const lockedNames = dashboard.currentSongRows.filter((row) => row.locked).map((row) => row.playerName);
-	const nonHostPlayers = dashboard.players.filter((player) => !player.isHost);
-	const allPlayersReady = nonHostPlayers.length > 0 && nonHostPlayers.every((player) => player.ready);
 	const bgImage = (() => {
 		if (!room || dashboard.activeSongId == null) return room?.backgroundUrl ?? null;
 		const song = room.songs.find((item) => item.id === dashboard.activeSongId);
@@ -241,21 +270,12 @@ export default function AdminViewClient({ roomId }: { roomId: string }) {
 
 	return (
 		<BackgroundShell bgImage={bgImage} socketError={socketError}>
-			<LeftSidebar
-				roomCode={dashboard.code}
-				players={sidebarPlayers}
-				submittedPlayers={submittedPlayers}
-				fallbackName="Host"
-				allPlayersReady={allPlayersReady}
-				lockedNames={lockedNames}
-				solvedByTheme={dashboard.theme.solvedBy}
-				lockedForThisRound={dashboard.theme.guessedThisRound}
-			/>
+			<main className="w-full p-4 sm:p-6 space-y-4 lg:col-span-12">
+				<AdminSetupPanel room={room} roomCode={dashboard.code} />
 
-			<main className="order-2 lg:order-none w-full lg:col-span-9 p-4 sm:p-6 space-y-4">
 				<header className="rounded-xl border border-border bg-card/40 p-4">
 					<div className="flex flex-wrap items-center gap-2">
-						<h1 className="text-xl font-semibold text-text">Admin View</h1>
+						<h1 className="text-xl font-semibold text-text">Room Editor</h1>
 						<span className="text-xs rounded border border-border px-2 py-0.5">Room {dashboard.code}</span>
 						<span className="text-xs rounded border border-border px-2 py-0.5">
 							Phase {dashboard.phase ?? "LOBBY"}

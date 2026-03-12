@@ -3,6 +3,7 @@ import { resetForNewTheme } from "../../lib/theme";
 import { setRoomTheme } from "../../lib/rooms";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, ThemeEditPayload } from "@/types/socket";
 import { requireHost, requireRoom } from "../logic/guards";
+import { isPhase } from "../logic/phase";
 import { themeEditPayloadSchema, validateWithZod } from "../schemas";
 
 export const themeEditHandler = (
@@ -19,6 +20,7 @@ export const themeEditHandler = (
 		const boundRoom = requireRoom(socket);
 		if (!boundRoom || boundRoom.code !== normalizedCode) return;
 		if (!requireHost(socket, boundRoom)) return;
+		if (!isPhase(boundRoom, "LOBBY")) return;
 
 		// Update in-memory room (Room.theme)
 		const room = await setRoomTheme(normalizedCode, trimmed || null);

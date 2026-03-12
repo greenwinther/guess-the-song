@@ -1,4 +1,4 @@
-// src/hooks/join/useReconnectNotice.ts
+// src/hooks/useReconnectNotice.ts
 "use client";
 import { useEffect, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
@@ -21,7 +21,7 @@ export function useReconnectNotice() {
 		};
 		const onDisconnect = () => {
 			if (suppress) return;
-			setMsg("Connection lost. Reconnecting...");
+			setMsg("Connection lost. Trying to reconnect...");
 		};
 
 		// Manager-level signals are optional but nice for UX

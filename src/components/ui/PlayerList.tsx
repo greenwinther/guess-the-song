@@ -1,10 +1,9 @@
-// src/components/PlayerList.tsx
+// src/components/ui/PlayerList.tsx
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import type { AvatarConfig } from "@/types/avatar";
 import type { Member } from "@/types/member";
+import AvatarStack from "@/components/ui/AvatarStack";
 
 interface PlayerListProps {
 	players: Member[];
@@ -31,12 +30,9 @@ export default function PlayerList({
 }: PlayerListProps) {
 	const lockedSet = new Set(lockedNames);
 	const [actionForId, setActionForId] = useState<number | null>(null);
-	const layerImageClass = "absolute inset-0 object-contain pointer-events-none";
 	const hasFallback =
 		!!fallbackName && !players.some((p) => p.name.toLowerCase() === fallbackName.toLowerCase());
-	const layerSrc = (prefix: string, id?: string) =>
-		id && id !== "empty" ? `/avatars/${prefix}/${id}.png` : "";
-	const hasAvatar = (avatar?: AvatarConfig) => Boolean(avatar?.base);
+	const hasAvatar = (avatar?: Member["avatar"]) => Boolean(avatar?.base);
 	return (
 		<div className={`flex flex-col w-full ${className ?? ""}`}>
 			<ul className="space-y-1 flex-1 max-h-[26rem] overflow-y-auto pr-1">
@@ -52,8 +48,7 @@ export default function PlayerList({
 					const didSubmit = submittedPlayers.includes(p.name);
 					const isLockedCurrentSong = lockedSet.has(p.name);
 					const lockCount = lockedCounts[p.name] ?? 0;
-					const avatar = p.avatar;
-					const showAvatar = hasAvatar(avatar);
+					const showAvatar = hasAvatar(p.avatar);
 
 					return (
 						<li key={p.id} className="flex items-center gap-1.5 text-text">
@@ -63,53 +58,7 @@ export default function PlayerList({
 									className="relative w-12 h-12 rounded-full bg-card/30"
 									title={didSubmit ? "Submitted" : "Not submitted"}
 								>
-									<div className="absolute inset-0 flex items-center justify-center">
-										{layerSrc("base", avatar?.base) && (
-											<Image
-												src={layerSrc("base", avatar?.base)}
-												alt=""
-												fill
-												sizes="48px"
-												className={layerImageClass}
-											/>
-										)}
-										{layerSrc("eyes", avatar?.eyes) && (
-											<Image
-												src={layerSrc("eyes", avatar?.eyes)}
-												alt=""
-												fill
-												sizes="48px"
-												className={layerImageClass}
-											/>
-										)}
-										{layerSrc("hair", avatar?.hair) && (
-											<Image
-												src={layerSrc("hair", avatar?.hair)}
-												alt=""
-												fill
-												sizes="48px"
-												className={layerImageClass}
-											/>
-										)}
-										{layerSrc("headwear", avatar?.headwear) && (
-											<Image
-												src={layerSrc("headwear", avatar?.headwear)}
-												alt=""
-												fill
-												sizes="48px"
-												className={layerImageClass}
-											/>
-										)}
-										{layerSrc("mouth", avatar?.mouth) && (
-											<Image
-												src={layerSrc("mouth", avatar?.mouth)}
-												alt=""
-												fill
-												sizes="48px"
-												className={layerImageClass}
-											/>
-										)}
-									</div>
+									<AvatarStack avatar={p.avatar} size={48} className="relative h-12 w-12" />
 								</div>
 							) : (
 								<span

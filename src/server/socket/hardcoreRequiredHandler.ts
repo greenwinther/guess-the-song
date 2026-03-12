@@ -8,6 +8,7 @@ import type {
 	SocketData,
 } from "@/types/socket";
 import { requireHost, requireRoom } from "../logic/guards";
+import { isPhase } from "../logic/phase";
 import { setHardcoreRequired } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
 import { hardcoreRequiredPayloadSchema, validateWithZod } from "../schemas";
@@ -26,6 +27,7 @@ export const hardcoreRequiredHandler = (
 		const room = requireRoom(socket, () => cb?.(false));
 		if (!room || room.code !== code) return;
 		if (!requireHost(socket, room, () => cb?.(false))) return;
+		if (!isPhase(room, "LOBBY")) return cb?.(false);
 
 		const updated = setHardcoreRequired(code, required);
 		if (!updated) return cb?.(false);

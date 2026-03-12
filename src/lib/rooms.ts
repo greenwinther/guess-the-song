@@ -9,6 +9,7 @@ import {
 	joinRoom as joinRoomInStore,
 	removeSong as removeSongInStore,
 	setRoomTheme as setRoomThemeInStore,
+	updateSong as updateSongInStore,
 } from "@/server/store/roomStore";
 
 import type { AvatarConfig } from "@/types/avatar";
@@ -46,6 +47,14 @@ export async function addSong(
 
 export async function removeSong(code: string, songId: number) {
 	return removeSongInStore(code, songId);
+}
+
+export async function updateSong(
+	code: string,
+	songId: number,
+	song: { url: string; submitter: string; title: string; detailAnswer?: string | null }
+) {
+	return updateSongInStore(code, songId, song);
 }
 
 export async function getSong(code: string, songId: number) {

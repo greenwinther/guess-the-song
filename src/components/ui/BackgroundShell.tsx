@@ -1,4 +1,4 @@
-// src/components/join/BackgroundShell.tsx
+// src/components/ui/BackgroundShell.tsx
 import { ReactNode } from "react";
 
 type Props = {

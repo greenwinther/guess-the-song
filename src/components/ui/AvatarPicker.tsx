@@ -1,7 +1,9 @@
 // src/components/ui/AvatarPicker.tsx
 "use client";
+import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import type { AvatarConfig } from "@/types/avatar";
 
 const STORAGE_KEY = "gts-avatar-v2";
@@ -60,15 +62,30 @@ const getStoredAvatar = (): AvatarConfig => {
 
 type AvatarLayer = "base" | "hair" | "headwear" | "eyes" | "mouth";
 
-export default function AvatarPicker({ onChange }: { onChange?: (cfg: AvatarConfig) => void }) {
-	const [config, setConfig] = useState<AvatarConfig>(getStoredAvatar);
+export default function AvatarPicker({
+	onChange,
+	compact = false,
+	className,
+}: {
+	onChange?: (cfg: AvatarConfig) => void;
+	compact?: boolean;
+	className?: string;
+}) {
+	const [config, setConfig] = useState<AvatarConfig>(defaultAvatar);
+	const [isHydrated, setIsHydrated] = useState(false);
 
 	useEffect(() => {
+		setConfig(getStoredAvatar());
+		setIsHydrated(true);
+	}, []);
+
+	useEffect(() => {
+		if (!isHydrated) return;
 		try {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 		} catch {}
 		onChange?.(config);
-	}, [config, onChange]);
+	}, [config, isHydrated, onChange]);
 
 	const baseSrc = useMemo(() => bases.find((b) => b.id === config.base)?.src ?? "", [config.base]);
 	const hairSrc = useMemo(() => hair.find((h) => h.id === config.hair)?.src ?? "", [config.hair]);
@@ -114,19 +131,26 @@ export default function AvatarPicker({ onChange }: { onChange?: (cfg: AvatarConf
 		<button
 			type="button"
 			onClick={() => cycleLayer(layer, dir)}
-			className="h-8 w-8 rounded-md border border-border bg-card/40 text-base leading-none text-text/80 backdrop-blur hover:bg-card/60"
+			className={`flex items-center justify-center rounded-md border border-border bg-card/40 text-text/80 backdrop-blur transition-colors hover:bg-card/60 ${
+				compact ? "h-10 w-10" : "h-11 w-11"
+			}`}
 			aria-label={`${dir === -1 ? "Previous" : "Next"} ${label}`}
 			title={`${dir === -1 ? "Previous" : "Next"} ${label}`}
 		>
-			{dir === -1 ? "<" : ">"}
+			{dir === -1 ? (
+				<FiChevronLeft className={compact ? "h-4 w-4" : "h-5 w-5"} aria-hidden="true" />
+			) : (
+				<FiChevronRight className={compact ? "h-4 w-4" : "h-5 w-5"} aria-hidden="true" />
+			)}
 		</button>
 	);
 
 	const layerImageClass = "absolute inset-0 object-contain pointer-events-none";
+	const avatarSizeClass = compact ? "w-36 h-36" : "w-48 h-48";
 	return (
-		<div className="w-full flex flex-col items-center gap-1">
-			<div className="w-full mt-0 flex items-center justify-center gap-2">
-				<div className="flex shrink-0 flex-col gap-2">
+		<div className={clsx("flex w-full flex-col items-center gap-2", className)}>
+			<div className="flex w-full items-center justify-between gap-3">
+				<div className="flex shrink-0 flex-col gap-2.5">
 					{layers.map((layer) => (
 						<LayerButton
 							key={`prev-${layer.key}`}
@@ -137,27 +161,55 @@ export default function AvatarPicker({ onChange }: { onChange?: (cfg: AvatarConf
 					))}
 				</div>
 
-				<div className="w-48 h-48 shrink-0 flex items-center justify-center">
-					<div className="relative w-48 h-48">
-						{baseSrc && (
-							<Image src={baseSrc} alt="" fill sizes="192px" className={layerImageClass} />
-						)}
-						{eyeSrc && (
-							<Image src={eyeSrc} alt="" fill sizes="192px" className={layerImageClass} />
-						)}
-						{hairSrc && (
-							<Image src={hairSrc} alt="" fill sizes="192px" className={layerImageClass} />
-						)}
-						{headwearSrc && (
-							<Image src={headwearSrc} alt="" fill sizes="192px" className={layerImageClass} />
-						)}
-						{mouthSrc && (
-							<Image src={mouthSrc} alt="" fill sizes="192px" className={layerImageClass} />
-						)}
-					</div>
+				<div className={clsx("relative shrink-0", avatarSizeClass)}>
+					{baseSrc && (
+						<Image
+							src={baseSrc}
+							alt=""
+							fill
+							sizes={compact ? "144px" : "192px"}
+							className={layerImageClass}
+						/>
+					)}
+					{eyeSrc && (
+						<Image
+							src={eyeSrc}
+							alt=""
+							fill
+							sizes={compact ? "144px" : "192px"}
+							className={layerImageClass}
+						/>
+					)}
+					{hairSrc && (
+						<Image
+							src={hairSrc}
+							alt=""
+							fill
+							sizes={compact ? "144px" : "192px"}
+							className={layerImageClass}
+						/>
+					)}
+					{headwearSrc && (
+						<Image
+							src={headwearSrc}
+							alt=""
+							fill
+							sizes={compact ? "144px" : "192px"}
+							className={layerImageClass}
+						/>
+					)}
+					{mouthSrc && (
+						<Image
+							src={mouthSrc}
+							alt=""
+							fill
+							sizes={compact ? "144px" : "192px"}
+							className={layerImageClass}
+						/>
+					)}
 				</div>
 
-				<div className="flex shrink-0 flex-col gap-2">
+				<div className="flex shrink-0 flex-col gap-2.5">
 					{layers.map((layer) => (
 						<LayerButton
 							key={`next-${layer.key}`}

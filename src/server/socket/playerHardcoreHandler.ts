@@ -7,7 +7,8 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { requireMember, requireRoom } from "../logic/guards";
+import { requireNonHostMember, requireRoom } from "../logic/guards";
+import { isPhase } from "../logic/phase";
 import { setPlayerHardcore } from "../store/roomStore";
 import { toPublicRoom } from "../state/publicRoom";
 import { playerHardcorePayloadSchema, validateWithZod } from "../schemas";
@@ -25,7 +26,8 @@ export const playerHardcoreHandler = (
 
 		const room = requireRoom(socket, () => cb?.(false));
 		if (!room || room.code !== code) return;
-		const me = requireMember(socket, room, () => cb?.(false));
+		if (!isPhase(room, "LOBBY")) return cb?.(false);
+		const me = requireNonHostMember(socket, room, () => cb?.(false));
 		if (!me) return;
 
 		const updated = setPlayerHardcore(code, me.name, hardcore);

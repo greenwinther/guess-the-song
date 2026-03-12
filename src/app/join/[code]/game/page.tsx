@@ -1,18 +1,19 @@
-"use client";
-// src/app/join/[code]/game/page.tsx
-import JoinGameClient from "@/components/JoinGameClient";
-import { useParams, useSearchParams } from "next/navigation";
+import { redirect } from "next/navigation";
 
-export default function JoinGamePage() {
-	const params = useParams();
-	let { code } = params;
-	const name = useSearchParams().get("name");
+type PageProps = {
+	params: Promise<{ code: string }>;
+	searchParams: Promise<{ name?: string | string[] }>;
+};
 
-	if (!code || !name) return <p>Invalid game link</p>;
-	// Unwrap array if necessary
-	if (Array.isArray(code)) {
-		code = code[0];
+export default async function JoinGamePage({ params, searchParams }: PageProps) {
+	const { code } = await params;
+	const { name } = await searchParams;
+	const playerName = Array.isArray(name) ? name[0] : name;
+	const query = new URLSearchParams();
+
+	if (playerName) {
+		query.set("name", playerName);
 	}
 
-	return <JoinGameClient code={code} playerName={name} />;
+	redirect(`/play/${code}${query.size ? `?${query.toString()}` : ""}`);
 }

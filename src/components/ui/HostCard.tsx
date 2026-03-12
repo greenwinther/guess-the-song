@@ -2,7 +2,6 @@
 // src/components/ui/HostCard.tsx
 import { FC, FormEvent } from "react";
 import clsx from "clsx";
-import GlassCard from "./GlassCard";
 import AvatarPicker from "./AvatarPicker";
 
 import Button from "./Button";
@@ -19,6 +18,8 @@ interface HostCardProps {
 	className?: string;
 	disabled?: boolean;
 	isLoading?: boolean;
+	compactAvatar?: boolean;
+	showAvatar?: boolean;
 }
 
 const HostCard: FC<HostCardProps> = ({
@@ -32,15 +33,22 @@ const HostCard: FC<HostCardProps> = ({
 	className,
 	disabled,
 	isLoading,
+	compactAvatar = false,
+	showAvatar = true,
 }) => {
 	const lock = disabled || isLoading;
+	const contentClassName = clsx(
+		"flex w-full flex-col gap-3",
+		className,
+	);
 	return (
-		<GlassCard className={clsx("w-80", className)}>
-			<h2 className="text-2xl font-semibold mb-2 text-text">Create Lobby</h2>
-			<div className="mb-4">
-				<AvatarPicker />
-			</div>
-			<form onSubmit={onCreate} className="flex flex-col gap-4">
+		<div className={contentClassName}>
+			{showAvatar && (
+				<div>
+					<AvatarPicker compact={compactAvatar} />
+				</div>
+			)}
+			<form onSubmit={onCreate} className="flex flex-col gap-3">
 				<Input
 					type="text"
 					variant={themeError ? "error" : "default"}
@@ -72,7 +80,7 @@ const HostCard: FC<HostCardProps> = ({
 					Create Lobby
 				</Button>
 			</form>
-		</GlassCard>
+		</div>
 	);
 };
 

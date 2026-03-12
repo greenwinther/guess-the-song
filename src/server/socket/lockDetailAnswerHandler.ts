@@ -9,6 +9,8 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
+import { requireNonHostMember, requireRoom } from "../logic/guards";
+import { isPhase } from "../logic/phase";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
 import { scopedLogger } from "../logger";
 import { lockDetailPayloadSchema, validateWithZod } from "../schemas";
@@ -25,10 +27,14 @@ export const lockDetailAnswerHandler = (
 				errorMessage: "Invalid lockDetailAnswer payload",
 			});
 			if (!payload.ok) return cb?.(false);
-			const { code, songId, playerName: fallbackPlayerName } = payload.data;
+			const { code, songId } = payload.data;
+			const room = requireRoom(socket, () => cb?.(false));
+			if (!room || room.code !== code) return cb?.(false);
+			if (!isPhase(room, "GUESSING")) return cb?.(false);
+			const member = requireNonHostMember(socket, room, () => cb?.(false));
+			if (!member) return;
 			if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-			const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
-			const ok = manualDetailLock(code, songId, playerName);
+			const ok = manualDetailLock(code, songId, member.name);
 			if (ok) {
 				const locked = getDetailLockedPlayers(code, songId);
 				io.to(code).emit("detailLockSnapshot", { songId, locked });
@@ -47,10 +53,14 @@ export const lockDetailAnswerHandler = (
 				errorMessage: "Invalid undoDetailLock payload",
 			});
 			if (!payload.ok) return cb?.(false);
-			const { code, songId, playerName: fallbackPlayerName } = payload.data;
+			const { code, songId } = payload.data;
+			const room = requireRoom(socket, () => cb?.(false));
+			if (!room || room.code !== code) return cb?.(false);
+			if (!isPhase(room, "GUESSING")) return cb?.(false);
+			const member = requireNonHostMember(socket, room, () => cb?.(false));
+			if (!member) return;
 			if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-			const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
-			const ok = tryUndoDetailLock(code, songId, playerName);
+			const ok = tryUndoDetailLock(code, songId, member.name);
 			if (ok) {
 				const locked = getDetailLockedPlayers(code, songId);
 				io.to(code).emit("detailLockSnapshot", { songId, locked });

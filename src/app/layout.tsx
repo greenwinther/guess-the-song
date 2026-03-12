@@ -1,6 +1,5 @@
 // src/app/layout.tsx
 
-import { GameProvider } from "@/contexts/tempContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 import "./globals.css";
 import SocketStatusBanner from "@/components/SocketStatusBanner";
@@ -27,22 +26,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="en">
 			<body>
 				<SocketProvider>
-					<GameProvider>
-						<SocketStatusBanner />
-						<ThemeSwitcher />
-						<Toaster
-							position="top-center"
-							toastOptions={{
-								duration: 2000,
-								style: {
-									background: "var(--color-card)",
-									color: "var(--color-text)",
-									border: "1px solid var(--color-border)",
-								},
-							}}
-						/>
-						{children}
-					</GameProvider>
+					<SocketStatusBanner />
+					<ThemeSwitcher />
+					<Toaster
+						position="top-center"
+						toastOptions={{
+							duration: 2000,
+							style: {
+								background: "var(--color-card)",
+								color: "var(--color-text)",
+								border: "1px solid var(--color-border)",
+							},
+						}}
+					/>
+					{children}
 				</SocketProvider>
 			</body>
 		</html>

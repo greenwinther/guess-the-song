@@ -4,6 +4,7 @@ import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, Soc
 import { createRoomHandler } from "./createRoomHandler";
 import { disconnectHandler } from "./disconnectHandler";
 import { addSongHandler } from "./addSongHandler";
+import { updateSongHandler } from "./updateSongHandler";
 import { playSongHandler } from "./playSongHandler";
 import { removeSongHandler } from "./removeSongHandler";
 import { showResultHandler } from "./showResultsHandler";
@@ -37,6 +38,7 @@ export const registerSocketHandlers = (
 	joinRoomHandler(io, socket);
 	disconnectHandler(io, socket);
 	addSongHandler(io, socket);
+	updateSongHandler(io, socket);
 	playSongHandler(io, socket);
 	removeSongHandler(io, socket);
 	showResultHandler(io, socket);

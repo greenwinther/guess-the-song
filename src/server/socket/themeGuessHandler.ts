@@ -18,6 +18,8 @@ import type {
 	ThemeGuessPayload,
 	ThemeRevealPayload,
 } from "@/types/socket";
+import { requireHost, requireNonHostMember, requireRoom } from "../logic/guards";
+import { isPhase } from "../logic/phase";
 import { themeGuessPayloadSchema, themeRevealPayloadSchema, validateWithZod } from "../schemas";
 
 export const themeGuessHandler = (
@@ -30,10 +32,16 @@ export const themeGuessHandler = (
 			errorMessage: "Invalid THEME_GUESS payload",
 		});
 		if (!payload.ok) return;
-		const { code: normalizedCode, playerName, guess } = payload.data;
+		const { code: normalizedCode, guess } = payload.data;
+
+		const boundRoom = requireRoom(socket);
+		if (!boundRoom || boundRoom.code !== normalizedCode) return;
+		if (!isPhase(boundRoom, ["GUESSING", "RECAP"])) return;
+		const member = requireNonHostMember(socket, boundRoom);
+		if (!member) return;
 
 		initThemeState(normalizedCode);
-		const resolvedName = socket.data.roomMeta?.playerName ?? playerName;
+		const resolvedName = member.name;
 
 		// Get current theme from in-memory room
 		const room = getRoomFromStore(normalizedCode);
@@ -97,6 +105,10 @@ export const themeGuessHandler = (
 		});
 		if (!payload.ok) return;
 		const { code: normalizedCode } = payload.data;
+		const boundRoom = requireRoom(socket);
+		if (!boundRoom || boundRoom.code !== normalizedCode) return;
+		if (!requireHost(socket, boundRoom)) return;
+		if (!isPhase(boundRoom, "RESULTS")) return;
 
 		const { setRevealed } = await import("@/lib/theme");
 		setRevealed(normalizedCode, true);

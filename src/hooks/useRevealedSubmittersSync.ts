@@ -1,11 +1,11 @@
-// src/hooks/join/useRevealedSubmittersSync.ts
+// src/hooks/useRevealedSubmittersSync.ts
 import { useEffect, useRef } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { useGame } from "@/contexts/tempContext";
+import { useGameRuntime } from "@/contexts/gameContext";
 
 export function useRevealedSubmittersSync() {
 	const socket = useSocket();
-	const { setRevealedSubmitters } = useGame();
+	const { setRevealedSubmitters } = useGameRuntime();
 	const ref = useRef<number[]>([]);
 
 	useEffect(() => {

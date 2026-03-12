@@ -3,30 +3,32 @@
 
 import HostCard from "@/components/ui/HostCard";
 import JoinCard from "@/components/ui/JoinCard";
-import { useGame } from "@/contexts/tempContext";
+import AvatarPicker from "@/components/ui/AvatarPicker";
 import { useSocket } from "@/contexts/SocketContext";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import type { AvatarConfig } from "@/types/avatar";
-import Button from "@/components/ui/Button";
 import { createLobbyFormSchema, firstFieldIssue, joinLobbyFormSchema } from "@/shared/schemas";
+import clsx from "clsx";
 
 export default function HomePage() {
 	const router = useRouter();
 	const socket = useSocket();
+	const contentWidthClass = "w-full max-w-[20rem]";
 
 	const [name, setName] = useState<string>("");
 	const [roomCode, setRoomCode] = useState<string>("");
 	const [joining, setJoining] = useState(false);
 	const [creating, setCreating] = useState(false);
-	const [mode, setMode] = useState<"host" | "player">("player");
+	const [view, setView] = useState<"join" | "create">("join");
 	const [error, setError] = useState<string | null>(null);
 	const [joinNameError, setJoinNameError] = useState<string | null>(null);
 	const [joinCodeError, setJoinCodeError] = useState<string | null>(null);
 	const [createThemeError, setCreateThemeError] = useState<string | null>(null);
 	const [createBgError, setCreateBgError] = useState<string | null>(null);
+	const [theme, setTheme] = useState<string>("");
+	const [backgroundUrl, setBackgroundUrl] = useState<string>("");
 
-	const { theme, setTheme, backgroundUrl, setBackgroundUrl } = useGame();
 	const getStoredAvatar = (): AvatarConfig | null => {
 		try {
 			const raw = localStorage.getItem("gts-avatar-v2");
@@ -36,6 +38,14 @@ export default function HomePage() {
 		} catch {
 			return null;
 		}
+	};
+
+	const clearMessages = () => {
+		setError(null);
+		setJoinNameError(null);
+		setJoinCodeError(null);
+		setCreateThemeError(null);
+		setCreateBgError(null);
 	};
 
 	// Create lobby: validate first, then send theme + background URL via socket
@@ -74,9 +84,9 @@ export default function HomePage() {
 				try {
 					localStorage.setItem(`gts-host-room-${resp.code}`, JSON.stringify({ name: "Host" }));
 				} catch {}
-				router.push(`/host/${resp.code}`);
+				router.push(`/admin/${resp.code}`);
 				setCreating(false);
-			}
+			},
 		);
 	};
 
@@ -103,7 +113,7 @@ export default function HomePage() {
 		const avatar = getStoredAvatar();
 		socket.emit("joinRoom", { code, name: playerName, avatar: avatar ?? undefined }, (ok: boolean) => {
 			if (ok) {
-				router.push(`/join/${code}?name=${encodeURIComponent(playerName)}`);
+				router.push(`/play/${code}?name=${encodeURIComponent(playerName)}`);
 			} else {
 				setError("Failed to join - check the room code and try again.");
 				setJoining(false);
@@ -114,96 +124,112 @@ export default function HomePage() {
 	return (
 		<main
 			className="
-			min-h-screen flex flex-col items-center justify-center p-8
+			relative isolate min-h-screen overflow-hidden flex flex-col items-center justify-center p-8
 			bg-gradient-to-br from-bg to-secondary
 			"
 		>
-			<div className="w-full max-w-sm flex flex-col items-center">
-				<div className="relative z-20 overflow-visible w-full">
-					<h1
-						className="
-							text-center
-							text-5xl sm:text-5xl font-extrabold tracking-tight
-							text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary
-							drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
-							leading-[1.15] overflow-visible pb-10
-							"
-					>
-						Guess the Song
-					</h1>
-				</div>
-
-				<div
+			<div className="flex w-full max-w-[26rem] flex-col items-center gap-7">
+				<h1
 					className="
-					relative z-10 w-full border border-border rounded-2xl p-8
-					bg-card bg-opacity-20 backdrop-blur-xl
-					flex flex-col items-center
-					"
+						relative z-20 w-full text-center
+						text-5xl sm:text-5xl font-extrabold tracking-tight
+						text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary
+						drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]
+						leading-normal pb-2
+						"
 				>
-					<div role="tablist" aria-label="Mode" className="flex w-full mb-6 gap-4">
-						<Button
-							type="button"
-							role="tab"
-							aria-selected={mode === "host"}
-							onClick={() => {
-								setMode("host");
-								if (error) setError(null);
-								setJoinNameError(null);
-								setJoinCodeError(null);
-							}}
-							variant={mode === "host" ? "primary" : "secondary"}
-							size="md"
-							className="flex-1"
-						>
-							Host
-						</Button>
-						<Button
-							type="button"
-							role="tab"
-							aria-selected={mode === "player"}
-							onClick={() => {
-								setMode("player");
-								if (error) setError(null);
-								setCreateThemeError(null);
-								setCreateBgError(null);
-							}}
-							variant={mode === "player" ? "primary" : "secondary"}
-							size="md"
-							className="flex-1"
-						>
-							Player
-						</Button>
+					Guess the Song
+				</h1>
+
+				<div className="home-neon-card relative z-10 w-full rounded-[28px] p-[1.75px]">
+					<div
+						className={clsx(
+							"relative w-full overflow-hidden rounded-[26px] px-4 py-5 sm:px-5 sm:py-6",
+							"bg-card/20 backdrop-blur-xl shadow-2xl",
+							"flex flex-col items-center gap-3",
+						)}
+					>
+						<div className="flex w-full justify-center">
+							<div
+								className={clsx(
+									contentWidthClass,
+									"relative z-10 grid grid-cols-2 gap-5 rounded-full p-1",
+								)}
+							>
+								<button
+									type="button"
+									className={clsx(
+										"relative z-10 w-full rounded-full border px-6 py-2 text-base font-semibold transition-colors duration-300",
+										"outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
+										view === "join"
+											? "border-white/15 bg-gradient-to-r from-primary to-secondary text-white shadow-[0_8px_24px_rgba(61,174,255,0.18)]"
+											: "border-border/80 bg-card/15 text-text/80 hover:border-border hover:text-text",
+									)}
+									onClick={() => {
+										clearMessages();
+										setView("join");
+									}}
+									aria-pressed={view === "join"}
+								>
+									Join
+								</button>
+								<button
+									type="button"
+									className={clsx(
+										"relative z-10 w-full rounded-full border px-6 py-2 text-base font-semibold transition-colors duration-300",
+										"outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
+										view === "create"
+											? "border-white/15 bg-gradient-to-r from-primary to-secondary text-white shadow-[0_8px_24px_rgba(61,174,255,0.18)]"
+											: "border-border/80 bg-card/15 text-text/80 hover:border-border hover:text-text",
+									)}
+									onClick={() => {
+										clearMessages();
+										setView("create");
+									}}
+									aria-pressed={view === "create"}
+								>
+									Host
+								</button>
+							</div>
+						</div>
+						{error && (
+							<p className="relative z-10 w-full text-center text-sm text-red-400" aria-live="polite">
+								{error}
+							</p>
+						)}
+						<div className="relative z-10 flex w-full flex-col items-center gap-3">
+							<AvatarPicker compact className={contentWidthClass} />
+							{view === "join" ? (
+								<JoinCard
+									name={name}
+									onNameChange={setName}
+									code={roomCode}
+									onRoomCodeChange={setRoomCode}
+									onJoin={handleJoin}
+									nameError={joinNameError}
+									codeError={joinCodeError}
+									disabled={joining}
+									isLoading={joining}
+									className={contentWidthClass}
+									showAvatar={false}
+								/>
+							) : (
+								<HostCard
+									theme={theme}
+									onThemeChange={setTheme}
+									backgroundUrl={backgroundUrl}
+									onBackgroundChange={setBackgroundUrl}
+									onCreate={handleCreate}
+									themeError={createThemeError}
+									backgroundUrlError={createBgError}
+									disabled={creating}
+									isLoading={creating}
+									className={contentWidthClass}
+									showAvatar={false}
+								/>
+							)}
+						</div>
 					</div>
-					<div className="w-full" aria-live="polite">
-						{error && <p className="text-sm text-red-400 text-center">{error}</p>}
-					</div>
-					{mode === "host" ? (
-						<HostCard
-							theme={theme}
-							onThemeChange={setTheme}
-							backgroundUrl={backgroundUrl}
-							onBackgroundChange={setBackgroundUrl}
-							onCreate={handleCreate}
-							themeError={createThemeError}
-							backgroundUrlError={createBgError}
-							disabled={creating}
-							isLoading={creating}
-							className="space-y-4"
-						/>
-					) : (
-						<JoinCard
-							name={name}
-							onNameChange={setName}
-							code={roomCode}
-							onRoomCodeChange={setRoomCode}
-							onJoin={handleJoin}
-							nameError={joinNameError}
-							codeError={joinCodeError}
-							disabled={joining}
-							isLoading={joining}
-							className="space-y-4"
-						/>
-					)}
 				</div>
 			</div>
 		</main>

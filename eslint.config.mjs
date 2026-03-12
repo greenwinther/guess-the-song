@@ -3,7 +3,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 export default [
 	...nextVitals,
 	{
-		ignores: ["dist/**", "eslint.config.mjs"],
+		ignores: ["dist/**", ".next/**", "test-results/**", "playwright-report/**", "eslint.config.mjs"],
 	},
 	{
 		rules: {

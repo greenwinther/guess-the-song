@@ -149,6 +149,18 @@ body {
 	}
 }
 
+@property --home-border-angle {
+	syntax: "<angle>";
+	inherits: false;
+	initial-value: 0deg;
+}
+
+@keyframes home-border-spin {
+	to {
+		--home-border-angle: 360deg;
+	}
+}
+
 .ready-hand {
 	display: inline-flex;
 	animation: raise-hand 1.2s ease-in-out infinite;
@@ -170,4 +182,44 @@ body {
 .btn-primary {
 	color: var(--color-on-primary);
 	text-shadow: none;
+}
+
+.home-neon-card {
+	position: relative;
+	isolation: isolate;
+}
+
+.home-neon-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1.75px;
+	background: conic-gradient(
+		from var(--home-border-angle) at 50% 38%,
+		rgb(var(--color-primary-rgb) / 0) 0deg,
+		rgb(var(--color-primary-rgb) / 0) 90deg,
+		rgb(var(--color-primary-rgb) / 0.62) 155deg,
+		rgb(var(--color-primary-rgb) / 0.82) 220deg,
+		rgb(var(--color-secondary-rgb) / 0.98) 285deg,
+		rgb(var(--color-highlight-rgb) / 0.94) 332deg,
+		rgb(var(--color-secondary-rgb) / 0.86) 350deg,
+		rgb(var(--color-primary-rgb) / 0) 360deg
+	);
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	mask-composite: exclude;
+	pointer-events: none;
+	animation: home-border-spin 3.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.home-neon-card::before {
+		animation: none;
+	}
 }

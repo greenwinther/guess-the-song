@@ -1,7 +1,6 @@
 // src/components/ui/JoinCard.tsx
 "use client";
 import clsx from "clsx";
-import GlassCard from "./GlassCard";
 import AvatarPicker from "./AvatarPicker";
 import Input from "./Input";
 import Button from "./Button";
@@ -17,6 +16,8 @@ interface JoinCardProps {
 	className?: string;
 	disabled?: boolean;
 	isLoading?: boolean;
+	compactAvatar?: boolean;
+	showAvatar?: boolean;
 }
 
 export default function JoinCard({
@@ -30,19 +31,26 @@ export default function JoinCard({
 	className,
 	disabled,
 	isLoading,
+	compactAvatar = false,
+	showAvatar = true,
 }: JoinCardProps) {
 	const lock = disabled || isLoading;
 	const nameOk = Boolean(name.trim());
 	const codeOk = Boolean(code.trim());
 	const canSubmit = !lock && nameOk && codeOk;
+	const contentClassName = clsx(
+		"flex w-full flex-col gap-3",
+		className,
+	);
 
 	return (
-		<GlassCard className={clsx("w-80", className)}>
-			<h2 className="text-2xl font-semibold mb-2 text-text">Join Lobby</h2>
-			<div className="mb-4">
-				<AvatarPicker />
-			</div>
-			<form onSubmit={onJoin} className="flex flex-col gap-4">
+		<div className={contentClassName}>
+			{showAvatar && (
+				<div>
+					<AvatarPicker compact={compactAvatar} />
+				</div>
+			)}
+			<form onSubmit={onJoin} className="flex flex-col gap-3">
 				<Input
 					type="text"
 					variant={nameError ? "error" : "default"}
@@ -78,6 +86,6 @@ export default function JoinCard({
 					Join Lobby
 				</Button>
 			</form>
-		</GlassCard>
+		</div>
 	);
 }

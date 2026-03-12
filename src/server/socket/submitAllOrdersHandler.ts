@@ -2,7 +2,7 @@
 import type { Server, Socket } from "socket.io";
 import { storeOrder } from "../../lib/game";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, SubmitAllOrdersPayload } from "@/types/socket";
-import { requireRoom } from "../logic/guards";
+import { requireNonHostMember, requireRoom } from "../logic/guards";
 import { isPhase } from "../logic/phase";
 import { scopedLogger } from "../logger";
 import { submitAllOrdersPayloadSchema, validateWithZod } from "../schemas";
@@ -24,19 +24,20 @@ export const submitAllOrdersHandler = (
 					errorMessage: "Invalid submitAllOrders payload",
 				});
 				if (!payload.ok) return callback(false);
-				const { code, guesses, playerName: fallbackPlayerName } = payload.data;
+				const { code, guesses } = payload.data;
 
 				const room = requireRoom(socket, () => callback(false));
 				if (!room || room.code !== code) return;
-				if (!isPhase(room, ["GUESSING", "RECAP"])) return callback(false);
+				if (!isPhase(room, "GUESSING")) return callback(false);
+				const member = requireNonHostMember(socket, room, () => callback(false));
+				if (!member) return;
 
-				const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
 				for (const [sid, order] of Object.entries(guesses)) {
-					storeOrder(code, parseInt(sid, 10), playerName, order);
+					storeOrder(code, parseInt(sid, 10), member.name, order);
 				}
 
 				// === ADD THIS: broadcast that this player has submitted ===
-				io.to(code).emit("playerSubmitted", { playerName });
+				io.to(code).emit("playerSubmitted", { playerName: member.name });
 
 				callback(true);
 			} catch (err) {

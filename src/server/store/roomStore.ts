@@ -176,6 +176,34 @@ export function addSong(
 	return created;
 }
 
+export function updateSong(
+	code: string,
+	songId: number,
+	song: { url: string; submitter: string; title: string | null; detailAnswer?: string | null }
+): Submission {
+	const room = getRoom(code);
+	if (!room) throw new Error("Room not found");
+
+	const existing = room.songs.find((item) => item.id === songId);
+	if (!existing) throw new Error("Song not found");
+
+	const normalizedUrl = song.url?.trim().toLowerCase();
+	if (normalizedUrl) {
+		const dup = room.songs.find(
+			(item) => item.id !== songId && (item.url ?? "").trim().toLowerCase() === normalizedUrl
+		);
+		if (dup) throw new Error("Duplicate song");
+	}
+
+	existing.url = song.url;
+	existing.submitter = song.submitter;
+	existing.title = song.title ?? "";
+	existing.detailAnswer = song.detailAnswer ?? undefined;
+	touch(room);
+	notifyStateChange();
+	return { ...existing };
+}
+
 export function removeSong(code: string, songId: number): number {
 	const room = getRoom(code);
 	if (!room) throw new Error("Room not found");

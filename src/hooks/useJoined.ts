@@ -74,7 +74,7 @@ export function useJoined(code: string, name: string) {
 		};
 
 		const onSocketSynced = () => {
-			toast.success("Synced.");
+			toast.success("Reconnected.");
 		};
 
 		const doJoin = () => {
@@ -95,7 +95,7 @@ export function useJoined(code: string, name: string) {
 						joinedRef.current = false;
 						if (errorRef.current !== codeRef.current) {
 							errorRef.current = codeRef.current;
-							toast.error("Room closed or not found.");
+							toast.error("This room is closed or unavailable.");
 						}
 						// (optional) toast/console here
 					}

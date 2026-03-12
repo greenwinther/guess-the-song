@@ -9,6 +9,8 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
+import { requireNonHostMember, requireRoom } from "../logic/guards";
+import { isPhase } from "../logic/phase";
 import { emitAdminDashboardToHosts } from "./adminDashboard";
 import { scopedLogger } from "../logger";
 import { selectDetailOrderPayloadSchema, validateWithZod } from "../schemas";
@@ -27,11 +29,16 @@ export const selectDetailOrderHandler = (
 					errorMessage: "Invalid selectDetailOrder payload",
 				});
 				if (!payload.ok) return cb?.(false);
-				const { code, songId, order, playerName: fallbackPlayerName } = payload.data;
+				const { code, songId, order } = payload.data;
+
+				const room = requireRoom(socket, () => cb?.(false));
+				if (!room || room.code !== code) return cb?.(false);
+				if (!isPhase(room, "GUESSING")) return cb?.(false);
+				const member = requireNonHostMember(socket, room, () => cb?.(false));
+				if (!member) return;
 
 				if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-				const playerName = socket.data.roomMeta?.playerName ?? fallbackPlayerName;
-				storeDetailOrder(code, songId, playerName, order);
+				storeDetailOrder(code, songId, member.name, order);
 				void emitAdminDashboardToHosts(io, code);
 				cb?.(true);
 			} catch (e) {

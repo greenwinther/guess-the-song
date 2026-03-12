@@ -39,6 +39,20 @@ export function requireMember(
 	return member;
 }
 
+export function requireNonHostMember(
+	socket: TypedSocket,
+	room: RoomState,
+	onError?: (reason: string) => void
+): Member | null {
+	const me = requireMember(socket, room, onError);
+	if (!me) return null;
+	if (me.isHost) {
+		onError?.("HOST_NOT_ALLOWED");
+		return null;
+	}
+	return me;
+}
+
 export function requireHost(
 	socket: TypedSocket,
 	room: RoomState,
