@@ -42,8 +42,11 @@ export const showResultHandler = (
 				themePointsByPlayer: themePoints,
 				hardcoreMultiplier: room.rules.hardcoreMultiplier,
 			});
+			const hostNames = new Set(room.players.filter((player) => player.isHost).map((player) => player.name));
 			const finalScores = Object.fromEntries(
-				Object.entries(board.byPlayer).map(([name, row]) => [name, row.total])
+				Object.entries(board.byPlayer)
+					.filter(([name]) => !hostNames.has(name))
+					.map(([name, row]) => [name, row.total])
 			);
 
 			// 1) cache them
