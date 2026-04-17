@@ -1,7 +1,7 @@
 "use client";
 
-import PlayerShellClient from "@/components/PlayerShellClient";
-import Loading from "@/components/ui/Loading";
+import PlayerRoomClient from "@/components/player/PlayerRoomClient";
+import Loading from "@/components/shared/Loading";
 import { useParams, useSearchParams } from "next/navigation";
 
 export default function PlayRoomPage() {
@@ -12,5 +12,5 @@ export default function PlayRoomPage() {
 
 	if (!code || !name) return <Loading />;
 
-	return <PlayerShellClient code={code} playerName={name} />;
+	return <PlayerRoomClient code={code} playerName={name} />;
 }

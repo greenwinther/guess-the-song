@@ -1,13 +1,13 @@
 "use client";
 // src/components/home/HomePageClient.tsx
 
-import AvatarActionRow from "@/components/home/AvatarActionRow";
-import HomeModeToggle from "@/components/home/HomeModeToggle";
-import HostInsetSlot from "@/components/home/HostInsetSlot";
+import AvatarRandomizer from "@/components/home/components/AvatarRandomizer";
+import JoinOrHostToggle from "@/components/home/components/JoinOrHostToggle";
+import HostStatusSlot from "@/components/home/components/HostStatusSlot";
 import styles from "@/components/home/home.module.css";
-import AvatarPicker from "@/components/ui/AvatarPicker";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import AvatarPicker from "@/components/shared/AvatarPicker";
+import Button from "@/components/shared/Button";
+import Input from "@/components/shared/Input";
 import { useSocket } from "@/contexts/SocketContext";
 import useAvatarPreviewTilt from "@/hooks/useAvatarPreviewTilt";
 import { useRouter } from "next/navigation";
@@ -160,7 +160,7 @@ export default function HomePageClient() {
 						</h1>
 						<div className={styles.homeTitleDivider} aria-hidden="true" />
 					</div>
-					<HomeModeToggle
+					<JoinOrHostToggle
 						view={view}
 						onViewChange={(nextView) => {
 							clearMessages();
@@ -194,14 +194,14 @@ export default function HomePageClient() {
 								/>
 							) : (
 								<div className="w-full">
-									<HostInsetSlot label="Host Ready" />
+									<HostStatusSlot label="Host Ready" />
 								</div>
 							)}
 						</div>
 						{view === "join" && joinNameError && (
 							<p className="-mt-2 text-xs text-red-400">{joinNameError}</p>
 						)}
-						<AvatarActionRow
+						<AvatarRandomizer
 							onRandomize={triggerRandomize}
 							disabled={view === "join" ? joinLocked : creating}
 						/>
@@ -241,7 +241,7 @@ export default function HomePageClient() {
 							</>
 						) : (
 							<>
-								<HostInsetSlot label="Settings in Lobby" />
+								<HostStatusSlot label="Settings in Lobby" />
 								<Button
 									type="submit"
 									variant="primary"

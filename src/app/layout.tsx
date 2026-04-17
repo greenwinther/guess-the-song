@@ -2,9 +2,9 @@
 
 import { SocketProvider } from "@/contexts/SocketContext";
 import "./globals.css";
-import SocketStatusBanner from "@/components/SocketStatusBanner";
+import SocketStatusBanner from "@/components/shared/SocketStatusBanner";
 import { Toaster } from "react-hot-toast";
-import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
+import ThemeSwitcher from "@/components/shared/ThemeSwitcher";
 
 export const metadata = {
 	title: "Guess the Song",

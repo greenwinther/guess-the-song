@@ -1,7 +1,7 @@
 "use client";
 
-import Loading from "@/components/ui/Loading";
-import HostControlShellClient from "@/components/HostControlShellClient";
+import Loading from "@/components/shared/Loading";
+import HostRoomClient from "@/components/host/HostRoomClient";
 import { useParams } from "next/navigation";
 
 export default function ControlRoomPage() {
@@ -11,5 +11,5 @@ export default function ControlRoomPage() {
 
 	if (!code) return <Loading />;
 
-	return <HostControlShellClient code={code} />;
+	return <HostRoomClient code={code} />;
 }
