@@ -1,4 +1,4 @@
-import AdminViewClient from "@/components/AdminViewClient";
+import AdminViewClient from "@/components/admin/AdminViewClient";
 
 export default async function AdminRoomPage({ params }: { params: Promise<{ code: string }> }) {
 	const { code } = await params;

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
-import { useSocket } from "@/contexts/SocketContext";
 import type { Room } from "@/types/room";
 import type { Submission } from "@/types/submission";
 import Button from "@/components/ui/Button";
@@ -10,17 +9,13 @@ import SongSetupForm from "@/components/control/SongSetupForm";
 import SetupPlaylistPanel from "@/components/control/SetupPlaylistPanel";
 import { ThemeEditorControls } from "@/components/control/ThemeEditorControls";
 import { DetailQuestionEditorControls } from "@/components/control/DetailQuestionEditorControls";
+import AdminHomeLink from "@/components/admin/AdminHomeLink";
+import AdminSetupTransferControls from "@/components/admin/AdminSetupTransferControls";
+import styles from "@/components/admin/admin.module.css";
 
 export default function AdminSetupPanel({ room, roomCode }: { room: Room | null; roomCode: string }) {
-	const socket = useSocket();
 	const [previewUrl, setPreviewUrl] = useState("");
-	const [hardcoreRequired, setHardcoreRequired] = useState(false);
 	const [editingSong, setEditingSong] = useState<Submission | null>(null);
-	const [isCollapsed, setIsCollapsed] = useState(false);
-
-	useEffect(() => {
-		setHardcoreRequired(!!room?.hardcoreRequired);
-	}, [room?.hardcoreRequired]);
 
 	useEffect(() => {
 		if (!room || !editingSong) return;
@@ -29,14 +24,6 @@ export default function AdminSetupPanel({ room, roomCode }: { room: Room | null;
 	}, [room, editingSong]);
 
 	const inLobby = room?.phase === undefined || room?.phase === "LOBBY";
-
-	useEffect(() => {
-		if (!room) return;
-		if (!inLobby) {
-			setIsCollapsed(true);
-			setEditingSong(null);
-		}
-	}, [inLobby, room]);
 
 	if (!room) {
 		return (
@@ -48,114 +35,105 @@ export default function AdminSetupPanel({ room, roomCode }: { room: Room | null;
 	}
 
 	return (
-		<section className="flex flex-col gap-4">
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div className="flex flex-col gap-1">
-					<h2 className="text-lg font-semibold text-text">Room Setup</h2>
-					<p className="text-sm text-text/70">
-						Editor-only controls for songs, theme, detail answers, and lobby rules.
-					</p>
-				</div>
-				<div className="flex flex-wrap items-center gap-2">
+		<section className="flex w-full flex-col gap-5">
+			<header
+				className={`${styles.panel} ${styles.panelOpen} ${styles.panelPrimary} z-20 grid items-center gap-4 rounded-b-2xl border border-border/70 border-t-0 p-4 md:grid-cols-[1fr_auto_1fr]`}
+			>
+				<div />
+				<AdminHomeLink className="justify-self-start text-center md:justify-self-center" />
+				<div className="self-end justify-self-end">
 					<Button
 						variant="secondary"
 						size="sm"
+						className="border-border/45 bg-card/10 text-text/78 hover:bg-card/18 hover:text-text"
 						onClick={() => window.open(`/control/${roomCode}`, "_blank", "noopener,noreferrer")}
 					>
 						Open host control
 					</Button>
-					<Button
-						type="button"
-						variant="secondary"
-						size="sm"
-						onClick={() => setIsCollapsed((prev) => !prev)}
-						aria-expanded={!isCollapsed}
-						aria-controls="admin-setup-content"
-					>
-						{isCollapsed ? "Show setup" : "Hide setup"}
-					</Button>
-					<span className="rounded-full border border-border/70 bg-card/40 px-3 py-1 text-xs uppercase tracking-[0.2em] text-text/70">
-						{inLobby ? "Editable" : "Locked after start"}
-					</span>
 				</div>
-			</div>
+			</header>
 
-			{!isCollapsed && (
-				<div id="admin-setup-content" className="flex flex-col gap-4">
+			<div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.72fr)]">
+				<section
+					className={`${styles.panel} ${styles.panelPrimary} rounded-2xl border border-border/70 p-5 backdrop-blur-xl`}
+				>
+					<div className="flex min-w-0 flex-col gap-6">
 					{!inLobby && (
 						<div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-100">
 							Setup is read-only once the live game has started.
 						</div>
 					)}
 
-					<div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_280px]">
-						<div className="flex h-full flex-col gap-3">
-							<DetailQuestionEditorControls
-								code={room.code}
-								detailQuestion={room.detailQuestion}
-								disabled={!inLobby}
-							/>
-						</div>
-						<div className="flex h-full flex-col gap-3">
-							<ThemeEditorControls code={room.code} themeValue={room.theme ?? ""} disabled={!inLobby} />
-						</div>
-						<div className="flex h-full flex-col gap-3">
-							<div className="flex flex-col gap-1">
-								<h3 className="text-sm font-semibold text-text">Lobby rules</h3>
-								<p className="text-xs text-text/70">Set live requirements before the room is started.</p>
-							</div>
+						<section className="flex min-w-0 flex-col gap-5">
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-sm text-text/80">Hardcore mode</span>
-								<label className="relative inline-flex items-center cursor-pointer">
-									<input
-										id="admin-hardcore-required"
-										type="checkbox"
-										className="sr-only peer"
-										checked={hardcoreRequired}
-										disabled={!inLobby}
-										onChange={(e) => {
-											const required = e.target.checked;
-											setHardcoreRequired(required);
-											socket.emit("HARDCORE_REQUIRED", { code: room.code, required }, (ok) => {
-												if (!ok) {
-													setHardcoreRequired(!!room.hardcoreRequired);
-													alert("Failed to update hardcore rule");
-												}
-											});
-										}}
-									/>
-									<span className="h-6 w-10 rounded-full border border-border bg-card/60 transition-colors peer-checked:border-primary/50 peer-checked:bg-primary/50" />
-									<span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white/80 transition-transform peer-checked:translate-x-4" />
-								</label>
+								<h2 className="text-xl font-semibold text-text sm:text-[1.4rem]">Song Setup</h2>
 							</div>
-						</div>
+							<div className={`${styles.insetPanel} rounded-xl px-4 py-1`}>
+								<div className="grid gap-4 xl:grid-cols-2">
+									<DetailQuestionEditorControls
+										code={room.code}
+										detailQuestion={room.detailQuestion}
+										disabled={!inLobby}
+									/>
+									<ThemeEditorControls
+										code={room.code}
+										themeValue={room.theme ?? ""}
+										disabled={!inLobby}
+									/>
+								</div>
+							</div>
+							<div>
+								<SongSetupForm
+									code={room.code}
+									onUrlChange={setPreviewUrl}
+									showDetailAnswer={Boolean(room.detailQuestion?.trim())}
+									disabled={!inLobby}
+									editingSong={editingSong}
+									onFinishEditing={() => setEditingSong(null)}
+								/>
+							</div>
+							<div>
+								<div
+									className={`${styles.insetPanel} aspect-video overflow-hidden rounded-lg border border-border/50`}
+								>
+									{previewUrl ? (
+										<ReactPlayer url={previewUrl} controls width="100%" height="100%" />
+									) : (
+										<div className="flex h-full items-center justify-center px-6 text-center text-sm font-medium text-text/60">
+											Search a song to preview
+										</div>
+									)}
+								</div>
+							</div>
+						</section>
 					</div>
+				</section>
 
-					<SongSetupForm
-						code={room.code}
-						onUrlChange={setPreviewUrl}
-						disabled={!inLobby}
-						editingSong={editingSong}
-						onFinishEditing={() => setEditingSong(null)}
+				<section
+					className={`${styles.panel} ${styles.panelSecondary} min-h-[24rem] rounded-2xl border border-border/70 p-4 backdrop-blur-xl`}
+				>
+					<SetupPlaylistPanel
+						roomOverride={room}
+						allowRemoval={inLobby}
+						showDevTools={true}
+						embedded
+						alwaysExpanded
+						onEditSong={inLobby ? setEditingSong : undefined}
+						listClassName={styles.insetPanel}
+						headerAddon={
+							<div className="flex min-w-0 items-center gap-2">
+								<AdminSetupTransferControls
+									room={room}
+									inLobby={inLobby}
+									onImportComplete={() => setEditingSong(null)}
+									label="Manage"
+									className="border-border/45 bg-card/10 text-text/78 hover:bg-card/18 hover:text-text"
+								/>
+							</div>
+						}
 					/>
-
-					<div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
-						<div className="rounded-lg overflow-hidden border border-border aspect-video bg-black/20">
-							<ReactPlayer url={previewUrl} controls width="100%" height="100%" />
-						</div>
-						<div className="min-h-[18rem] rounded-lg border border-border bg-card/20">
-							<SetupPlaylistPanel
-								roomOverride={room}
-								allowRemoval={inLobby}
-								showDevTools={true}
-								embedded
-								alwaysExpanded
-								onEditSong={inLobby ? setEditingSong : undefined}
-							/>
-						</div>
-					</div>
-				</div>
-			)}
+				</section>
+			</div>
 		</section>
 	);
 }

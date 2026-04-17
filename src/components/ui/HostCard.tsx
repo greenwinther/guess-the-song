@@ -1,20 +1,12 @@
 "use client";
 // src/components/ui/HostCard.tsx
-import { FC, FormEvent } from "react";
+import { FC, FormEvent, useState } from "react";
 import clsx from "clsx";
-import AvatarPicker from "./AvatarPicker";
-
+import AvatarPicker, { DiceIcon } from "./AvatarPicker";
 import Button from "./Button";
-import Input from "./Input";
 
 interface HostCardProps {
-	theme: string;
-	onThemeChange: (val: string) => void;
-	backgroundUrl: string;
-	onBackgroundChange: (url: string) => void;
 	onCreate: (e: FormEvent) => void;
-	themeError?: string | null;
-	backgroundUrlError?: string | null;
 	className?: string;
 	disabled?: boolean;
 	isLoading?: boolean;
@@ -23,13 +15,7 @@ interface HostCardProps {
 }
 
 const HostCard: FC<HostCardProps> = ({
-	theme,
-	onThemeChange,
-	backgroundUrl,
-	onBackgroundChange,
 	onCreate,
-	themeError,
-	backgroundUrlError,
 	className,
 	disabled,
 	isLoading,
@@ -37,38 +23,35 @@ const HostCard: FC<HostCardProps> = ({
 	showAvatar = true,
 }) => {
 	const lock = disabled || isLoading;
-	const contentClassName = clsx(
-		"flex w-full flex-col gap-3",
-		className,
-	);
+	const [randomizeSignal, setRandomizeSignal] = useState(0);
+	const contentClassName = clsx("flex w-full flex-col gap-3", className);
+
 	return (
 		<div className={contentClassName}>
-			{showAvatar && (
-				<div>
-					<AvatarPicker compact={compactAvatar} />
-				</div>
-			)}
 			<form onSubmit={onCreate} className="flex flex-col gap-3">
-				<Input
-					type="text"
-					variant={themeError ? "error" : "default"}
-					placeholder="Theme (optional)"
-					value={theme}
-					onChange={(e) => onThemeChange(e.target.value)}
-					className="w-full"
-					disabled={lock}
-				/>
-				{themeError && <p className="-mt-2 text-xs text-red-400">{themeError}</p>}
-				<Input
-					type="text"
-					variant={backgroundUrlError ? "error" : "default"}
-					placeholder="Background image URL (optional)"
-					value={backgroundUrl}
-					onChange={(e) => onBackgroundChange(e.target.value)}
-					className="w-full"
-					disabled={lock}
-				/>
-				{backgroundUrlError && <p className="-mt-2 text-xs text-red-400">{backgroundUrlError}</p>}
+				<div className="flex items-stretch gap-2">
+					<div className="min-w-0 flex-1" aria-hidden="true" />
+					<button
+						type="button"
+						onClick={() => setRandomizeSignal((current) => current + 1)}
+						className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center text-[color:var(--color-text-muted)] transition-colors duration-150 hover:text-[color:var(--color-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary/70 disabled:cursor-not-allowed disabled:opacity-50"
+						title="Randomize avatar"
+						aria-label="Randomize avatar"
+						disabled={lock}
+					>
+						<DiceIcon className="h-full w-full" />
+					</button>
+				</div>
+				{showAvatar && (
+					<div>
+						<AvatarPicker
+							compact={compactAvatar}
+							showRandomizeButton={false}
+							randomizeSignal={randomizeSignal}
+						/>
+					</div>
+				)}
+				<div className="h-10 w-full" aria-hidden="true" />
 				<Button
 					type="submit"
 					variant="primary"

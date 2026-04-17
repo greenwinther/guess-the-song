@@ -14,6 +14,7 @@ interface Props {
 	code: string;
 	defaultSubmitter?: string;
 	onUrlChange?: (url: string) => void;
+	showDetailAnswer?: boolean;
 	disabled?: boolean;
 	editingSong?: Submission | null;
 	onFinishEditing?: () => void;
@@ -31,6 +32,7 @@ export default function SongSetupForm({
 	code,
 	defaultSubmitter = "",
 	onUrlChange,
+	showDetailAnswer = true,
 	disabled = false,
 	editingSong = null,
 	onFinishEditing,
@@ -147,7 +149,7 @@ export default function SongSetupForm({
 		const validation = songSubmitFormSchema.safeParse({
 			url,
 			submitter,
-			detailAnswer,
+			detailAnswer: showDetailAnswer ? detailAnswer : "",
 		});
 
 		if (!validation.success) {
@@ -180,7 +182,7 @@ export default function SongSetupForm({
 					url: validation.data.url,
 					submitter: validation.data.submitter,
 					title,
-					detailAnswer: validation.data.detailAnswer,
+					detailAnswer: showDetailAnswer ? validation.data.detailAnswer : "",
 				},
 				(res) => {
 					if (!res?.success) {
@@ -200,7 +202,7 @@ export default function SongSetupForm({
 				url: validation.data.url,
 				submitter: validation.data.submitter,
 				title,
-				detailAnswer: validation.data.detailAnswer,
+				detailAnswer: showDetailAnswer ? validation.data.detailAnswer : "",
 			},
 			(res) => {
 				if (!res?.success) {
@@ -212,9 +214,22 @@ export default function SongSetupForm({
 		);
 	};
 
+	const onRemove = () => {
+		if (disabled || !editingSong) return;
+
+		setSubmitError(null);
+		socket.emit("removeSong", { code, songId: editingSong.id }, (res) => {
+			if (!res?.success) {
+				setSubmitError(res?.error || "Could not remove song");
+				return;
+			}
+			onFinishEditing?.();
+		});
+	};
+
 	return (
-		<form onSubmit={onSubmit} className="relative flex flex-wrap gap-2 items-start">
-			<div className="flex-[2] min-w-0">
+		<form onSubmit={onSubmit} className="relative flex flex-wrap items-start gap-2">
+			<div className="min-w-[16rem] flex-[2.3]">
 				<Input
 					placeholder="Search or paste YouTube URL"
 					value={title || query || url}
@@ -237,9 +252,9 @@ export default function SongSetupForm({
 				/>
 			</div>
 
-			<div className="flex-1 min-w-0">
+			<div className="min-w-[9rem] flex-1">
 				<Input
-					placeholder="Your name"
+					placeholder="Submitter"
 					value={submitter}
 					variant={submitterError ? "error" : "default"}
 					onChange={(e) => {
@@ -252,29 +267,31 @@ export default function SongSetupForm({
 				/>
 			</div>
 
+			{showDetailAnswer && (
+				<div className="min-w-[13rem] flex-[1.4]">
+					<Input
+						placeholder="Answer for question (optional)"
+						value={detailAnswer}
+						variant={detailError ? "error" : "default"}
+						onChange={(e) => {
+							if (disabled) return;
+							setDetailAnswer(e.target.value);
+							setDetailError(null);
+							setSubmitError(null);
+						}}
+						className="w-full"
+					/>
+				</div>
+			)}
+
 			<Button type="submit" disabled={disabled}>
 				{editingSong ? "Save Song" : "Add Song"}
 			</Button>
 			{editingSong && (
-				<Button type="button" variant="secondary" disabled={disabled} onClick={() => onFinishEditing?.()}>
-					Cancel
+				<Button type="button" variant="secondary" disabled={disabled} onClick={onRemove}>
+					Remove
 				</Button>
 			)}
-
-			<div className="w-full">
-				<Input
-					placeholder="Answer for question (optional)"
-					value={detailAnswer}
-					variant={detailError ? "error" : "default"}
-					onChange={(e) => {
-						if (disabled) return;
-						setDetailAnswer(e.target.value);
-						setDetailError(null);
-						setSubmitError(null);
-					}}
-					className="w-full"
-				/>
-			</div>
 
 			{(urlError || submitterError || detailError || submitError || searchError) && (
 				<div className="w-full text-xs text-red-400" aria-live="polite">

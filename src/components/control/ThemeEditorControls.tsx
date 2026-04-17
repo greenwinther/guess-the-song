@@ -3,19 +3,23 @@
 import { useEffect, useState, useCallback, KeyboardEvent } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGameRuntime, useRoomState } from "@/contexts/gameContext";
-import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import clsx from "clsx";
 
 type ThemeEditorControlsProps = {
 	code?: string;
 	themeValue?: string;
 	disabled?: boolean;
+	compact?: boolean;
+	className?: string;
 };
 
 export function ThemeEditorControls({
 	code,
 	themeValue,
 	disabled = false,
+	compact = false,
+	className,
 }: ThemeEditorControlsProps) {
 	const socket = useSocket();
 	const { room } = useRoomState();
@@ -32,8 +36,9 @@ export function ThemeEditorControls({
 	const handleSave = useCallback(() => {
 		if (!resolvedCode || disabled) return;
 		const trimmed = (value ?? "").trim();
+		if (trimmed === (resolvedTheme ?? "").trim()) return;
 		socket.emit("THEME_EDIT", { code: resolvedCode, theme: trimmed });
-	}, [disabled, resolvedCode, value, socket]);
+	}, [disabled, resolvedCode, resolvedTheme, value, socket]);
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
@@ -46,33 +51,39 @@ export function ThemeEditorControls({
 
 	if (!resolvedCode) return null;
 
-	return (
-		<div className="flex w-full flex-col gap-3">
-			<div className="space-y-1">
-				<h3 className="text-sm font-semibold text-text">Theme</h3>
-				<p className="text-xs text-text/70">Optional side-game answer players can discover over the round.</p>
-			</div>
-			<div className="flex flex-col items-start gap-2 sm:flex-row">
+	if (compact) {
+		return (
+			<div className={clsx("flex items-center gap-2", className)}>
+				<h2 className="shrink-0 text-lg font-semibold text-text sm:text-xl">Theme</h2>
 				<Input
 					value={value}
 					onChange={(e) => setValue(e.target.value)}
+					onBlur={handleSave}
 					onKeyDown={handleKeyDown}
 					size="md"
 					variant="default"
-					className="w-full bg-card text-text placeholder:text-text-muted sm:flex-1"
-					placeholder="Secret theme (e.g., Disney)"
+					className="w-36 border-border/70 bg-card/25 text-text"
+					placeholder="Secret theme"
 					disabled={disabled}
 				/>
-				<Button
-					variant="primary"
-					size="md"
-					onClick={handleSave}
-					disabled={disabled}
-					className="relative z-10 w-full shrink-0 sm:w-auto"
-				>
-					Save theme
-				</Button>
 			</div>
+		);
+	}
+
+	return (
+		<div className={clsx("flex w-full items-center gap-3", className)}>
+			<label className="shrink-0 text-base font-medium text-text/78">Theme</label>
+			<Input
+				value={value}
+				onChange={(e) => setValue(e.target.value)}
+				onBlur={handleSave}
+				onKeyDown={handleKeyDown}
+				size="md"
+				variant="default"
+				className="flex-1 bg-card text-text"
+				placeholder="Secret theme (e.g., Disney)"
+				disabled={disabled}
+			/>
 		</div>
 	);
 }

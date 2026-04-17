@@ -1,9 +1,11 @@
 // src/components/control/SetupPlaylistPanel.tsx
 "use client";
 
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useRoomState } from "@/contexts/gameContext";
+import { getYouTubeID } from "@/lib/youtube";
+import Image from "next/image";
 import type { Room } from "@/types/room";
 import type { Submission } from "@/types/submission";
 import Button from "../ui/Button";
@@ -15,6 +17,8 @@ export default function SetupPlaylistPanel({
 	embedded = false,
 	alwaysExpanded = false,
 	onEditSong,
+	headerAddon,
+	listClassName = "",
 }: {
 	roomOverride?: Room | null;
 	allowRemoval?: boolean;
@@ -22,6 +26,8 @@ export default function SetupPlaylistPanel({
 	embedded?: boolean;
 	alwaysExpanded?: boolean;
 	onEditSong?: (song: Submission) => void;
+	headerAddon?: ReactNode;
+	listClassName?: string;
 }) {
 	const socket = useSocket();
 	const { room } = useRoomState();
@@ -35,89 +41,87 @@ export default function SetupPlaylistPanel({
 		<aside
 			className={
 				embedded
-					? "h-full p-4 flex flex-col"
-					: "order-2 lg:order-none w-full lg:col-span-3 p-4 sm:p-6 pt-6 sm:pt-8 border-t lg:border-t-0 lg:border-l border-border flex flex-col"
+					? "flex h-full flex-col gap-5"
+					: "order-2 flex w-full flex-col border-t border-border p-4 pt-6 sm:p-6 sm:pt-8 lg:order-none lg:col-span-3 lg:border-t-0 lg:border-l"
 			}
 		>
-			<h2 className="text-lg sm:text-xl font-semibold text-text mb-3 sm:mb-4">Playlist</h2>
-			<div className="bg-card/50 border border-border rounded-lg divide-y divide-border overflow-auto max-h-56 sm:max-h-72 lg:max-h-none">
-				{viewRoom.songs.map((s: Submission, i: number) => {
-					const isRevealed = alwaysExpanded || revealedId === s.id;
+			<div className="flex items-center justify-between gap-3 rounded-lg px-3 py-0">
+				<h2 className="text-lg font-semibold text-text sm:text-xl">Playlist</h2>
+				{headerAddon}
+			</div>
+
+			<div
+				className={`max-h-56 overflow-auto rounded-lg bg-transparent px-2 py-2 sm:max-h-72 lg:max-h-none ${listClassName}`.trim()}
+			>
+				{viewRoom.songs.map((song: Submission, index: number) => {
+					const isRevealed = alwaysExpanded || revealedId === song.id;
+					const videoId = getYouTubeID(song.url);
+					const thumbnailUrl = videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null;
+					const canEditRow = alwaysExpanded && Boolean(onEditSong);
+					const isInteractiveRow = canEditRow || !alwaysExpanded;
+
 					return (
 						<div
-							key={s.id}
+							key={song.id}
 							onClick={() => {
+								if (canEditRow) {
+									onEditSong?.(song);
+									return;
+								}
 								if (alwaysExpanded) return;
-								setRevealedId(isRevealed ? null : s.id);
+								setRevealedId(isRevealed ? null : song.id);
 							}}
-							className={`relative flex items-center px-4 py-3 transition ${
-								alwaysExpanded ? "" : "cursor-pointer hover:bg-card/30"
+							className={`relative py-1 flex items-center rounded-md transition ${
+								isInteractiveRow ? "cursor-pointer hover:bg-black/20" : ""
 							}`}
 						>
-							<div className="flex items-start gap-3 flex-1">
-								<div className="items-center justify-center font-semibold">{i + 1}</div>
+							<div className="flex flex-1 items-start gap-2">
+								<div className="flex w-6 shrink-0 items-center justify-center self-center text-center text-sm font-semibold tabular-nums text-text/80">
+									{index + 1}
+								</div>
 
 								{isRevealed && (
-									<div className="flex flex-col">
-										<span className="font-semibold text-text">{s.title}</span>
-										<span className="text-sm text-text-muted">
-											Submitted by {s.submitter}
-											{viewRoom.detailQuestion && s.detailAnswer && (
-												<>
-													{" · "}Answer: {s.detailAnswer}
-												</>
+									<>
+										<div className="h-12 w-20 shrink-0 overflow-hidden rounded-md bg-black/20">
+											{thumbnailUrl ? (
+												<Image
+													src={thumbnailUrl}
+													alt=""
+													width={160}
+													height={90}
+													className="h-full w-full object-cover"
+													unoptimized={false}
+												/>
+											) : (
+												<div className="flex h-full w-full items-center justify-center text-[0.65rem] text-text/45">
+													No image
+												</div>
 											)}
-										</span>
-									</div>
+										</div>
+
+										<div className="flex h-12 min-w-0 flex-col">
+											<span className="block w-full overflow-hidden text-sm font-semibold leading-[0.95rem] text-text [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+												{song.title}
+											</span>
+											<span className="text-xs leading-[0.85rem] text-text-muted pt-1">
+												Submitted by {song.submitter}
+												{viewRoom.detailQuestion && song.detailAnswer && (
+													<>
+														{" | "}Answer: {song.detailAnswer}
+													</>
+												)}
+											</span>
+										</div>
+									</>
 								)}
 							</div>
-
-							{isRevealed && (allowRemoval || onEditSong) && (
-								<div className="ml-3 flex shrink-0 flex-col items-stretch gap-2 self-start">
-									{allowRemoval && (
-										<Button
-											type="button"
-											variant="danger"
-											size="sm"
-											onClick={(e) => {
-												e.stopPropagation();
-												socket.emit(
-													"removeSong",
-													{ code: viewRoom.code, songId: s.id },
-													(res: { success: boolean; error?: string }) => {
-														if (!res.success) {
-															alert("Could not remove song: " + res.error);
-														}
-													}
-												);
-											}}
-											aria-label="Remove song"
-										>
-											Remove
-										</Button>
-									)}
-									{onEditSong && (
-										<Button
-											type="button"
-											variant="secondary"
-											size="sm"
-											onClick={(e) => {
-												e.stopPropagation();
-												onEditSong(s);
-											}}
-										>
-											Edit
-										</Button>
-									)}
-								</div>
-							)}
 						</div>
 					);
 				})}
 			</div>
 
 			{isDev && showDevTools && (
-				<div className="mt-auto pt-4 flex flex-col gap-2">
+				<div className="mt-auto flex flex-col gap-2 pt-4">
 					<div className="flex flex-wrap items-center gap-2">
 						<Button
 							variant="secondary"
@@ -128,7 +132,7 @@ export default function SetupPlaylistPanel({
 									{ code: viewRoom.code, players: 3, songs: 5, ready: true },
 									(ok) => {
 										if (!ok) alert("Failed to seed demo data");
-									}
+									},
 								);
 							}}
 						>
@@ -165,4 +169,3 @@ export default function SetupPlaylistPanel({
 		</aside>
 	);
 }
-

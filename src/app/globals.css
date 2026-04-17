@@ -149,15 +149,47 @@ body {
 	}
 }
 
-@property --home-border-angle {
-	syntax: "<angle>";
-	inherits: false;
-	initial-value: 0deg;
+@keyframes avatar-layer-out-right {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(20%);
+	}
 }
 
-@keyframes home-border-spin {
+@keyframes avatar-layer-out-left {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
 	to {
-		--home-border-angle: 360deg;
+		opacity: 0;
+		transform: translateX(-20%);
+	}
+}
+
+@keyframes avatar-layer-in-left {
+	from {
+		opacity: 0;
+		transform: translateX(-20%);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes avatar-layer-in-right {
+	from {
+		opacity: 0;
+		transform: translateX(20%);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
 	}
 }
 
@@ -184,42 +216,34 @@ body {
 	text-shadow: none;
 }
 
-.home-neon-card {
-	position: relative;
-	isolation: isolate;
-}
-
-.home-neon-card::before {
-	content: "";
+.avatar-layer-stage {
 	position: absolute;
 	inset: 0;
-	border-radius: inherit;
-	padding: 1.75px;
-	background: conic-gradient(
-		from var(--home-border-angle) at 50% 38%,
-		rgb(var(--color-primary-rgb) / 0) 0deg,
-		rgb(var(--color-primary-rgb) / 0) 90deg,
-		rgb(var(--color-primary-rgb) / 0.62) 155deg,
-		rgb(var(--color-primary-rgb) / 0.82) 220deg,
-		rgb(var(--color-secondary-rgb) / 0.98) 285deg,
-		rgb(var(--color-highlight-rgb) / 0.94) 332deg,
-		rgb(var(--color-secondary-rgb) / 0.86) 350deg,
-		rgb(var(--color-primary-rgb) / 0) 360deg
-	);
-	-webkit-mask:
-		linear-gradient(#000 0 0) content-box,
-		linear-gradient(#000 0 0);
-	-webkit-mask-composite: xor;
-	mask:
-		linear-gradient(#000 0 0) content-box,
-		linear-gradient(#000 0 0);
-	mask-composite: exclude;
+	overflow: hidden;
 	pointer-events: none;
-	animation: home-border-spin 3.8s linear infinite;
+}
+
+.avatar-layer-out-right {
+	animation: avatar-layer-out-right 220ms ease-out both;
+}
+
+.avatar-layer-out-left {
+	animation: avatar-layer-out-left 220ms ease-out both;
+}
+
+.avatar-layer-in-left {
+	animation: avatar-layer-in-left 220ms ease-out both;
+}
+
+.avatar-layer-in-right {
+	animation: avatar-layer-in-right 220ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.home-neon-card::before {
+	.avatar-layer-out-right,
+	.avatar-layer-out-left,
+	.avatar-layer-in-left,
+	.avatar-layer-in-right {
 		animation: none;
 	}
 }
