@@ -1,25 +1,21 @@
 import { z } from "zod";
 
-const persistedRoomSchema = z
-	.object({
-		code: z.string().min(1),
-		updatedAt: z.number().finite().optional(),
-		createdAt: z.number().finite().optional(),
-	})
-	.passthrough();
+const persistedRoomSchema = z.looseObject({
+	code: z.string().min(1),
+	updatedAt: z.number().optional(),
+	createdAt: z.number().optional(),
+});
 
-const persistedRoomStoreSchema = z
-	.object({
-		rooms: z.array(persistedRoomSchema).default([]),
-		nextRoomId: z.number().int().positive().optional(),
-		nextPlayerId: z.number().int().positive().optional(),
-		nextSongId: z.number().int().positive().optional(),
-	})
-	.passthrough();
+const persistedRoomStoreSchema = z.looseObject({
+	rooms: z.array(persistedRoomSchema).default([]),
+	nextRoomId: z.number().int().positive().optional(),
+	nextPlayerId: z.number().int().positive().optional(),
+	nextSongId: z.number().int().positive().optional(),
+});
 
 export const persistedStateSchema = z.object({
 	version: z.literal(1),
-	savedAt: z.number().finite(),
+	savedAt: z.number(),
 	roomStore: persistedRoomStoreSchema,
 	gameState: z.record(z.string(), z.unknown()).default({}),
 	rounds: z.record(z.string(), z.unknown()).default({}),

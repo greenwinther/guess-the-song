@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { useSocket } from "@/contexts/SocketContext";
 import Button, { type ButtonSize, type ButtonVariant } from "@/components/shared/Button";
 import type { AdminDashboardPayload } from "@/types/socket";
@@ -62,7 +63,7 @@ const buildReportHtml = ({
 				.join("");
 			return `<h3>${esc(player.playerName)}</h3>
 <table>
-<thead><tr><th>#</th><th>Song</th><th>Guess</th><th>Correct</th><th>Locked</th><th>Detail Guess</th><th>Detail Correct</th><th>Detail Locked</th></tr></thead>
+<thead><tr><th>#</th><th>Song</th><th>Guess</th><th>Correct</th><th>Locked</th><th>Bonus Guess</th><th>Bonus Correct</th><th>Bonus Locked</th></tr></thead>
 <tbody>${roundsRows}</tbody>
 </table>`;
 		})
@@ -105,7 +106,7 @@ th { background: #eee; }
 <div class="section">
 <h2>Songs / Correct Answers</h2>
 <table>
-<thead><tr><th>#</th><th>Song</th><th>Submitter</th><th>Detail Answer</th></tr></thead>
+<thead><tr><th>#</th><th>Song</th><th>Submitter</th><th>Bonus Answer</th></tr></thead>
 <tbody>${songsRows}</tbody>
 </table>
 </div>
@@ -145,7 +146,7 @@ export default function ExportGameReportButton({
 
 		const reportWindow = window.open("", "_blank");
 		if (!reportWindow) {
-			alert("Popup blocked. Allow popups to export PDF.");
+			toast.error("Popup blocked. Allow popups to export PDF.");
 			return;
 		}
 
@@ -158,10 +159,10 @@ export default function ExportGameReportButton({
 			if (!res.ok) {
 				reportWindow.close();
 				if (res.error === "NOT_AUTHORIZED") {
-					alert("You can export after results are shown.");
+					toast.error("You can export after results are shown.");
 					return;
 				}
-				alert("Failed to collect report data.");
+				toast.error("Failed to collect report data.");
 				return;
 			}
 

@@ -1,17 +1,6 @@
 import { z } from "zod";
 import { getYouTubeID } from "@/lib/youtube";
-
-const trimText = (value: unknown) => (typeof value === "string" ? value.trim() : "");
-
-const normalizeRoomCode = (value: unknown) =>
-	String(value ?? "")
-		.trim()
-		.toUpperCase()
-		.replace(/[^A-Z0-9]/g, "");
-
-const isValidUrl = (value: string) => {
-	return URL.canParse(value);
-};
+import { isValidUrl, normalizeRoomCode, trimText } from "@/shared/validation/inputNormalization";
 
 export const joinLobbyFormSchema = z.object({
 	name: z.preprocess(
@@ -74,13 +63,3 @@ export const songSubmitFormSchema = z
 		submitter: data.submitter,
 		detailAnswer: data.detailAnswer || undefined,
 	}));
-
-export function firstFieldIssue(
-	error: z.ZodError,
-	field: string
-): string | null {
-	for (const issue of error.issues) {
-		if (issue.path[0] === field) return issue.message;
-	}
-	return null;
-}

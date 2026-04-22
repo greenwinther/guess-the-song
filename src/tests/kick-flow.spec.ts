@@ -13,8 +13,8 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/control/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
+	await page.goto(`/host/${roomCode}`);
+	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -24,7 +24,7 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 		await playerPage.fill('input[placeholder="Your Name"]', "Alice");
 		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
-		await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 
 		await expect(page.getByRole("button", { name: "Alice" })).toBeVisible();
 
@@ -41,8 +41,8 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 		await expect(playerPage).toHaveURL(/\/$/);
 
 		await playerPage.evaluate(() => localStorage.removeItem("gts-join-denied"));
-		await playerPage.goto(`/play/${roomCode}?name=Alice`);
-		await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+		await playerPage.goto(`/join/${roomCode}?name=Alice`);
+		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(
 			playerPage.getByText("You were kicked from this room.", { exact: true }).first()
 		).toBeVisible();

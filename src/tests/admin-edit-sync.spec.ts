@@ -8,8 +8,8 @@ test("admin theme and detail edits sync into host control status", async ({ page
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/control/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
+	await page.goto(`/host/${roomCode}`);
+	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);

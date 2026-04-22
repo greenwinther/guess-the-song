@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseName, parseOptionalText, parseRequiredUrl, parseRoomCode } from "@/server/validation";
+import { parseName, parseOptionalText, parseRequiredUrl, parseRoomCode } from "./inputParsers";
 
 const firstValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
 

@@ -8,7 +8,7 @@ import {
 	parseOptionalUrl,
 	parseRequiredUrl,
 	parseRoomCode,
-} from "@/server/validation";
+} from "./inputParsers";
 
 const roomCodeSchema = z.preprocess(
 	(value) => parseRoomCode(value),

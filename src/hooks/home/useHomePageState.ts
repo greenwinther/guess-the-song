@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import useAvatarPreviewTilt from "@/hooks/useAvatarPreviewTilt";
+import useAvatarPreviewTilt from "@/hooks/home/useAvatarPreviewTilt";
 import { getStoredAvatar } from "@/lib/avatarStorage";
 import { firstFieldIssue, joinLobbyFormSchema } from "@/shared/schemas";
 
@@ -93,7 +93,7 @@ export function useHomePageState() {
 
 		socket.emit("joinRoom", { code, name: playerName, avatar: avatar ?? undefined }, (ok: boolean) => {
 			if (ok) {
-				router.push(`/play/${code}?name=${encodeURIComponent(playerName)}`);
+				router.push(`/join/${code}?name=${encodeURIComponent(playerName)}`);
 			} else {
 				setError("Failed to join - check the room code and try again.");
 				setJoining(false);

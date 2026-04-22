@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import HostGameView from "@/components/host/HostGameView";
-import HostLobbyView from "@/components/host/HostLobbyView";
+import HostGameView from "@/components/host/game/HostGameView";
+import HostLobbyView from "@/components/host/lobby/HostLobbyView";
 import { useRoomState } from "@/contexts/gameContext";
 import type { Room } from "@/types/room";
 

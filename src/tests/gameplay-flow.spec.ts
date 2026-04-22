@@ -14,8 +14,8 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/control/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
+	await page.goto(`/host/${roomCode}`);
+	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);
@@ -38,7 +38,7 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
 
-		await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(playerPage.locator("#player-ready")).toBeVisible();
 		await playerPage.locator("#player-ready").check();
 
@@ -47,8 +47,8 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 
 		await page.getByRole("button", { name: "Start Game" }).click();
 
-		await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
-		await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+		await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
+		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(page.getByRole("button", { name: "Play/Pause (Space)" })).toBeVisible();
 		await expect(playerPage.getByRole("heading", { name: /Guess the Submitter/i })).toBeVisible();
 

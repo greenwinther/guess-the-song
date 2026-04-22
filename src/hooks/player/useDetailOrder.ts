@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { shuffleArray } from "@/utils/shuffleArray";
 import type { Room } from "@/types/room";
-import type { OrderItem } from "@/components/player/components/GuessOrderList";
+import type { OrderItem } from "@/components/player/game/guessing/PlayerGuessOrderList";
 import { useLocalStorageState } from "./useLocalStorageState";
 
 export function useDetailOrder(code: string, room: Room | null, playerName: string) {

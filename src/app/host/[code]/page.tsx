@@ -1,10 +1,15 @@
-import { redirect } from "next/navigation";
+"use client";
 
-type PageProps = {
-	params: Promise<{ code: string }>;
-};
+import HostRoomClient from "@/components/host/HostRoomClient";
+import Loading from "@/components/shared/Loading";
+import { useParams } from "next/navigation";
 
-export default async function HostLobbyPage({ params }: PageProps) {
-	const { code } = await params;
-	redirect(`/control/${code}`);
+export default function HostRoomPage() {
+	const params = useParams<{ code: string | string[] }>();
+	const codeParam = params?.code;
+	const code = Array.isArray(codeParam) ? codeParam[0] : codeParam;
+
+	if (!code) return <Loading />;
+
+	return <HostRoomClient code={code} />;
 }

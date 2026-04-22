@@ -14,13 +14,13 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "moduleResolution": "node", // <-- switch to node
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
     "types": [
-      "node" // <-- load @types/node
+      "node"
     ],
     "paths": {
       "@/*": [
@@ -37,8 +37,7 @@
     "**/*.ts",
     "**/*.tsx",
     "next-env.d.ts",
-    "src/server/**/*.ts" // <-- make sure your socket server lives in an included folder
-    ,
+    "src/server/**/*.ts",
     ".next/types/**/*.ts",
     "tailwind.config.js",
     ".next/dev/types/**/*.ts"

@@ -3,10 +3,10 @@ import { useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useGameRuntime, useRoomState } from "@/contexts/gameContext";
 import { useSocket } from "@/contexts/SocketContext";
+import { getStoredAvatar } from "@/lib/avatarStorage";
 import { getYouTubeID } from "@/lib/youtube";
 import type { Room } from "@/types/room";
 import type { Member } from "@/types/member";
-import type { AvatarConfig } from "@/types/avatar";
 
 const getClientId = () => {
 	const k = "gts-client-id";
@@ -16,17 +16,6 @@ const getClientId = () => {
 		localStorage.setItem(k, v);
 	}
 	return v;
-};
-
-const getStoredAvatar = (): AvatarConfig | null => {
-	try {
-		const raw = localStorage.getItem("gts-avatar-v2");
-		if (!raw) return null;
-		const parsed = JSON.parse(raw) as AvatarConfig;
-		return parsed?.base ? parsed : null;
-	} catch {
-		return null;
-	}
 };
 
 export function useJoinRoomSocket(code: string, playerName: string) {

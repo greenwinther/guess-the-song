@@ -169,18 +169,15 @@ export type ClientToServerEvents = {
 	joinRoom: (data: JoinRoomPayload, cb?: (ok: boolean) => void) => void;
 	addSong: (
 		data: AddSongPayload,
-		cb: (res: { success: boolean; song?: Submission; error?: string }) => void
+		cb: (res: { success: boolean; song?: Submission; error?: string }) => void,
 	) => void;
 	updateSong: (
 		data: UpdateSongPayload,
-		cb: (res: { success: boolean; song?: Submission; error?: string }) => void
+		cb: (res: { success: boolean; song?: Submission; error?: string }) => void,
 	) => void;
 	removeSong: (data: RemoveSongPayload, cb: (res: { success: boolean; error?: string }) => void) => void;
 	startGame: (data: StartGamePayload, cb: (ok: boolean) => void) => void;
-	playSong: (
-		data: PlaySongPayload,
-		cb: (res: { success: boolean; error?: string }) => void
-	) => void;
+	playSong: (data: PlaySongPayload, cb: (res: { success: boolean; error?: string }) => void) => void;
 	nextSong: (data: NextSongPayload, cb?: (ok: boolean) => void) => void;
 	showResults: (data: ShowResultsPayload, cb: (ok: boolean) => void) => void;
 	selectOrder: (data: SelectOrderPayload, cb?: (ok: boolean) => void) => void;
@@ -206,7 +203,7 @@ export type ClientToServerEvents = {
 	kickPlayer: (data: KickPlayerPayload, cb?: (ok: boolean) => void) => void;
 	ADMIN_GET_DASHBOARD: (
 		data: AdminGetDashboardPayload,
-		cb: (res: AdminGetDashboardResponse) => void
+		cb: (res: AdminGetDashboardResponse) => void,
 	) => void;
 };
 

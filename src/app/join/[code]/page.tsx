@@ -1,19 +1,16 @@
-import { redirect } from "next/navigation";
+"use client";
 
-type PageProps = {
-	params: Promise<{ code: string }>;
-	searchParams: Promise<{ name?: string | string[] }>;
-};
+import PlayerRoomClient from "@/components/player/PlayerRoomClient";
+import Loading from "@/components/shared/Loading";
+import { useParams, useSearchParams } from "next/navigation";
 
-export default async function JoinLobbyPage({ params, searchParams }: PageProps) {
-	const { code } = await params;
-	const { name } = await searchParams;
-	const playerName = Array.isArray(name) ? name[0] : name;
-	const query = new URLSearchParams();
+export default function JoinRoomPage() {
+	const params = useParams<{ code: string | string[] }>();
+	const name = useSearchParams().get("name");
+	const codeParam = params?.code;
+	const code = Array.isArray(codeParam) ? codeParam[0] : codeParam;
 
-	if (playerName) {
-		query.set("name", playerName);
-	}
+	if (!code || !name) return <Loading />;
 
-	redirect(`/play/${code}${query.size ? `?${query.toString()}` : ""}`);
+	return <PlayerRoomClient code={code} playerName={name} />;
 }

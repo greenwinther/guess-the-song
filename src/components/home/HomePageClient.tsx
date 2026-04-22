@@ -7,7 +7,7 @@ import HomeHero from "@/components/home/components/HomeHero";
 import JoinOrHostToggle from "@/components/home/components/JoinOrHostToggle";
 import CardInsetLabel from "@/components/home/components/CardInsetLabel";
 import styles from "@/components/home/home.module.css";
-import AvatarPicker from "@/components/shared/AvatarPicker";
+import AvatarPicker from "@/components/home/components/AvatarPicker";
 import Input from "@/components/shared/Input";
 import { useHomePageState } from "@/hooks/home/useHomePageState";
 import clsx from "clsx";

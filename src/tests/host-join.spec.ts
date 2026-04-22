@@ -11,8 +11,8 @@ test("host can create room and player can join", async ({ page, context }) => {
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/control/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
+	await page.goto(`/host/${roomCode}`);
+	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 	await expect(page.getByText("Room code", { exact: true })).toBeVisible();
 
 	// Open a second context for the player
@@ -22,7 +22,7 @@ test("host can create room and player can join", async ({ page, context }) => {
 	await playerPage.fill('input[placeholder="Your Name"]', "Alice");
 	await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 	await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
-	await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+	await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 
 	// Player ready up
 	const readyToggle = playerPage.locator("#player-ready");

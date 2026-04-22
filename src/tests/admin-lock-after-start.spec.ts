@@ -14,8 +14,8 @@ test("admin editor becomes read-only after the live game starts", async ({
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/control/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
+	await page.goto(`/host/${roomCode}`);
+	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);
@@ -42,7 +42,7 @@ test("admin editor becomes read-only after the live game starts", async ({
 		await playerPage.fill('input[placeholder="Your Name"]', "Alice");
 		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
-		await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await playerPage.locator("#player-ready").check();
 
 		await page.getByRole("button", { name: "Start Game" }).click();

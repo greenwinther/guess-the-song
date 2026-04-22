@@ -1,7 +1,7 @@
 "use client";
 // src/components/home/AvatarActionRow.tsx
 
-import { DiceIcon } from "@/components/shared/AvatarPicker";
+import { DiceIcon } from "@/components/home/components/AvatarPicker";
 import styles from "@/components/home/home.module.css";
 import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";

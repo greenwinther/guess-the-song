@@ -10,8 +10,8 @@ test("host and player can reload into an active round", async ({ page, context, 
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/control/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
+	await page.goto(`/host/${roomCode}`);
+	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);
@@ -30,7 +30,7 @@ test("host and player can reload into an active round", async ({ page, context, 
 		await playerPage.fill('input[placeholder="Your Name"]', "Alice");
 		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
-		await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await playerPage.locator("#player-ready").check();
 
 		await page.getByRole("button", { name: "Start Game" }).click();
@@ -39,12 +39,12 @@ test("host and player can reload into an active round", async ({ page, context, 
 		await expect(playerPage.getByRole("heading", { name: /Guess the Submitter/i })).toBeVisible();
 
 		await playerPage.reload();
-		await expect(playerPage).toHaveURL(new RegExp(`/play/${roomCode}\\?name=Alice$`));
+		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(playerPage.getByRole("heading", { name: /Guess the Submitter/i })).toBeVisible();
 		await expect(playerPage.getByText("Song 1")).toBeVisible();
 
 		await page.reload();
-		await expect(page).toHaveURL(new RegExp(`/control/${roomCode}$`));
+		await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 		await expect(page.getByRole("button", { name: "Play/Pause (Space)" })).toBeVisible();
 		await expect(page.getByRole("button", { name: "Recap" })).toBeVisible();
 		await expect(page.getByRole("button", { name: "Show Results" })).toBeVisible();
