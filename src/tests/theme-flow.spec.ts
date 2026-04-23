@@ -19,7 +19,7 @@ test("theme guesses reset between rounds, expose the hint, and persist solved st
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);
-	await expect(adminPage.getByRole("heading", { name: "Room Setup" })).toBeVisible();
+	await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").fill("Movie Night");
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").press("Enter");
@@ -48,7 +48,7 @@ test("theme guesses reset between rounds, expose the hint, and persist solved st
 		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
-		await playerPage.locator("#player-ready").check();
+		await playerPage.locator("#player-ready").click();
 
 		await page.getByRole("button", { name: "Start Game" }).click();
 		await expect(playerPage.getByRole("textbox", { name: "Theme guess" })).toBeVisible();

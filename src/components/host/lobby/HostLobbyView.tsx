@@ -46,13 +46,18 @@ export default function HostLobbyView({ initialRoom }: { initialRoom: Room }) {
 	};
 
 	return (
-		<BackgroundShell bgImage={viewRoom.backgroundUrl ?? null} socketError={socketError}>
+		<BackgroundShell
+			bgImage={viewRoom.backgroundUrl ?? null}
+			socketError={socketError}
+			shellSize="lobby"
+		>
 			<RoomSidebar
 				roomCode={viewRoom.code}
 				players={viewRoom.players}
 				submittedPlayers={submittedPlayers}
 				fallbackName="Host"
 				allPlayersReady={allReady && nonHostPlayers.length > 0}
+				playerStatusMode="lobby"
 				onKick={(player) => {
 					setPlayerToKick(player);
 				}}

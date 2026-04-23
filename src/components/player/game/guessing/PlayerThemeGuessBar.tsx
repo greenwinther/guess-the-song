@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useMemo, useState, KeyboardEvent } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, KeyboardEvent } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGameRuntime, useRoomState } from "@/contexts/gameContext";
 import Input from "@/components/shared/Input";
@@ -10,12 +10,27 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 	const { room } = useRoomState();
 	const { solvedByTheme, lockedForThisRound, themeRevealed } = useGameRuntime();
 	const [value, setValue] = useState("");
+	const [lockedGuess, setLockedGuess] = useState("");
+	const wasLockedThisRoundRef = useRef(false);
 
 	const iSolved = useMemo(() => solvedByTheme.includes(playerName), [solvedByTheme, playerName]);
 	const iLockedThisRound = useMemo(
 		() => lockedForThisRound.includes(playerName),
 		[lockedForThisRound, playerName]
 	);
+
+	useEffect(() => {
+		if (iLockedThisRound) {
+			wasLockedThisRoundRef.current = true;
+			return;
+		}
+
+		if (wasLockedThisRoundRef.current) {
+			wasLockedThisRoundRef.current = false;
+			setLockedGuess("");
+			setValue("");
+		}
+	}, [iLockedThisRound]);
 
 	if (!room?.theme) return null;
 
@@ -32,7 +47,8 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 		);
 	}
 
-	const disabled = !room?.theme || themeRevealed || iLockedThisRound;
+	const hasLockedGuess = Boolean(lockedGuess) || iLockedThisRound;
+	const disabled = !room?.theme || themeRevealed || hasLockedGuess;
 
 	const placeholder = themeRevealed
 		? "Theme revealed"
@@ -46,8 +62,9 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 		const guess = value.trim();
 		if (!guess) return;
 
+		setLockedGuess(guess);
+		setValue(guess);
 		socket.emit("THEME_GUESS", { code, playerName, guess });
-		setValue(""); // locked for this round anyway
 	};
 
 	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -68,7 +85,7 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 				aria-label="Theme guess"
 			/>
 			<Button type="submit" variant="primary" size="md" disabled={disabled}>
-				Lock in theme guess
+				Lock in theme
 			</Button>
 		</form>
 	);

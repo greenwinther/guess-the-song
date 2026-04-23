@@ -50,6 +50,37 @@ export function useAdminDashboard({
 			setDashboard(next);
 		};
 		const refresh = () => requestDashboard();
+		const onThemeGuessedThisRound = ({
+			playerName,
+			guess,
+		}: {
+			playerName: string;
+			guess?: string;
+		}) => {
+			setDashboard((prev) => {
+				if (!prev || !guess?.trim()) return prev;
+
+				return {
+					...prev,
+					theme: {
+						...prev.theme,
+						guessedThisRound: prev.theme.guessedThisRound.includes(playerName)
+							? prev.theme.guessedThisRound
+							: [...prev.theme.guessedThisRound, playerName],
+						guessesThisRound: {
+							...prev.theme.guessesThisRound,
+							[playerName]: guess,
+						},
+					},
+					currentSongRows: prev.currentSongRows.map((row) =>
+						row.playerName === playerName
+							? { ...row, themeGuessedThisRound: true, themeGuess: guess }
+							: row,
+					),
+				};
+			});
+			refresh();
+		};
 
 		socket.on("ADMIN_DASHBOARD", onPush);
 		socket.on("roomData", refresh);
@@ -59,7 +90,7 @@ export function useAdminDashboard({
 		socket.on("detailLockSnapshot", refresh);
 		socket.on("detailFinalized", refresh);
 		socket.on("THEME_SOLVED", refresh);
-		socket.on("THEME_GUESSED_THIS_ROUND", refresh);
+		socket.on("THEME_GUESSED_THIS_ROUND", onThemeGuessedThisRound);
 		socket.on("THEME_REVEALED", refresh);
 		socket.on("THEME_HINT_READY", refresh);
 		socket.on("gameStarted", refresh);
@@ -80,7 +111,7 @@ export function useAdminDashboard({
 			socket.off("detailLockSnapshot", refresh);
 			socket.off("detailFinalized", refresh);
 			socket.off("THEME_SOLVED", refresh);
-			socket.off("THEME_GUESSED_THIS_ROUND", refresh);
+			socket.off("THEME_GUESSED_THIS_ROUND", onThemeGuessedThisRound);
 			socket.off("THEME_REVEALED", refresh);
 			socket.off("THEME_HINT_READY", refresh);
 			socket.off("gameStarted", refresh);

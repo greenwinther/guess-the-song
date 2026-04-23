@@ -15,6 +15,7 @@ export type RoundData = {
 	detailAnswers?: string[];
 	detailOrders?: Record<string, string[]>;
 	detailLocks?: Record<string, LockInfo>;
+	themeGuesses?: Record<string, string>;
 };
 
 const HARDCORE_UNDO_MS = 2000;
@@ -45,6 +46,7 @@ export function startRoundData(
 		detailAnswers: detail?.answers,
 		detailOrders: detail ? {} : undefined,
 		detailLocks: detail ? {} : undefined,
+		themeGuesses: {},
 	};
 	notifyStateChange();
 }
@@ -65,6 +67,14 @@ export function storeDetailOrder(code: string, songId: number, playerName: strin
 	const li = rd.detailLocks[playerName];
 	if (li?.locked) return;
 	rd.detailOrders[playerName] = order;
+	notifyStateChange();
+}
+
+export function storeThemeGuess(code: string, songId: number, playerName: string, guess: string) {
+	const rd = rounds[code]?.[songId];
+	if (!rd) return;
+	rd.themeGuesses = rd.themeGuesses ?? {};
+	rd.themeGuesses[playerName] = guess;
 	notifyStateChange();
 }
 
@@ -213,6 +223,7 @@ export function removePlayerFromRounds(code: string, playerName: string) {
 	for (const data of Object.values(bySong)) {
 		delete data.orders[playerName];
 		delete data.locks[playerName];
+		delete data.themeGuesses?.[playerName];
 	}
 	notifyStateChange();
 }
@@ -234,6 +245,7 @@ export function exportRoundsState(): PersistedRounds {
 				detailAnswers: data.detailAnswers ? [...data.detailAnswers] : undefined,
 				detailOrders: data.detailOrders ? { ...data.detailOrders } : undefined,
 				detailLocks: data.detailLocks ? { ...data.detailLocks } : undefined,
+				themeGuesses: data.themeGuesses ? { ...data.themeGuesses } : undefined,
 			};
 		}
 	}
@@ -256,6 +268,7 @@ export function importRoundsState(snapshot: PersistedRounds | null | undefined) 
 				detailAnswers: Array.isArray(data.detailAnswers) ? data.detailAnswers : undefined,
 				detailOrders: data.detailOrders ?? undefined,
 				detailLocks: data.detailLocks ?? undefined,
+				themeGuesses: data.themeGuesses ?? {},
 			};
 		}
 	}

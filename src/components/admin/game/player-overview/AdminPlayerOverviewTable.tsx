@@ -1,22 +1,41 @@
 // src/components/admin/game/player-overview/AdminPlayerOverviewTable.tsx
 
+import { FaLock } from "react-icons/fa6";
 import styles from "@/components/admin/admin.module.css";
 import type { AdminDashboardPayload } from "@/types/socket";
 
+function GuessValue({ label, locked }: { label: string; locked: boolean }) {
+	return (
+		<span className="inline-flex items-center gap-2">
+			<span>{label}</span>
+			{locked && (
+				<FaLock
+					className="h-3 w-3 shrink-0 text-secondary"
+					aria-label="Locked"
+					title="Locked"
+				/>
+			)}
+		</span>
+	);
+}
+
 export default function AdminPlayerOverviewTable({
 	dashboard,
+	roomTheme,
 	selectedHistoryPlayer,
 	onSelectHistoryPlayer,
 	embedded = false,
 }: {
 	dashboard: AdminDashboardPayload;
+	roomTheme?: string | null;
 	selectedHistoryPlayer: string | null;
 	onSelectHistoryPlayer: (playerName: string) => void;
 	embedded?: boolean;
 }) {
-	const lockedCount = dashboard.currentSongRows.filter((row) => row.locked).length;
-	const totalGuessers = dashboard.currentSongRows.length;
-	const detailLockedCount = dashboard.currentSongRows.filter((row) => row.detailLocked).length;
+	const hasTheme =
+		dashboard.theme.enabled ||
+		Boolean(roomTheme?.trim()) ||
+		dashboard.currentSongRows.some((row) => Boolean(row.themeGuess?.trim()));
 
 	const content = (
 		<>
@@ -26,11 +45,8 @@ export default function AdminPlayerOverviewTable({
 						<tr className="text-left text-text/70 border-b border-border">
 							<th className="py-2 pr-3">Player</th>
 							<th className="py-2 pr-3">Guess</th>
-							<th className="py-2 pr-3">{`Locked in ${lockedCount}/${totalGuessers}`}</th>
 							{dashboard.hasDetailLane && <th className="py-2 pr-3">Bonus Guess</th>}
-							{dashboard.hasDetailLane && (
-								<th className="py-2 pr-3">{`Bonus locked ${detailLockedCount}/${totalGuessers}`}</th>
-							)}
+							{hasTheme && <th className="py-2 pr-3">Theme Guess</th>}
 							<th className="py-2 pr-3">History</th>
 						</tr>
 					</thead>
@@ -38,15 +54,16 @@ export default function AdminPlayerOverviewTable({
 						{dashboard.currentSongRows.map((row) => (
 							<tr key={row.playerName} className="border-b border-border/60 last:border-b-0">
 								<td className="py-2 pr-3 text-text">{row.playerName}</td>
-								<td className="py-2 pr-3 text-text">{row.guessLabel}</td>
-								<td className="py-2 pr-3 text-text/80">{row.locked ? "Yes" : "No"}</td>
+								<td className="py-2 pr-3 text-text">
+									<GuessValue label={row.guessLabel} locked={row.locked} />
+								</td>
 								{dashboard.hasDetailLane && (
-									<td className="py-2 pr-3 text-text">{row.detailLabel}</td>
-								)}
-								{dashboard.hasDetailLane && (
-									<td className="py-2 pr-3 text-text/80">
-										{row.detailLocked ? "Yes" : "No"}
+									<td className="py-2 pr-3 text-text">
+										<GuessValue label={row.detailLabel} locked={row.detailLocked} />
 									</td>
+								)}
+								{hasTheme && (
+									<td className="py-2 pr-3 text-text">{row.themeGuess?.trim() || "-"}</td>
 								)}
 								<td className="py-2 pr-3">
 									<button

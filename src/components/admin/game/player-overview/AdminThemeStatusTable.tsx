@@ -25,6 +25,7 @@ export default function AdminThemeStatusTable({
 					<thead>
 						<tr className="text-left text-text/70 border-b border-border">
 							<th className="py-2 pr-3">Player</th>
+							<th className="py-2 pr-3">Theme Guess</th>
 							<th className="py-2 pr-3">Theme Status</th>
 						</tr>
 					</thead>
@@ -35,6 +36,9 @@ export default function AdminThemeStatusTable({
 								className="border-b border-border/60 last:border-b-0"
 							>
 								<td className="py-2 pr-3 text-text">{row.playerName}</td>
+								<td className="py-2 pr-3 text-text">
+									{row.themeGuess?.trim() || "-"}
+								</td>
 								<td className="py-2 pr-3 text-text/80">
 									{row.themeSolved
 										? "Solved"

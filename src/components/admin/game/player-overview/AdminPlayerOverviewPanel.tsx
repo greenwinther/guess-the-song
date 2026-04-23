@@ -4,13 +4,13 @@ import type { AdminDashboardPayload } from "@/types/socket";
 import type { Submission } from "@/types/submission";
 import AdminPlayerOverviewSummary from "./AdminPlayerOverviewSummary";
 import AdminPlayerOverviewTable from "./AdminPlayerOverviewTable";
-import AdminThemeStatusTable from "./AdminThemeStatusTable";
 import styles from "@/components/admin/admin.module.css";
 
 type AdminPlayerOverviewPanelProps = {
 	dashboard: AdminDashboardPayload;
 	reconnecting: boolean;
 	currentSong: Submission | null;
+	roomTheme?: string | null;
 	selectedHistoryPlayer: string | null;
 	onSelectHistoryPlayer: (playerName: string) => void;
 };
@@ -19,6 +19,7 @@ export default function AdminPlayerOverviewPanel({
 	dashboard,
 	reconnecting,
 	currentSong,
+	roomTheme,
 	selectedHistoryPlayer,
 	onSelectHistoryPlayer,
 }: AdminPlayerOverviewPanelProps) {
@@ -32,15 +33,16 @@ export default function AdminPlayerOverviewPanel({
 					reconnecting={reconnecting}
 					currentSongSubmitter={currentSong?.submitter ?? null}
 					currentSongBonusAnswer={currentSong?.detailAnswer ?? null}
+					roomTheme={roomTheme}
 					embedded
 				/>
 				<AdminPlayerOverviewTable
 					dashboard={dashboard}
+					roomTheme={roomTheme}
 					selectedHistoryPlayer={selectedHistoryPlayer}
 					onSelectHistoryPlayer={onSelectHistoryPlayer}
 					embedded
 				/>
-				{dashboard.theme.enabled && <AdminThemeStatusTable dashboard={dashboard} embedded />}
 			</div>
 		</section>
 	);

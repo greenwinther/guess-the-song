@@ -18,12 +18,14 @@ type HistoryRow = {
 	detailCorrectAnswer?: string | null;
 	detailLocked: boolean;
 	detailGuessOrder: string[];
+	themeGuess?: string | null;
 };
 
 type AdminGameViewProps = {
 	dashboard: AdminDashboardPayload;
 	reconnecting: boolean;
 	currentSong: Submission | null;
+	roomTheme?: string | null;
 	selectedHistoryPlayer: string | null;
 	selectedHistoryRows: HistoryRow[];
 	onSelectHistoryPlayer: (playerName: string) => void;
@@ -33,6 +35,7 @@ export default function AdminGameView({
 	dashboard,
 	reconnecting,
 	currentSong,
+	roomTheme,
 	selectedHistoryPlayer,
 	selectedHistoryRows,
 	onSelectHistoryPlayer,
@@ -46,6 +49,7 @@ export default function AdminGameView({
 					dashboard={dashboard}
 					reconnecting={reconnecting}
 					currentSong={currentSong}
+					roomTheme={roomTheme}
 					selectedHistoryPlayer={selectedHistoryPlayer}
 					onSelectHistoryPlayer={onSelectHistoryPlayer}
 				/>

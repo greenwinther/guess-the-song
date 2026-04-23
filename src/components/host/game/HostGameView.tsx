@@ -115,7 +115,12 @@ export default function HostGameView({
 	};
 
 	return (
-		<BackgroundShell bgImage={bgImage} socketError={socketError}>
+		<BackgroundShell
+			bgImage={bgImage}
+			socketError={socketError}
+			shellSize="cinema"
+			transitionPreset="cinema-enter"
+		>
 			<RoomSidebar
 				roomCode={viewRoom?.code ?? code}
 				players={viewRoom?.players ?? []}
@@ -143,37 +148,40 @@ export default function HostGameView({
 				onCancel={() => setPlayerToKick(null)}
 			/>
 
-			<HostPlaybackPanel
-				code={code}
-				currentSong={currentSong ?? null}
-				isPlaying={isPlaying}
-				setIsPlaying={setIsPlaying}
-				onPrev={playPrevious}
-				onPlayPause={playOrPause}
-				onNext={playNext}
-				scores={scores}
-				playedCount={
-					revealedSongs.filter((id) => (viewRoom?.songs ?? []).some((s) => s.id === id)).length
-				}
-				totalSongs={totalSongs}
-				allPlayed={allPlayed}
-				onShowResults={() => {
-					socket.emit("showResults", { code }, (ok: boolean) => {
-						if (!ok) toast.error("Failed to show results.");
-					});
-				}}
-				recapRunning={recapRunning}
-				onStartRecap={() => {
-					setRecapRunning(true);
-					if (songs.length > 0) {
-						playSong(songs[0]);
+			<main className="lg:col-span-6 p-4 pt-6 sm:p-6 sm:pt-8 flex flex-col">
+				<HostPlaybackPanel
+					code={code}
+					currentSong={currentSong ?? null}
+					isPlaying={isPlaying}
+					setIsPlaying={setIsPlaying}
+					onPrev={playPrevious}
+					onPlayPause={playOrPause}
+					onNext={playNext}
+					scores={scores}
+					playedCount={
+						revealedSongs.filter((id) =>
+							(viewRoom?.songs ?? []).some((s) => s.id === id)
+						).length
 					}
-				}}
-				onStopRecap={() => setRecapRunning(false)}
-				recapSeconds={recapSeconds}
-				fastRecap={fastRecap}
-				onToggleFastRecap={setFastRecap}
-			/>
+					totalSongs={totalSongs}
+					allPlayed={allPlayed}
+					onShowResults={() => {
+						socket.emit("showResults", { code }, (ok: boolean) => {
+							if (!ok) toast.error("Failed to show results.");
+						});
+					}}
+					recapRunning={recapRunning}
+					onStartRecap={(fast) => {
+						setFastRecap(fast);
+						setRecapRunning(true);
+						if (songs.length > 0) {
+							playSong(songs[0]);
+						}
+					}}
+					onStopRecap={() => setRecapRunning(false)}
+					recapSeconds={recapSeconds}
+				/>
+			</main>
 
 			<HostPlaylistPanel
 				songs={viewRoom?.songs ?? []}

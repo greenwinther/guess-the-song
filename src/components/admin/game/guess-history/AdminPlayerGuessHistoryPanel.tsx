@@ -1,5 +1,6 @@
 // src/components/admin/game/guess-history/AdminPlayerGuessHistoryPanel.tsx
 
+import { FaLock } from "react-icons/fa6";
 import type { AdminDashboardPayload } from "@/types/socket";
 
 import styles from "@/components/admin/admin.module.css";
@@ -16,7 +17,31 @@ type HistoryRow = {
 	detailCorrectAnswer?: string | null;
 	detailLocked: boolean;
 	detailGuessOrder: string[];
+	themeGuess?: string | null;
 };
+
+function GuessValue({
+	label,
+	locked,
+	inProgress,
+}: {
+	label: string;
+	locked: boolean;
+	inProgress: boolean;
+}) {
+	return (
+		<span className="inline-flex items-center gap-2">
+			<span className={!locked && inProgress ? "text-text/80" : undefined}>{label}</span>
+			{locked && (
+				<FaLock
+					className="h-3 w-3 shrink-0 text-secondary"
+					aria-label="Locked"
+					title="Locked"
+				/>
+			)}
+		</span>
+	);
+}
 
 export default function AdminPlayerGuessHistoryPanel({
 	dashboard,
@@ -27,6 +52,8 @@ export default function AdminPlayerGuessHistoryPanel({
 	selectedHistoryPlayer: string | null;
 	rows: HistoryRow[];
 }) {
+	const hasTheme = dashboard.theme.enabled || rows.some((row) => Boolean(row.themeGuess?.trim()));
+
 	return (
 		<section
 			className={`${styles.panel} ${styles.panelSecondary} rounded-2xl border border-border/70 p-4 backdrop-blur-xl`}
@@ -46,14 +73,13 @@ export default function AdminPlayerGuessHistoryPanel({
 								<th className="py-2 px-3">Song</th>
 								<th className="py-2 px-3">Guess</th>
 								<th className="py-2 px-3">Correct</th>
-								<th className="py-2 px-3">Locked</th>
 								{dashboard.hasDetailLane && (
 									<>
 										<th className="py-2 px-3">Bonus Guess</th>
 										<th className="py-2 px-3">Bonus Correct</th>
-										<th className="py-2 px-3">Bonus Locked</th>
 									</>
 								)}
+								{hasTheme && <th className="py-2 px-3">Theme Guess</th>}
 							</tr>
 						</thead>
 						<tbody>
@@ -62,29 +88,30 @@ export default function AdminPlayerGuessHistoryPanel({
 									<td className="py-2 px-3 text-text">
 										#{row.songIndex} {row.songTitle || "Untitled"}
 									</td>
-									<td className="py-2 px-3 text-text">{row.guessLabel}</td>
-									<td className="py-2 px-3 text-text">{row.correctAnswer || "-"}</td>
-									<td className="py-2 px-3 text-text/80">
-										{row.locked
-											? "Yes"
-											: row.guessOrder.length > 0
-												? "In progress"
-												: "No"}
+									<td className="py-2 px-3 text-text">
+										<GuessValue
+											label={row.guessLabel}
+											locked={row.locked}
+											inProgress={row.guessOrder.length > 0}
+										/>
 									</td>
+									<td className="py-2 px-3 text-text">{row.correctAnswer || "-"}</td>
 									{dashboard.hasDetailLane && (
 										<>
-											<td className="py-2 px-3 text-text">{row.detailGuessLabel}</td>
+											<td className="py-2 px-3 text-text">
+												<GuessValue
+													label={row.detailGuessLabel ?? "—"}
+													locked={row.detailLocked}
+													inProgress={row.detailGuessOrder.length > 0}
+												/>
+											</td>
 											<td className="py-2 px-3 text-text">
 												{row.detailCorrectAnswer || "-"}
 											</td>
-											<td className="py-2 px-3 text-text/80">
-												{row.detailLocked
-													? "Yes"
-													: row.detailGuessOrder.length > 0
-														? "In progress"
-														: "No"}
-											</td>
 										</>
+									)}
+									{hasTheme && (
+										<td className="py-2 px-3 text-text">{row.themeGuess?.trim() || "-"}</td>
 									)}
 								</tr>
 							))}

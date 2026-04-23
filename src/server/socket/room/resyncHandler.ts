@@ -11,7 +11,13 @@ import {
 } from "@/lib/game";
 import { requireHost, requireRoom } from "@/server/logic/guards";
 import { toPublicRoom } from "@/server/state/publicRoom";
-import { getHint, getLockedThisRoundList, getSolvedList, isRevealed } from "@/lib/theme";
+import {
+	getHint,
+	getLockedThisRoundList,
+	getSolvedList,
+	getThemeGuessesThisRound,
+	isRevealed,
+} from "@/lib/theme";
 import { scopedLogger } from "@/server/logger";
 import { devResyncPayloadSchema, validateWithZod } from "@/server/schemas";
 
@@ -87,8 +93,9 @@ export const resyncHandler = (
 			for (const playerName of getSolvedList(code)) {
 				io.to(code).emit("THEME_SOLVED", { playerName });
 			}
+			const themeGuesses = getThemeGuessesThisRound(code);
 			for (const playerName of getLockedThisRoundList(code)) {
-				io.to(code).emit("THEME_GUESSED_THIS_ROUND", { playerName });
+				io.to(code).emit("THEME_GUESSED_THIS_ROUND", { playerName, guess: themeGuesses[playerName] });
 			}
 
 			if (gameState.finalScores) {

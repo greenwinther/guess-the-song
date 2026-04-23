@@ -38,17 +38,19 @@ export default function HostPlaylistPanel({
 		room: viewRoom,
 		songs,
 	});
+	const showSubmitterRevealButton = !playlistReveals.allSubmittersRevealed;
+	const showDetailRevealButton = hasDetailQuestion && !playlistReveals.allDetailAnswersRevealed;
 
 	// ---- it's safe to early-return after hooks ----
 	if (!viewRoom) return null;
 
 	return (
-		<aside className="order-2 lg:order-none w-full lg:col-span-3 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
+		<aside className="order-2 lg:order-none w-full min-h-0 lg:col-span-3 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
 			<div className="mb-3 sm:mb-4">
 				<h2 className="text-lg sm:text-xl font-semibold text-text">Playlist</h2>
 			</div>
 
-			<div className="space-y-2 flex-1 overflow-y-auto max-h-60 sm:max-h-80 lg:max-h-[70vh]">
+			<div className="scrollbar-hidden min-h-[12rem] max-h-72 flex-1 space-y-1 overflow-y-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:max-h-80 lg:max-h-[calc(100vh-12rem)]">
 				{songs.map((song, index) => (
 					<HostPlaylistSongRow
 						key={song.id}
@@ -69,26 +71,32 @@ export default function HostPlaylistPanel({
 			</div>
 
 			{/* Bottom center button: enabled once all tracks are played */}
-			{showRevealControls &&
-				(!playlistReveals.allSubmittersRevealed ||
-					(hasDetailQuestion && !playlistReveals.allDetailAnswersRevealed)) && (
-				<div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-					<Button
-						variant="primary"
-						size="md"
-						onClick={playlistReveals.revealNextSubmitter}
-						disabled={!canReveal}
-						className="min-w-40"
-					>
-						{`Reveal submitter #${playlistReveals.nextSubmitterSongNumber ?? ""}`}
-					</Button>
-					{hasDetailQuestion && !playlistReveals.allDetailAnswersRevealed && (
+			{showRevealControls && (showSubmitterRevealButton || showDetailRevealButton) && (
+				<div
+					className={`mt-4 grid gap-2 ${
+						showSubmitterRevealButton && showDetailRevealButton
+							? "grid-cols-2"
+							: "grid-cols-1"
+					}`}
+				>
+					{showSubmitterRevealButton && (
+						<Button
+							variant="primary"
+							size="md"
+							onClick={playlistReveals.revealNextSubmitter}
+							disabled={!canReveal}
+							className="w-full min-w-0 px-2 text-xs leading-tight sm:text-sm"
+						>
+							{`Reveal submitter #${playlistReveals.nextSubmitterSongNumber ?? ""}`}
+						</Button>
+					)}
+					{showDetailRevealButton && (
 						<Button
 							variant="secondary"
 							size="md"
 							onClick={playlistReveals.revealNextDetailAnswer}
 							disabled={!canReveal}
-							className="min-w-40"
+							className="w-full min-w-0 px-2 text-xs leading-tight sm:text-sm"
 						>
 							{`Reveal answer #${playlistReveals.nextDetailSongNumber ?? ""}`}
 						</Button>

@@ -4,7 +4,13 @@ import type { Server, Socket } from "socket.io";
 import { getRoomGameState } from "@/server/state/gameState";
 import type { ClientToServerEvents, InterServerEvents, JoinRoomPayload, ServerToClientEvents, SocketData } from "@/types/socket";
 import { toPublicRoom } from "@/server/state/publicRoom";
-import { getHint, getLockedThisRoundList, getSolvedList, isRevealed } from "@/lib/theme";
+import {
+	getHint,
+	getLockedThisRoundList,
+	getSolvedList,
+	getThemeGuessesThisRound,
+	isRevealed,
+} from "@/lib/theme";
 import { scopedLogger } from "@/server/logger";
 import { joinRoomPayloadSchema, validateWithZod } from "@/server/schemas";
 
@@ -77,8 +83,9 @@ export const joinRoomHandler = (
 				for (const playerName of getSolvedList(code)) {
 					socket.emit("THEME_SOLVED", { playerName });
 				}
+				const themeGuesses = getThemeGuessesThisRound(code);
 				for (const playerName of getLockedThisRoundList(code)) {
-					socket.emit("THEME_GUESSED_THIS_ROUND", { playerName });
+					socket.emit("THEME_GUESSED_THIS_ROUND", { playerName, guess: themeGuesses[playerName] });
 				}
 				if (gameState.finalScores) {
 					socket.emit("gameOver", { scores: gameState.finalScores });
@@ -124,8 +131,9 @@ export const joinRoomHandler = (
 				for (const playerName of getSolvedList(code)) {
 					socket.emit("THEME_SOLVED", { playerName });
 				}
+				const themeGuesses = getThemeGuessesThisRound(code);
 				for (const playerName of getLockedThisRoundList(code)) {
-					socket.emit("THEME_GUESSED_THIS_ROUND", { playerName });
+					socket.emit("THEME_GUESSED_THIS_ROUND", { playerName, guess: themeGuesses[playerName] });
 				}
 
 				if (gameState.finalScores) {

@@ -13,7 +13,7 @@ test("admin theme and detail edits sync into host control status", async ({ page
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);
-	await expect(adminPage.getByRole("heading", { name: "Room Setup" })).toBeVisible();
+	await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").fill("Movie Night");
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").press("Enter");

@@ -13,8 +13,11 @@ import { useReconnectNotice } from "@/hooks/shared/useReconnectNotice";
 import { useRoomJoinSocket } from "@/hooks/shared/useRoomJoinSocket";
 import { usePlayerJoinDenied } from "@/hooks/player/usePlayerJoinDenied";
 import { usePlayerLobbySocket } from "@/hooks/player/usePlayerLobbySocket";
+import BackgroundShell from "@/components/shared/BackgroundShell";
+import RoomSidebar from "@/components/shared/RoomSidebar";
 import PlayerJoinDeniedBanner from "@/components/player/common/PlayerJoinDeniedBanner";
 import PlayerLobbyCard from "@/components/player/lobby/PlayerLobbyCard";
+import PlayerPlaylistPanel from "@/components/player/game/playlist/PlayerPlaylistPanel";
 
 export default function PlayerLobbyView({
 	initialRoom,
@@ -84,22 +87,28 @@ export default function PlayerLobbyView({
 		);
 	}
 
+	const nonHostPlayers = room.players.filter((player) => !player.isHost);
+	const allReady = nonHostPlayers.length > 0 && nonHostPlayers.every((player) => player.ready);
+
 	return (
-		<div
-			className="flex min-h-screen items-center justify-center bg-gradient-to-br from-bg to-secondary bg-cover bg-center bg-no-repeat p-8"
-			style={{
-				backgroundImage: `url(${room.backgroundUrl})`,
-				backgroundBlendMode: "overlay",
-			}}
+		<BackgroundShell
+			bgImage={room.backgroundUrl ?? null}
+			socketError={socketError}
+			shellSize="lobby"
 		>
-			{socketError && (
-				<div className="fixed left-0 top-0 z-50 w-full bg-yellow-300 py-2 text-center text-yellow-900">
-					{socketError}
-				</div>
-			)}
 			{joinDenied && (
 				<PlayerJoinDeniedBanner joinDenied={joinDenied} onBackToStart={handleBackToStart} />
 			)}
+
+			<RoomSidebar
+				roomCode={room.code}
+				players={room.players}
+				submittedPlayers={submittedPlayers}
+				allPlayersReady={allReady}
+				showGameplayLegend={false}
+				showLockCounts={false}
+				playerStatusMode="lobby"
+			/>
 
 			<PlayerLobbyCard
 				hardcore={hardcore}
@@ -107,8 +116,9 @@ export default function PlayerLobbyView({
 				onReadyChange={handleReadyChange}
 				ready={ready}
 				room={room}
-				submittedPlayers={submittedPlayers}
 			/>
-		</div>
+
+			<PlayerPlaylistPanel songs={room.songs} revealedIds={[]} variant="lobby" />
+		</BackgroundShell>
 	);
 }

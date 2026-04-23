@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from "react";
+import type { ReactNode } from "react";
 import Button from "@/components/shared/Button";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import PlayerGuessOrderList, {
 	OrderItem,
 } from "@/components/player/game/guessing/PlayerGuessOrderList";
@@ -22,6 +27,7 @@ export function PlayerGuessPanel({
 	detailUndoVisible,
 	onDetailUndo,
 	scoreForMe,
+	themeGuessBar,
 	onSubmitAll, // 👈 new (optional)
 	showSubmitAll, // 👈 new (optional)
 }: {
@@ -46,22 +52,29 @@ export function PlayerGuessPanel({
 	onDetailUndo?: () => void;
 
 	scoreForMe?: number | null;
+	themeGuessBar?: ReactNode;
 	onSubmitAll?: () => void; // 👈
 	showSubmitAll?: boolean; // 👈
 }) {
+	const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
 	const isLockedCurrent = lockedIndices.includes(currentIndex);
 	const isDetailLocked = detailLockedIndices?.includes(currentIndex) ?? false;
+	const confirmSubmitAll = () => {
+		setConfirmSubmitOpen(false);
+		onSubmitAll?.();
+	};
 
 	return (
-		<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
+		<section className="flex flex-col items-center">
 			<h1 className="text-xl sm:text-3xl font-semibold text-text mb-4 sm:mb-2">
-				Guess the Submitter
-				{detailQuestion ? ` and ${detailQuestion}` : ""}
+				Make your guesses
 			</h1>
 
 			<p className="text-sm mb-4 opacity-80">
 				Song {currentIndex + 1} — drag to arrange both lists, then lock each answer.
 			</p>
+
+			{themeGuessBar && <div className="mb-6 w-full max-w-3xl">{themeGuessBar}</div>}
 
 			<div
 				className={`w-full grid gap-6 ${
@@ -69,6 +82,12 @@ export function PlayerGuessPanel({
 				}`}
 			>
 				<div className="w-full flex flex-col items-center">
+					<div className="mb-3 w-full max-w-md text-left">
+						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+							Submitter
+						</p>
+						<p className="mt-1 text-sm font-medium text-text">Who submitted the song?</p>
+					</div>
 					<PlayerGuessOrderList
 						order={order}
 						submitted={submitted}
@@ -103,6 +122,12 @@ export function PlayerGuessPanel({
 
 				{detailQuestion && detailOrder && onDetailReorder && (
 					<div className="w-full flex flex-col items-center">
+						<div className="mb-3 w-full max-w-md text-left">
+							<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+								Bonus question
+							</p>
+							<p className="mt-1 text-sm font-medium text-text">{detailQuestion}</p>
+						</div>
 						<PlayerGuessOrderList
 							order={detailOrder}
 							submitted={submitted}
@@ -118,7 +143,7 @@ export function PlayerGuessPanel({
 								disabled={submitted || !canLockDetail}
 								className="flex-1"
 							>
-								{submitted ? "Submitted" : "Lock detail answer"}
+								{submitted ? "Submitted" : "Lock in bonus"}
 							</Button>
 							{detailUndoVisible && onDetailUndo && (
 								<Button onClick={onDetailUndo} variant="secondary" size="sm">
@@ -137,7 +162,7 @@ export function PlayerGuessPanel({
 			<div className="mt-6 flex items-center gap-3">
 				{showSubmitAll && onSubmitAll && (
 					<Button
-						onClick={onSubmitAll}
+						onClick={() => setConfirmSubmitOpen(true)}
 						variant="secondary"
 						size="lg"
 						disabled={submitted}
@@ -147,6 +172,14 @@ export function PlayerGuessPanel({
 					</Button>
 				)}
 			</div>
+			<ConfirmDialog
+				open={confirmSubmitOpen}
+				title="Submit all guesses?"
+				description="This will lock in your current order for every song. You can still cancel and adjust the lists first."
+				confirmLabel="Submit guesses"
+				onConfirm={confirmSubmitAll}
+				onCancel={() => setConfirmSubmitOpen(false)}
+			/>
 
 			{scoreForMe != null && (
 				<div className="mt-6 text-center">
@@ -155,6 +188,6 @@ export function PlayerGuessPanel({
 					</p>
 				</div>
 			)}
-		</main>
+		</section>
 	);
 }

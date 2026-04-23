@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { FaCheck, FaLock, FaQuestion } from "react-icons/fa6";
 import type { Member } from "@/types/member";
 import AvatarStack from "@/components/shared/AvatarStack";
 
@@ -14,6 +15,9 @@ interface PlayerListProps {
 	lockedCounts?: Record<string, number>;
 	solvedByTheme?: string[];
 	lockedForThisRound?: string[];
+	showLockCounts?: boolean;
+	statusMode?: "game" | "lobby";
+	inset?: boolean;
 	onKick?: (player: Member) => void;
 }
 
@@ -26,6 +30,9 @@ export default function RoomPlayerList({
 	lockedCounts = {},
 	solvedByTheme = [],
 	lockedForThisRound = [],
+	showLockCounts = true,
+	statusMode = "game",
+	inset = false,
 	onKick,
 }: PlayerListProps) {
 	const lockedSet = new Set(lockedNames);
@@ -34,8 +41,14 @@ export default function RoomPlayerList({
 		!!fallbackName && !players.some((p) => p.name.toLowerCase() === fallbackName.toLowerCase());
 	const hasAvatar = (avatar?: Member["avatar"]) => Boolean(avatar?.base);
 	return (
-		<div className={`flex flex-col w-full ${className ?? ""}`}>
-			<ul className="space-y-1 flex-1 max-h-[26rem] overflow-y-auto pr-1">
+		<div className={`flex min-h-0 flex-col w-full ${className ?? ""}`}>
+			<ul
+				className={`scrollbar-hidden flex min-h-[12rem] flex-1 flex-col gap-1 max-h-72 overflow-y-auto sm:max-h-80 lg:max-h-none ${
+					inset
+						? "rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)]"
+						: "pr-1"
+				}`}
+			>
 				{hasFallback && (
 					<li key="__fallback__" className="flex items-center gap-1.5 text-text">
 						<span className="w-3 h-3 rounded-full bg-primary" />
@@ -49,23 +62,37 @@ export default function RoomPlayerList({
 					const isLockedCurrentSong = lockedSet.has(p.name);
 					const lockCount = lockedCounts[p.name] ?? 0;
 					const showAvatar = hasAvatar(p.avatar);
+					const statusTitle =
+						statusMode === "lobby"
+							? p.ready
+								? "Ready"
+								: "Not ready"
+							: didSubmit
+								? "Submitted"
+								: "Not submitted";
+					const dotClassName =
+						statusMode === "lobby"
+							? p.ready
+								? "bg-emerald-400"
+								: "bg-primary"
+							: didSubmit
+								? "bg-green-500"
+								: "bg-primary";
 
 					return (
-						<li key={p.id} className="flex items-center gap-1.5 text-text">
-							{/* Dot color = submitted status */}
+						<li key={p.id} className="flex items-center gap-1.5 rounded-md px-1.5 text-text transition-colors hover:bg-black/10">
+							{/* Dot color follows lobby readiness or game submission status. */}
 							{showAvatar ? (
-								<div
-									className="relative w-12 h-12 rounded-full bg-card/30"
-									title={didSubmit ? "Submitted" : "Not submitted"}
-								>
-									<AvatarStack avatar={p.avatar} size={48} className="relative h-12 w-12" />
-								</div>
+								<AvatarStack
+									avatar={p.avatar}
+									size={48}
+									className="h-12 w-12 shrink-0"
+									title={statusTitle}
+								/>
 							) : (
 								<span
-									className={`w-3 h-3 rounded-full ${
-										didSubmit ? "bg-green-500" : "bg-primary"
-									}`}
-									title={didSubmit ? "Submitted" : "Not submitted"}
+									className={`w-3 h-3 rounded-full ${dotClassName}`}
+									title={statusTitle}
 								/>
 							)}
 							{onKick && !p.isHost ? (
@@ -80,7 +107,7 @@ export default function RoomPlayerList({
 							) : (
 								<span className="truncate">{p.name}</span>
 							)}
-							{p.ready && (
+							{statusMode === "lobby" && p.ready && (
 								<span
 									className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10"
 									title="Ready"
@@ -100,15 +127,23 @@ export default function RoomPlayerList({
 
 							{/* Song lock */}
 							{isLockedCurrentSong && (
-								<span className="text-xs opacity-70" title="Locked current song">
-									LOCK
+								<span
+									className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-secondary/35 bg-secondary/10 text-secondary"
+									title="Locked current song"
+									aria-label="Locked current song"
+								>
+									<FaLock className="h-2.5 w-2.5" aria-hidden="true" />
 								</span>
 							)}
 
 							{/* THEME indicators */}
 							{solvedByTheme.includes(p.name) && (
-								<span title="Solved theme" aria-label="Solved theme" className="ml-1">
-									SOLVED
+								<span
+									title="Solved theme"
+									aria-label="Solved theme"
+									className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+								>
+									<FaCheck className="h-2.5 w-2.5" aria-hidden="true" />
 								</span>
 							)}
 
@@ -116,16 +151,18 @@ export default function RoomPlayerList({
 								<span
 									title="Guessed theme this round"
 									aria-label="Guessed theme this round"
-									className="ml-1"
+									className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary"
 								>
-									GUESS
+									<FaQuestion className="h-2.5 w-2.5" aria-hidden="true" />
 								</span>
 							)}
 
 							{/* Songs locked count */}
-							<span className="ml-auto text-xs opacity-70 tabular-nums" title="Songs locked">
-								{lockCount}
-							</span>
+							{showLockCounts && (
+								<span className="ml-auto text-xs opacity-70 tabular-nums" title="Songs locked">
+									{lockCount}
+								</span>
+							)}
 
 							{onKick && !p.isHost && actionForId === p.id && (
 								<button

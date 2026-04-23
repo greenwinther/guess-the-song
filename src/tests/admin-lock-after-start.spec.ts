@@ -19,7 +19,7 @@ test("admin editor becomes read-only after the live game starts", async ({
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);
-	await expect(adminPage.getByRole("heading", { name: "Room Setup" })).toBeVisible();
+	await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
@@ -43,7 +43,7 @@ test("admin editor becomes read-only after the live game starts", async ({
 		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
-		await playerPage.locator("#player-ready").check();
+		await playerPage.locator("#player-ready").click();
 
 		await page.getByRole("button", { name: "Start Game" }).click();
 

@@ -12,7 +12,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useEffect, useState } from "react";
 
 export interface OrderItem {
@@ -108,16 +108,16 @@ export default function PlayerGuessOrderList({
 	};
 
 	return (
-		<div className="bg-card border border-border rounded-2xl p-6 shadow-xl w-full max-w-md">
+		<div className="w-full max-w-md rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)]">
 			<DndContext
 				sensors={sensors}
 				collisionDetection={closestCenter}
 				onDragStart={handleDragStart}
 				onDragEnd={handleDragEnd}
-				modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+				modifiers={[restrictToVerticalAxis]}
 			>
 				<SortableContext items={order.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-					<ul className="space-y-4">
+					<ul className="flex flex-col gap-2">
 						{order.map((item, idx) => (
 							<SortableItem
 								key={item.id}
@@ -154,19 +154,33 @@ function SortableItem({
 
 	return (
 		<li
-			ref={setNodeRef}
-			style={style}
-			{...(!disabled ? attributes : {})}
-			{...(!disabled ? listeners : {})}
-			className={`flex items-center justify-between rounded-lg p-3
-        bg-card ${isDragging ? "opacity-80" : "opacity-100"}
-        ${disabled ? "opacity-60 cursor-not-allowed select-none" : "cursor-grab"}`}
+			className="flex items-center gap-3 text-text"
 			title={disabled ? "Locked" : isCurrent ? "Current song" : undefined}
 		>
-			<span className="font-medium">{index + 1}.</span>
-			<span className="flex-1 mx-4">{name}</span>
-			{disabled && <span className="text-xs opacity-70">🔒</span>}
-			{isCurrent && !disabled && <span className="text-xs opacity-70">🎯</span>}
+			<span
+				className={`grid h-10 w-10 shrink-0 place-items-center rounded-md border font-mono text-sm ${
+					isCurrent
+						? "border-primary bg-primary/15 text-secondary"
+						: "border-border/60 bg-black/10 text-text-muted"
+				}`}
+			>
+				{index + 1}.
+			</span>
+			<div
+				ref={setNodeRef}
+				style={style}
+				{...(!disabled ? attributes : {})}
+				{...(!disabled ? listeners : {})}
+				className={`flex min-w-0 flex-1 items-center gap-3 rounded-md border px-3 py-2 text-text shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-colors
+        border-border/70 bg-card/45
+        ${isDragging ? "scale-[1.01] opacity-90 shadow-lg" : "opacity-100"}
+        ${disabled ? "cursor-not-allowed select-none opacity-60" : "cursor-grab hover:bg-card/60 active:cursor-grabbing"}`}
+			>
+				<span className="min-w-0 flex-1 truncate font-medium">{name}</span>
+				<span className="text-xs uppercase tracking-widest text-text-muted">
+					{disabled ? "Locked" : "Drag"}
+				</span>
+			</div>
 		</li>
 	);
 }

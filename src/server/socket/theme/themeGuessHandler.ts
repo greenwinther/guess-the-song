@@ -7,9 +7,13 @@ import {
 	alreadySolved,
 	markSolved,
 	normalize,
+	storeThemeGuessThisRound,
 } from "@/lib/theme";
+import { storeThemeGuess } from "@/lib/game";
 import { addPointsByCodeName } from "@/lib/score";
 import { getRoom as getRoomFromStore } from "@/server/store/roomStore";
+import { getRoomGameState } from "@/server/state/gameState";
+import { emitAdminDashboardToHosts } from "@/server/socket/admin/adminDashboard";
 import type {
 	ClientToServerEvents,
 	InterServerEvents,
@@ -79,7 +83,13 @@ export const themeGuessHandler = (
 
 		// Consume their single attempt this round
 		lockPlayerThisRound(normalizedCode, resolvedName);
-		io.to(normalizedCode).emit("THEME_GUESSED_THIS_ROUND", { playerName: resolvedName });
+		storeThemeGuessThisRound(normalizedCode, resolvedName, guess);
+		const activeSongId = getRoomGameState(normalizedCode).activeSongId;
+		if (activeSongId != null) {
+			storeThemeGuess(normalizedCode, activeSongId, resolvedName, guess);
+		}
+		io.to(normalizedCode).emit("THEME_GUESSED_THIS_ROUND", { playerName: resolvedName, guess });
+		void emitAdminDashboardToHosts(io, normalizedCode);
 
 		const correct = normalize(guess) === normalize(room.theme);
 		if (!correct) {
@@ -96,6 +106,7 @@ export const themeGuessHandler = (
 		const newTotal = addPointsByCodeName(normalizedCode, resolvedName, 1);
 		io.to(normalizedCode).emit("THEME_SOLVED", { playerName: resolvedName });
 		io.to(normalizedCode).emit("scoreUpdated", { playerName: resolvedName, total: newTotal });
+		void emitAdminDashboardToHosts(io, normalizedCode);
 	});
 
 	// Optional: reveal button from host UI

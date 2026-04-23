@@ -6,6 +6,7 @@ import { useGameRuntime, useRoomState } from "@/contexts/gameContext";
 import { useThemeSocketSync } from "@/hooks/shared/useThemeSocketSync";
 import { useHostRecapPlayback } from "@/hooks/host/useHostRecapPlayback";
 import type { Submission } from "@/types/submission";
+import ExportGameReportButton from "@/components/shared/ExportGameReportButton";
 import HostActivePlaybackPanel from "./HostActivePlaybackPanel";
 import HostResultsPanel from "./HostResultsPanel";
 
@@ -23,11 +24,9 @@ type HostPlaybackPanelProps = {
 	allPlayed: boolean;
 	onShowResults: () => void;
 	recapRunning?: boolean;
-	onStartRecap?: () => void;
+	onStartRecap?: (fast: boolean) => void;
 	onStopRecap?: () => void;
 	recapSeconds?: number;
-	fastRecap?: boolean;
-	onToggleFastRecap?: (checked: boolean) => void;
 };
 
 export default function HostPlaybackPanel({
@@ -47,8 +46,6 @@ export default function HostPlaybackPanel({
 	onStartRecap,
 	onStopRecap,
 	recapSeconds = 30,
-	fastRecap = false,
-	onToggleFastRecap,
 }: HostPlaybackPanelProps) {
 	const socket = useSocket();
 	const { room } = useRoomState();
@@ -69,28 +66,37 @@ export default function HostPlaybackPanel({
 	}
 
 	if (scores) {
+		const resultTheme = theme || room.theme || "";
 		return (
-			<HostResultsPanel
-				code={code}
-				roomCode={room.code}
-				scores={scores}
-				theme={theme}
-				themeRevealed={themeRevealed}
-				onRevealTheme={() => socket.emit("THEME_REVEAL", { code: room.code })}
-			/>
+			<>
+				<HostResultsPanel
+					players={room.players}
+					scores={scores}
+					theme={resultTheme}
+					themeRevealed={themeRevealed}
+					onRevealTheme={() => socket.emit("THEME_REVEAL", { code: room.code })}
+				/>
+				<div className="mt-4 flex justify-center">
+					<ExportGameReportButton
+						code={room.code || code}
+						scores={scores}
+						theme={resultTheme}
+						variant="secondary"
+					/>
+				</div>
+			</>
 		);
 	}
 
-	const handleStartRecap = () => {
+	const handleStartRecap = (fast: boolean) => {
 		setRecapTriggered(true);
-		onStartRecap?.();
+		onStartRecap?.(fast);
 	};
 
 	return (
 		<HostActivePlaybackPanel
 			allPlayed={allPlayed}
 			currentSong={currentSong}
-			fastRecap={fastRecap}
 			isPlaying={isPlaying}
 			playedCount={playedCount}
 			recapRunning={recapRunning}
@@ -102,7 +108,6 @@ export default function HostPlaybackPanel({
 			onShowResults={onShowResults}
 			onStartRecap={handleStartRecap}
 			onStopRecap={onStopRecap}
-			onToggleFastRecap={onToggleFastRecap}
 			onDuration={playbackHandlers.handleDuration}
 			onEnded={playbackHandlers.handleEnded}
 			onProgress={playbackHandlers.handleProgress}

@@ -19,7 +19,7 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);
-	await expect(adminPage.getByRole("heading", { name: "Room Setup" })).toBeVisible();
+	await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
@@ -40,7 +40,7 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(playerPage.locator("#player-ready")).toBeVisible();
-		await playerPage.locator("#player-ready").check();
+		await playerPage.locator("#player-ready").click();
 
 		await expect(page.getByRole("button", { name: "Alice" })).toBeVisible();
 		await expect(page.getByText("Players ready: 1/1")).toBeVisible();

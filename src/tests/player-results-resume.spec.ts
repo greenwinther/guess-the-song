@@ -35,7 +35,7 @@ test("player can reload into results after the game has ended", async ({
 		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
-		await playerPage.locator("#player-ready").check();
+		await playerPage.locator("#player-ready").click();
 
 		await page.getByRole("button", { name: "Start Game" }).click();
 		await page.getByRole("button", { name: "Play/Pause (Space)" }).click();

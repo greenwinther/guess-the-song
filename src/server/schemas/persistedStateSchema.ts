@@ -23,12 +23,14 @@ export const persistedStateSchema = z.object({
 		.object({
 			solvedBy: z.record(z.string(), z.unknown()).default({}),
 			lockedThisRound: z.record(z.string(), z.unknown()).default({}),
+			guessesThisRound: z.record(z.string(), z.unknown()).default({}),
 			revealed: z.record(z.string(), z.unknown()).default({}),
 			hint: z.record(z.string(), z.unknown()).default({}),
 		})
 		.default({
 			solvedBy: {},
 			lockedThisRound: {},
+			guessesThisRound: {},
 			revealed: {},
 			hint: {},
 		}),

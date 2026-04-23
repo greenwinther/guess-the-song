@@ -12,7 +12,6 @@ import type { Submission } from "@/types/submission";
 type HostActivePlaybackPanelProps = {
 	allPlayed: boolean;
 	currentSong: Submission | null;
-	fastRecap: boolean;
 	isPlaying: boolean;
 	playedCount: number;
 	recapRunning: boolean;
@@ -22,9 +21,8 @@ type HostActivePlaybackPanelProps = {
 	onPlayPause: () => void;
 	onPrev: () => void;
 	onShowResults: () => void;
-	onStartRecap?: () => void;
+	onStartRecap?: (fast: boolean) => void;
 	onStopRecap?: () => void;
-	onToggleFastRecap?: (checked: boolean) => void;
 	onDuration: (duration: number) => void;
 	onEnded: () => void;
 	onProgress: (state: { playedSeconds: number }) => void;
@@ -34,7 +32,6 @@ type HostActivePlaybackPanelProps = {
 export default function HostActivePlaybackPanel({
 	allPlayed,
 	currentSong,
-	fastRecap,
 	isPlaying,
 	playedCount,
 	recapRunning,
@@ -46,47 +43,52 @@ export default function HostActivePlaybackPanel({
 	onShowResults,
 	onStartRecap,
 	onStopRecap,
-	onToggleFastRecap,
 	onDuration,
 	onEnded,
 	onProgress,
 	playerRef,
 }: HostActivePlaybackPanelProps) {
 	return (
-		<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col items-center">
-			<HostSongPlaybackDisplay
-				currentSong={currentSong}
-				isPlaying={isPlaying}
-				onDuration={onDuration}
-				onEnded={onEnded}
-				onProgress={onProgress}
-				playerRef={playerRef}
-			/>
+		<section className="flex flex-col items-center gap-6">
+			<h2 className="text-lg sm:text-2xl font-semibold text-text">
+				{currentSong ? currentSong.title ?? "Unknown title" : "Press Play to start with track 1"}
+			</h2>
 
-			<HostPlaybackControls
-				currentSong={currentSong}
-				isPlaying={isPlaying}
-				recapRunning={recapRunning}
-				onNext={onNext}
-				onPlayPause={onPlayPause}
-				onPrev={onPrev}
-			/>
-
-			{!allPlayed ? (
-				<p className="mt-3 sm:mt-4 text-xs sm:text-sm text-text-muted">
-					Played {playedCount}/{totalSongs}
-				</p>
-			) : (
-				<HostRecapResultsActions
-					fastRecap={fastRecap}
-					recapRunning={recapRunning}
-					recapTriggered={recapTriggered}
-					onShowResults={onShowResults}
-					onStartRecap={onStartRecap}
-					onStopRecap={onStopRecap}
-					onToggleFastRecap={onToggleFastRecap}
+			<div className="flex w-full flex-col gap-6">
+				<HostSongPlaybackDisplay
+					currentSong={currentSong}
+					isPlaying={isPlaying}
+					onDuration={onDuration}
+					onEnded={onEnded}
+					onProgress={onProgress}
+					playerRef={playerRef}
 				/>
-			)}
-		</main>
+
+				<HostPlaybackControls
+					currentSong={currentSong}
+					isPlaying={isPlaying}
+					recapRunning={recapRunning}
+					onNext={onNext}
+					onPlayPause={onPlayPause}
+					onPrev={onPrev}
+				/>
+			</div>
+
+			<div className="w-full pt-4">
+				{!allPlayed ? (
+					<p className="text-center text-xs text-text-muted sm:text-sm">
+						Played {playedCount}/{totalSongs}
+					</p>
+				) : (
+					<HostRecapResultsActions
+						recapRunning={recapRunning}
+						recapTriggered={recapTriggered}
+						onShowResults={onShowResults}
+						onStartRecap={onStartRecap}
+						onStopRecap={onStopRecap}
+					/>
+				)}
+			</div>
+		</section>
 	);
 }

@@ -1,6 +1,12 @@
 import type { Server } from "socket.io";
 import { getRoundsForCode } from "@/lib/game";
-import { getHint, getLockedThisRoundList, getSolvedList, isRevealed } from "@/lib/theme";
+import {
+	getHint,
+	getLockedThisRoundList,
+	getSolvedList,
+	getThemeGuessesThisRound,
+	isRevealed,
+} from "@/lib/theme";
 import { getRoom } from "@/server/store/roomStore";
 import { getRoomGameState } from "@/server/state/gameState";
 import type {
@@ -35,6 +41,10 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 
 	const solved = new Set(getSolvedList(code));
 	const guessedThisRound = new Set(getLockedThisRoundList(code));
+	const themeGuessesThisRound = {
+		...getThemeGuessesThisRound(code),
+		...(activeRound?.themeGuesses ?? {}),
+	};
 
 	const currentSongRows = room.players
 		.filter((player) => !player.isHost)
@@ -43,6 +53,8 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 			const detailLockInfo = activeRound?.detailLocks?.[player.name];
 			const guessOrder = activeRound?.orders?.[player.name] ?? [];
 			const detailOrder = activeRound?.detailOrders?.[player.name] ?? [];
+			const themeGuess =
+				activeRound?.themeGuesses?.[player.name] ?? themeGuessesThisRound[player.name] ?? null;
 			return {
 				playerName: player.name,
 				guessOrder,
@@ -55,6 +67,7 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 				detailLockedAt: detailLockInfo?.lockedAt ?? null,
 				themeSolved: solved.has(player.name),
 				themeGuessedThisRound: guessedThisRound.has(player.name),
+				themeGuess,
 			};
 		});
 	const playerHistories = room.players
@@ -81,6 +94,7 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 					detailCorrectAnswer: rd?.detailCorrectAnswer ?? song.detailAnswer ?? null,
 					detailLocked: !!detailLockInfo?.locked,
 					detailLockedAt: detailLockInfo?.lockedAt ?? null,
+					themeGuess: rd?.themeGuesses?.[player.name] ?? null,
 				};
 			}),
 		}));
@@ -95,10 +109,12 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		detailQuestion: room.detailQuestion ?? null,
 		theme: {
 			enabled: !!room.theme,
+			value: room.theme ?? null,
 			hint: getHint(code) || null,
 			revealed: isRevealed(code),
 			solvedBy: Array.from(solved),
 			guessedThisRound: Array.from(guessedThisRound),
+			guessesThisRound: themeGuessesThisRound,
 		},
 		players: room.players.map((player) => ({
 			id: player.id,

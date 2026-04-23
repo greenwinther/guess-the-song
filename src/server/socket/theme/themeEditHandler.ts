@@ -1,6 +1,8 @@
 import type { Server, Socket } from "socket.io";
 import { resetForNewTheme } from "@/lib/theme";
 import { setRoomTheme } from "@/lib/rooms";
+import { emitAdminDashboardToHosts } from "@/server/socket/admin/adminDashboard";
+import { toPublicRoom } from "@/server/state/publicRoom";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, ThemeEditPayload } from "@/types/socket";
 import { requireHost, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
@@ -31,5 +33,7 @@ export const themeEditHandler = (
 
 		// Broadcast new theme value (string | null -> undefined on client if you prefer)
 		io.to(normalizedCode).emit("THEME_UPDATED", { theme: room.theme ?? undefined });
+		io.to(normalizedCode).emit("roomData", toPublicRoom(room));
+		void emitAdminDashboardToHosts(io, normalizedCode);
 	});
 };

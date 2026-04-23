@@ -55,6 +55,7 @@ const pruneSnapshot = (snapshot: PersistedState) => {
 		theme: {
 			solvedBy: filterRecordByCodes(snapshot.theme?.solvedBy ?? {}, keptCodes),
 			lockedThisRound: filterRecordByCodes(snapshot.theme?.lockedThisRound ?? {}, keptCodes),
+			guessesThisRound: filterRecordByCodes(snapshot.theme?.guessesThisRound ?? {}, keptCodes),
 			revealed: filterRecordByCodes(snapshot.theme?.revealed ?? {}, keptCodes),
 			hint: filterRecordByCodes(snapshot.theme?.hint ?? {}, keptCodes),
 		},

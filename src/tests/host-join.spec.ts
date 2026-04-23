@@ -7,7 +7,7 @@ test("host can create room and player can join", async ({ page, context }) => {
 	await page.getByRole("button", { name: "Host" }).click();
 	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
-	await expect(page.getByRole("heading", { name: "Room Setup" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
@@ -27,7 +27,7 @@ test("host can create room and player can join", async ({ page, context }) => {
 	// Player ready up
 	const readyToggle = playerPage.locator("#player-ready");
 	await expect(readyToggle).toBeVisible();
-	await readyToggle.check();
+	await readyToggle.click();
 
 	// Verify host sees new player
 	await expect(page.getByRole("button", { name: "Alice" })).toBeVisible();

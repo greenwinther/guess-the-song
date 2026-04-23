@@ -112,10 +112,12 @@ export type AdminDashboardPayload = {
 	detailQuestion: string | null;
 	theme: {
 		enabled: boolean;
+		value: string | null;
 		hint: string | null;
 		revealed: boolean;
 		solvedBy: string[];
 		guessedThisRound: string[];
+		guessesThisRound: Record<string, string>;
 	};
 	players: Array<{
 		id: number;
@@ -138,6 +140,7 @@ export type AdminDashboardPayload = {
 		detailLockedAt: number | null;
 		themeSolved: boolean;
 		themeGuessedThisRound: boolean;
+		themeGuess: string | null;
 	}>;
 	playerHistories: Array<{
 		playerName: string;
@@ -155,6 +158,7 @@ export type AdminDashboardPayload = {
 			detailCorrectAnswer: string | null;
 			detailLocked: boolean;
 			detailLockedAt: number | null;
+			themeGuess: string | null;
 		}>;
 	}>;
 	updatedAt: number;
@@ -256,7 +260,7 @@ export type ServerToClientEvents = {
 	}) => void;
 	THEME_HINT_READY: (data: { obfuscated: string }) => void;
 	THEME_REVEALED: () => void;
-	THEME_GUESSED_THIS_ROUND: (data: { playerName: string }) => void;
+	THEME_GUESSED_THIS_ROUND: (data: { playerName: string; guess?: string }) => void;
 	HARDCORE_REQUIRED_UPDATED: (data: { required: boolean }) => void;
 	submitterRevealed: (data: { songId: number }) => void;
 	submitterRevealedAll: (data: { songIds: number[] }) => void;

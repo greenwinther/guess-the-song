@@ -42,6 +42,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 		submittedPlayers,
 		solvedByTheme,
 		lockedForThisRound,
+		themeRevealed,
 	} = useGameRuntime();
 	const [undoUntil, setUndoUntil] = useState<number | null>(null);
 	const [detailUndoUntil, setDetailUndoUntil] = useState<number | null>(null);
@@ -484,6 +485,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const bgImage = bgThumbnail ?? room.backgroundUrl ?? null;
 	const isResultsMode = room.phase === "RESULTS" && Boolean(scores);
 	const correctList = room.songs.map((s) => s.submitter);
+	const detailCorrectList = hasDetailQuestion ? room.songs.map((s) => s.detailAnswer ?? "") : [];
 
 	// You can hide the legacy submit button now, since Lock is per-song
 	const canLock = Boolean(order[currentIndex]?.name) && !selfLocked.has(currentIndex);
@@ -498,7 +500,12 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	};
 
 	return (
-		<BackgroundShell bgImage={bgImage} socketError={socketError}>
+		<BackgroundShell
+			bgImage={bgImage}
+			socketError={socketError}
+			shellSize="cinema"
+			transitionPreset="cinema-enter"
+		>
 			{joinDenied && (
 				<PlayerJoinDeniedBanner joinDenied={joinDenied} onBackToStart={handleBackToStart} />
 			)}
@@ -517,7 +524,17 @@ export default function PlayerGameView({ code, playerName }: Props) {
 			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col">
 				{isResultsMode ? (
 					<>
-						<PlayerResultsPanel order={order} correctList={correctList} />
+						<PlayerResultsPanel
+							order={order}
+							correctList={correctList}
+							detailOrder={hasDetailQuestion ? detailOrder : undefined}
+							detailCorrectList={hasDetailQuestion ? detailCorrectList : undefined}
+							detailQuestion={hasDetailQuestion ? room.detailQuestion : undefined}
+							theme={room.theme ?? null}
+							themeRevealed={themeRevealed}
+							themeSolved={solvedByTheme.includes(resolvedPlayerName)}
+							finalScore={scores?.[resolvedPlayerName] ?? null}
+						/>
 						<div className="mt-4 flex justify-center">
 							<ExportGameReportButton
 								code={room.code}
@@ -549,17 +566,21 @@ export default function PlayerGameView({ code, playerName }: Props) {
 						onSubmitAll={handleSubmitAll}
 						showSubmitAll={!submitted}
 						scoreForMe={scores?.[resolvedPlayerName] ?? null}
+						themeGuessBar={
+							room.theme ? (
+								<PlayerThemeGuessBar code={code} playerName={resolvedPlayerName} />
+							) : null
+						}
 					/>
 				)}
-
-				{/* THEME mini-game: sits UNDER the center panel */}
-				<div className="mt-4">
-					<PlayerThemeGuessBar code={code} playerName={resolvedPlayerName} />
-				</div>
 			</main>
 
 			{/* RIGHT */}
-			<PlayerPlaylistPanel songs={room.songs} revealedIds={revealedSongs} />
+			<PlayerPlaylistPanel
+				songs={room.songs}
+				revealedIds={revealedSongs}
+				currentSongId={currentSongId}
+			/>
 		</BackgroundShell>
 	);
 }

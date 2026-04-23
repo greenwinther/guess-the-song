@@ -25,8 +25,12 @@ export default function HostPlaylistSongRow({
 		<button
 			onClick={() => onSelect?.(song)}
 			disabled={!onSelect}
-			className={`w-full text-left rounded-lg border border-border px-3 py-2 transition ${
-				isCurrent ? "bg-primary/15 border-primary" : onSelect ? "bg-card/50 hover:bg-card/70" : "bg-card/50"
+			className={`w-full rounded-md border px-3 py-2 text-left text-text shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-colors ${
+				isCurrent
+					? "border-primary bg-primary/15"
+					: onSelect
+						? "border-border/70 bg-card/45 hover:bg-card/60"
+						: "border-border/70 bg-card/45"
 			}`}
 		>
 			<div className="flex items-center gap-2">

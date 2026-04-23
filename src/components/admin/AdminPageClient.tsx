@@ -53,6 +53,7 @@ export default function AdminPageClient({ roomCode }: { roomCode: string }) {
 					dashboard={dashboard}
 					reconnecting={reconnecting}
 					currentSong={currentSong}
+					roomTheme={room?.theme ?? null}
 					selectedHistoryPlayer={selectedHistoryPlayer}
 					selectedHistoryRows={selectedHistoryRows}
 					onSelectHistoryPlayer={setSelectedHistoryPlayer}

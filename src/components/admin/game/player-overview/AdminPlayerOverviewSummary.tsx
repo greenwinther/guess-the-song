@@ -7,14 +7,18 @@ export default function AdminPlayerOverviewSummary({
 	reconnecting,
 	currentSongSubmitter,
 	currentSongBonusAnswer,
+	roomTheme,
 	embedded = false,
 }: {
 	dashboard: AdminDashboardPayload;
 	reconnecting: boolean;
 	currentSongSubmitter?: string | null;
 	currentSongBonusAnswer?: string | null;
+	roomTheme?: string | null;
 	embedded?: boolean;
 }) {
+	const themeValue = dashboard.theme.value ?? roomTheme ?? null;
+	const hasTheme = Boolean(themeValue?.trim()) || dashboard.theme.enabled;
 	const content = (
 		<header className={embedded ? "rounded-lg pb-3" : "rounded-lg pb-3"}>
 			<div className="flex flex-wrap items-start justify-between gap-3">
@@ -51,6 +55,12 @@ export default function AdminPlayerOverviewSummary({
 									<span className="text-text/78">
 										{dashboard.detailQuestion ?? "Enabled"}
 									</span>
+								</div>
+							)}
+							{hasTheme && (
+								<div className="text-sm">
+									<span className="text-text/55">Theme:</span>{" "}
+									<span className="text-text/78">{themeValue?.trim() || "-"}</span>
 								</div>
 							)}
 						</div>
