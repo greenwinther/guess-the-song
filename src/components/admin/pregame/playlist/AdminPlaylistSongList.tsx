@@ -100,7 +100,7 @@ export default function AdminPlaylistSongList({
 							onClick={() => {
 								socket.emit(
 									"DEV_SEED",
-									{ code: room.code, players: 3, songs: 5, ready: true },
+									{ code: room.code, players: 10, songs: 10, ready: true },
 									(ok) => {
 										if (!ok) toast.error("Failed to seed demo data.");
 									},
@@ -133,7 +133,7 @@ export default function AdminPlaylistSongList({
 						</Button>
 					</div>
 					<span className="text-xs text-text/60">
-						Adds 3 players + 5 songs (dev only). Resync re-emits room/snapshots.
+						Adds 10 players + 10 songs (dev only). Resync re-emits room/snapshots.
 					</span>
 				</div>
 			)}

@@ -21,6 +21,10 @@ const demoUrls = [
 	{ url: "https://www.youtube.com/watch?v=ktvTqknDobU", title: "Radioactive" },
 	{ url: "https://www.youtube.com/watch?v=Zi_XLOBDo_Y", title: "Billie Jean" },
 	{ url: "https://www.youtube.com/watch?v=09R8_2nJtjg", title: "Sugar" },
+	{ url: "https://www.youtube.com/watch?v=y6120QOlsfU", title: "Sandstorm" },
+	{ url: "https://www.youtube.com/watch?v=60ItHLz5WEA", title: "Faded" },
+	{ url: "https://www.youtube.com/watch?v=hT_nvWreIhg", title: "Counting Stars" },
+	{ url: "https://www.youtube.com/watch?v=lp-EO5I60KA", title: "Thinking Out Loud" },
 ];
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
@@ -73,8 +77,8 @@ export const devSeedHandler = (
 		if (!room || room.code !== code) return;
 		if (!requireHost(socket, room, () => cb?.(false))) return;
 
-		const players = payload.data.players ?? 3;
-		const songs = payload.data.songs ?? 5;
+		const players = payload.data.players ?? 10;
+		const songs = payload.data.songs ?? 10;
 		const ready = payload.data.ready ?? true;
 		const ensureQuestion = !room.detailQuestion;
 		if (ensureQuestion) {

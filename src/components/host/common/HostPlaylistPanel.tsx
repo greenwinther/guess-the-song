@@ -45,12 +45,12 @@ export default function HostPlaylistPanel({
 	if (!viewRoom) return null;
 
 	return (
-		<aside className="order-2 lg:order-none w-full min-h-0 lg:col-span-3 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
+		<aside className="order-2 lg:order-none w-full min-h-0 lg:col-span-3 p-4 sm:p-4 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
 			<div className="mb-3 sm:mb-4">
 				<h2 className="text-lg sm:text-xl font-semibold text-text">Playlist</h2>
 			</div>
 
-			<div className="scrollbar-hidden min-h-[12rem] max-h-72 flex-1 space-y-1 overflow-y-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:max-h-80 lg:max-h-[calc(100vh-12rem)]">
+			<div className="scrollbar-hidden min-h-[12rem] max-h-72 flex-1 space-y-1 overflow-y-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:max-h-80 lg:max-h-[calc(100vh-15rem)]">
 				{songs.map((song, index) => (
 					<HostPlaylistSongRow
 						key={song.id}
@@ -74,9 +74,7 @@ export default function HostPlaylistPanel({
 			{showRevealControls && (showSubmitterRevealButton || showDetailRevealButton) && (
 				<div
 					className={`mt-4 grid gap-2 ${
-						showSubmitterRevealButton && showDetailRevealButton
-							? "grid-cols-2"
-							: "grid-cols-1"
+						showSubmitterRevealButton && showDetailRevealButton ? "grid-cols-2" : "grid-cols-1"
 					}`}
 				>
 					{showSubmitterRevealButton && (
@@ -109,11 +107,10 @@ export default function HostPlaylistPanel({
 				canReveal &&
 				playlistReveals.allSubmittersRevealed &&
 				(!hasDetailQuestion || playlistReveals.allDetailAnswersRevealed) && (
-				<p className="mt-4 text-xs sm:text-sm text-text-muted text-center">
-					All submitters revealed.
-				</p>
-			)}
+					<p className="mt-4 text-xs sm:text-sm text-text-muted text-center">
+						All submitters revealed.
+					</p>
+				)}
 		</aside>
 	);
 }
-

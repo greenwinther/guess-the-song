@@ -76,7 +76,7 @@ function PodiumParticipant({
 	const avatarSize = isFirst ? 64 : 48;
 
 	return (
-		<div className="flex shrink-0 flex-col items-center gap-1.5 text-center">
+		<div className="flex w-16 shrink-0 flex-col items-center gap-0 text-center sm:w-20">
 			<p
 				className={`w-full truncate font-bold text-text ${isFirst ? "text-base" : "text-sm"}`}
 				title={name}
@@ -204,29 +204,34 @@ export default function HostResultsPanel({
 					const baseHeightClass =
 						group.rank === 1 ? "h-28" : group.rank === 2 ? "h-20" : "h-16";
 					const revealAreaClass =
-						group.rank === 1 ? "min-h-28" : group.rank === 2 ? "min-h-24" : "min-h-20";
+						group.rank === 1 ? "min-h-24" : group.rank === 2 ? "min-h-20" : "min-h-16";
 					const orderClass =
 						group.rank === 1 ? "sm:order-2" : group.rank === 2 ? "sm:order-1" : "sm:order-3";
+					const shouldScrollParticipants = group.names.length > 3;
 					return (
 						<div
 							key={`${group.score}-${group.rank}`}
-							className={`${orderClass} flex flex-col items-center justify-end`}
+							className={`${orderClass} flex min-w-0 flex-col items-center justify-end`}
 						>
 							<div
-								className={`flex w-full items-end justify-center px-2 pb-3 text-center ${revealAreaClass}`}
+								className={`flex min-w-0 w-full items-end justify-center px-2 pb-0 text-center ${revealAreaClass}`}
 							>
 								{isRevealed ? (
-									<div>
-										<div className="scrollbar-hidden mx-auto flex max-w-full snap-x gap-2 overflow-x-auto px-1">
-											{group.names.map((name) => (
-													<PodiumParticipant
-														key={name}
-														name={name}
-														player={playersByName.get(name.toLowerCase())}
-														isFirst={isFirst}
-													/>
-												))}
-										</div>
+									<div
+										className={`mx-auto min-w-0 gap-2 px-1 ${
+											shouldScrollParticipants
+												? "scrollbar-hidden grid max-h-28 w-full max-w-[11rem] grid-cols-3 justify-items-center overflow-y-auto overflow-x-hidden sm:max-w-[13rem] lg:max-w-[15rem]"
+												: "flex w-auto max-w-full flex-nowrap justify-center overflow-visible"
+										}`}
+									>
+										{group.names.map((name) => (
+											<PodiumParticipant
+												key={name}
+												name={name}
+												player={playersByName.get(name.toLowerCase())}
+												isFirst={isFirst}
+											/>
+										))}
 									</div>
 								) : (
 									<p className="text-sm font-semibold italic text-text-muted">

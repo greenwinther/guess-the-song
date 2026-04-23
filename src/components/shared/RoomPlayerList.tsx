@@ -43,7 +43,7 @@ export default function RoomPlayerList({
 	return (
 		<div className={`flex min-h-0 flex-col w-full ${className ?? ""}`}>
 			<ul
-				className={`scrollbar-hidden flex min-h-[12rem] flex-1 flex-col gap-1 max-h-72 overflow-y-auto sm:max-h-80 lg:max-h-none ${
+				className={`scrollbar-hidden flex min-h-[12rem] flex-1 flex-col gap-1 max-h-64 overflow-y-auto sm:max-h-72 lg:max-h-[calc(100vh-27rem)] ${
 					inset
 						? "rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)]"
 						: "pr-1"
@@ -80,7 +80,10 @@ export default function RoomPlayerList({
 								: "bg-primary";
 
 					return (
-						<li key={p.id} className="flex items-center gap-1.5 rounded-md px-1.5 text-text transition-colors hover:bg-black/10">
+						<li
+							key={p.id}
+							className="flex items-center gap-1.5 rounded-md px-1.5 text-text transition-colors hover:bg-black/10"
+						>
 							{/* Dot color follows lobby readiness or game submission status. */}
 							{showAvatar ? (
 								<AvatarStack
@@ -159,7 +162,10 @@ export default function RoomPlayerList({
 
 							{/* Songs locked count */}
 							{showLockCounts && (
-								<span className="ml-auto text-xs opacity-70 tabular-nums" title="Songs locked">
+								<span
+									className="ml-auto text-xs opacity-70 tabular-nums"
+									title="Songs locked"
+								>
 									{lockCount}
 								</span>
 							)}

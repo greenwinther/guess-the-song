@@ -17,7 +17,7 @@ export default function PlayerPlaylistPanel({
 	return (
 		<aside
 			className={clsx(
-				"order-3 w-full min-h-0 border-t border-border p-4 sm:p-6 lg:order-none lg:col-span-3 lg:border-l lg:border-t-0 flex flex-col"
+				"order-3 w-full min-h-0 border-t border-border p-4 sm:p-4 lg:order-none lg:col-span-3 lg:border-l lg:border-t-0 flex flex-col"
 			)}
 		>
 			<div className="mb-3 sm:mb-4">

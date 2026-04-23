@@ -66,9 +66,9 @@ export default function AdminPlayerGuessHistoryPanel({
 						<span className="text-text">{selectedHistoryPlayer ?? "No player selected"}</span>
 					</div>
 				</div>
-				<div className={`${styles.insetPanel} overflow-x-auto rounded-xl px-3 py-2`}>
+				<div className={`${styles.insetPanel} scrollbar-hidden max-h-[calc(100vh-24rem)] overflow-auto rounded-xl px-3 py-2`}>
 					<table className="min-w-full text-sm">
-						<thead>
+						<thead className="sticky top-0 z-10 bg-[rgb(34_21_48)] shadow-[0_1px_0_rgb(255_255_255/0.08)]">
 							<tr className="text-left text-text/70 border-b border-border">
 								<th className="py-2 px-3">Song</th>
 								<th className="py-2 px-3">Guess</th>

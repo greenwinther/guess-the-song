@@ -15,29 +15,28 @@ export function PlayerGuessPanel({
 	submitted,
 	onReorder,
 	onDetailReorder,
-	onLockCurrent, // 👈 NEW
+	onLockCurrent,
 	onLockDetail,
-	currentIndex, // 👈 NEW
-	lockedIndices, // 👈 NEW
+	currentIndex,
+	lockedIndices,
 	detailLockedIndices,
-	canLock, // 👈 NEW (e.g., there is a selection & not locked)
+	canLock,
 	canLockDetail,
-	undoVisible, // 👈 optional
-	onUndo, // 👈 optional
+	undoVisible,
+	onUndo,
 	detailUndoVisible,
 	onDetailUndo,
 	scoreForMe,
 	themeGuessBar,
-	onSubmitAll, // 👈 new (optional)
-	showSubmitAll, // 👈 new (optional)
+	onSubmitAll,
+	showSubmitAll,
 }: {
 	order: OrderItem[];
 	detailOrder?: OrderItem[];
 	detailQuestion?: string;
 	submitted: boolean;
-	onReorder: (o: OrderItem[]) => void;
-	onDetailReorder?: (o: OrderItem[]) => void;
-
+	onReorder: (order: OrderItem[]) => void;
+	onDetailReorder?: (order: OrderItem[]) => void;
 	currentIndex: number;
 	lockedIndices: number[];
 	onLockCurrent: () => void;
@@ -45,20 +44,19 @@ export function PlayerGuessPanel({
 	detailLockedIndices?: number[];
 	onLockDetail?: () => void;
 	canLockDetail?: boolean;
-
 	undoVisible?: boolean;
 	onUndo?: () => void;
 	detailUndoVisible?: boolean;
 	onDetailUndo?: () => void;
-
 	scoreForMe?: number | null;
 	themeGuessBar?: ReactNode;
-	onSubmitAll?: () => void; // 👈
-	showSubmitAll?: boolean; // 👈
+	onSubmitAll?: () => void;
+	showSubmitAll?: boolean;
 }) {
 	const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
 	const isLockedCurrent = lockedIndices.includes(currentIndex);
 	const isDetailLocked = detailLockedIndices?.includes(currentIndex) ?? false;
+
 	const confirmSubmitAll = () => {
 		setConfirmSubmitOpen(false);
 		onSubmitAll?.();
@@ -66,22 +64,25 @@ export function PlayerGuessPanel({
 
 	return (
 		<section className="flex flex-col items-center">
-			<h1 className="text-xl sm:text-3xl font-semibold text-text mb-4 sm:mb-2">
-				Make your guesses
-			</h1>
+			<h1 className="mb-4 text-xl font-semibold text-text sm:mb-2 sm:text-3xl">Make your guesses</h1>
 
-			<p className="text-sm mb-4 opacity-80">
-				Song {currentIndex + 1} — drag to arrange both lists, then lock each answer.
+			<p className="mb-4 text-sm opacity-80">
+				<span className="sm:hidden">
+					Song {currentIndex + 1} - tap each slot to choose a player, then lock each answer.
+				</span>
+				<span className="hidden sm:inline">
+					Song {currentIndex + 1} - drag to arrange both lists, then lock each answer.
+				</span>
 			</p>
 
 			{themeGuessBar && <div className="mb-6 w-full max-w-3xl">{themeGuessBar}</div>}
 
 			<div
-				className={`w-full grid gap-6 ${
+				className={`grid w-full gap-6 ${
 					detailQuestion && detailOrder && onDetailReorder ? "lg:grid-cols-2" : "grid-cols-1"
 				}`}
 			>
-				<div className="w-full flex flex-col items-center">
+				<div className="flex w-full flex-col items-center">
 					<div className="mb-3 w-full max-w-md text-left">
 						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
 							Submitter
@@ -96,11 +97,11 @@ export function PlayerGuessPanel({
 						lockedIndices={lockedIndices}
 					/>
 
-					<div className="mt-6 flex items-center gap-3 w-full max-w-md">
+					<div className="mt-5 flex w-full max-w-md items-center gap-3">
 						<Button
 							onClick={onLockCurrent}
 							variant="primary"
-							size="lg"
+							size="md"
 							disabled={submitted || !canLock}
 							className="flex-1"
 						>
@@ -121,7 +122,7 @@ export function PlayerGuessPanel({
 				</div>
 
 				{detailQuestion && detailOrder && onDetailReorder && (
-					<div className="w-full flex flex-col items-center">
+					<div className="flex w-full flex-col items-center">
 						<div className="mb-3 w-full max-w-md text-left">
 							<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
 								Bonus question
@@ -135,11 +136,11 @@ export function PlayerGuessPanel({
 							currentIndex={currentIndex}
 							lockedIndices={detailLockedIndices ?? []}
 						/>
-						<div className="mt-6 flex items-center gap-3 w-full max-w-md">
+						<div className="mt-5 flex w-full max-w-md items-center gap-3">
 							<Button
 								onClick={onLockDetail}
 								variant="primary"
-								size="lg"
+								size="md"
 								disabled={submitted || !canLockDetail}
 								className="flex-1"
 							>
@@ -159,12 +160,12 @@ export function PlayerGuessPanel({
 					</div>
 				)}
 			</div>
-			<div className="mt-6 flex items-center gap-3">
+			<div className="mt-5 flex items-center gap-3">
 				{showSubmitAll && onSubmitAll && (
 					<Button
 						onClick={() => setConfirmSubmitOpen(true)}
 						variant="secondary"
-						size="lg"
+						size="md"
 						disabled={submitted}
 						className="flex-1"
 					>

@@ -521,7 +521,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 			/>
 
 			{/* CENTER */}
-			<main className="lg:col-span-6 p-4 sm:p-6 flex flex-col">
+			<main className="lg:col-span-6 p-4 sm:p-4 flex flex-col">
 				{isResultsMode ? (
 					<>
 						<PlayerResultsPanel
