@@ -24,6 +24,7 @@ export function computeScoreBoard({
 			byPlayer[name] = {
 				playerName: name,
 				correctGuesses: 0,
+				correctDetailGuesses: 0,
 				themeBonuses: 0,
 				hardcoreBonus: 0,
 				total: 0,
@@ -45,6 +46,17 @@ export function computeScoreBoard({
 		}
 	}
 
+	// Per-song bonus/detail answer (uses first choice)
+	for (const rd of Object.values(rounds)) {
+		if (!rd.detailCorrectAnswer || !rd.detailOrders) continue;
+		for (const [playerName, order] of Object.entries(rd.detailOrders)) {
+			if (!scoringNames.has(playerName)) continue;
+			if (order[0] === rd.detailCorrectAnswer) {
+				ensure(playerName).correctDetailGuesses += 1;
+			}
+		}
+	}
+
 	// Theme bonuses (tracked in lib/score)
 	for (const [playerName, points] of Object.entries(themePointsByPlayer)) {
 		if (!scoringNames.has(playerName)) continue;
@@ -54,7 +66,7 @@ export function computeScoreBoard({
 	// Hardcore multiplier (apply on base)
 	for (const player of scoringPlayers) {
 		const row = ensure(player.name);
-		const base = row.correctGuesses + row.themeBonuses;
+		const base = row.correctGuesses + row.correctDetailGuesses + row.themeBonuses;
 		if (player.hardcore) {
 			const boosted = Math.round(base * hardcoreMultiplier * 100) / 100;
 			row.hardcoreBonus = boosted - base;

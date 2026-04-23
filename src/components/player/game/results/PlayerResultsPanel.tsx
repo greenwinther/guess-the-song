@@ -12,16 +12,17 @@ type PlayerResultsPanelProps = {
 	finalScore?: number | null;
 };
 
-function ResultBadge({ correct }: { correct: boolean }) {
+function ResultBadge({ points }: { points: number }) {
+	const hasPoints = points > 0;
 	return (
 		<span
 			className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-xs font-bold ${
-				correct
+				hasPoints
 					? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
 					: "border-primary/40 bg-primary/10 text-primary"
 			}`}
 		>
-			{correct ? "1" : "0"}
+			{points}
 		</span>
 	);
 }
@@ -57,7 +58,14 @@ export function PlayerResultsPanel({
 		Boolean(detailQuestion) &&
 		Boolean(detailOrder?.length) &&
 		Boolean(detailCorrectList?.some((answer) => answer.trim().length > 0));
-	const displayScore = finalScore ?? totalCorrect;
+	const totalDetailCorrect = hasDetailResults
+		? (detailOrder ?? []).reduce(
+				(sum, item, idx) => sum + (item.name === detailCorrectList?.[idx] ? 1 : 0),
+				0
+			)
+		: 0;
+	const localScore = totalCorrect + totalDetailCorrect + (themeSolved ? 1 : 0);
+	const displayScore = finalScore == null ? localScore : Math.max(finalScore, localScore);
 
 	return (
 		<section className="flex min-h-0 flex-1 flex-col items-center gap-5">
@@ -65,6 +73,7 @@ export function PlayerResultsPanel({
 				<h1 className="text-2xl font-semibold text-text">Results</h1>
 				<p className="mt-1 text-sm text-text-muted">
 					You matched {totalCorrect} of {totalSongs} submitters
+					{hasDetailResults ? ` and ${totalDetailCorrect} bonus answers` : ""}
 				</p>
 			</div>
 
@@ -141,6 +150,7 @@ export function PlayerResultsPanel({
 						const detailGuess = detailOrder?.[idx]?.name ?? "";
 						const detailCorrect = detailCorrectList?.[idx] ?? "";
 						const detailIsCorrect = detailGuess === detailCorrect;
+						const rowPoints = (isCorrect ? 1 : 0) + (hasDetailResults && detailIsCorrect ? 1 : 0);
 						return (
 							<tr
 								key={item.id}
@@ -166,7 +176,7 @@ export function PlayerResultsPanel({
 									</>
 								)}
 								<td className="px-2 py-2 text-right">
-									<ResultBadge correct={isCorrect} />
+									<ResultBadge points={rowPoints} />
 								</td>
 							</tr>
 						);

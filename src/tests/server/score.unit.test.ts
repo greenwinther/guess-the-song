@@ -58,3 +58,39 @@ test("computeScoreBoard excludes the host from seeded and calculated scores", ()
 	assert.equal(board.byPlayer.Alice?.total, 1);
 	assert.equal(board.byPlayer.Bob?.total, 1.5);
 });
+
+test("computeScoreBoard awards points for correct bonus detail answers", () => {
+	const room = baseRoom();
+	const rounds: Record<number, RoundData> = {
+		1: {
+			correctAnswer: "Alice",
+			orders: {
+				Alice: ["Bob"],
+				Bob: ["Alice"],
+			},
+			submitters: ["Alice", "Bob"],
+			locks: {},
+			detailCorrectAnswer: "1999",
+			detailAnswers: ["1999", "2002"],
+			detailOrders: {
+				Alice: ["1999"],
+				Bob: ["1999"],
+			},
+			detailLocks: {},
+		},
+	};
+
+	const board = computeScoreBoard({
+		room,
+		rounds,
+		themePointsByPlayer: {},
+		hardcoreMultiplier: 1.5,
+	});
+
+	assert.equal(board.byPlayer.Alice?.correctGuesses, 0);
+	assert.equal(board.byPlayer.Alice?.correctDetailGuesses, 1);
+	assert.equal(board.byPlayer.Alice?.total, 1);
+	assert.equal(board.byPlayer.Bob?.correctGuesses, 1);
+	assert.equal(board.byPlayer.Bob?.correctDetailGuesses, 1);
+	assert.equal(board.byPlayer.Bob?.total, 3);
+});

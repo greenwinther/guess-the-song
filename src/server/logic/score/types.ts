@@ -1,6 +1,7 @@
 export type ScoreRow = {
 	playerName: string;
 	correctGuesses: number;
+	correctDetailGuesses: number;
 	themeBonuses: number;
 	hardcoreBonus: number;
 	total: number;
