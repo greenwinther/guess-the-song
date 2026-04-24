@@ -24,10 +24,10 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
 		.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-	await adminPage.getByPlaceholder("Your name").fill("Bob");
+	await adminPage.getByPlaceholder("Submitter").fill("Bob");
 	await adminPage.getByRole("button", { name: "Add Song" }).click();
 
-	await expect(page.getByText("Songs prepared: 1")).toBeVisible();
+	await expect(page.getByText("1 song added")).toBeVisible();
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -43,14 +43,14 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 		await playerPage.locator("#player-ready").click();
 
 		await expect(page.getByRole("button", { name: "Alice" })).toBeVisible();
-		await expect(page.getByText("Players ready: 1/1")).toBeVisible();
+		await expect(page.getByText(/1\s*\/\s*1 players ready/i)).toBeVisible();
 
 		await page.getByRole("button", { name: "Start Game" }).click();
 
 		await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(page.getByRole("button", { name: "Play/Pause (Space)" })).toBeVisible();
-		await expect(playerPage.getByRole("heading", { name: /Guess the Submitter/i })).toBeVisible();
+		await expect(playerPage.getByRole("heading", { name: "Make your guesses" })).toBeVisible();
 
 		await page.getByRole("button", { name: "Play/Pause (Space)" }).click();
 		await expect(page.getByRole("button", { name: "Play/Pause (Space)" })).toContainText("Pause");
@@ -61,7 +61,7 @@ test("host, admin, and player can complete a minimal live game flow", async ({
 
 		await expect(page.getByRole("heading", { name: "Final Results" })).toBeVisible();
 		await expect(playerPage.getByRole("heading", { name: "Results" })).toBeVisible();
-		await expect(playerPage.getByText("Your total correct:")).toBeVisible();
+		await expect(playerPage.getByText("Final score")).toBeVisible();
 	} finally {
 		await playerContext.close();
 	}

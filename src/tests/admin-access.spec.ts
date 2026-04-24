@@ -15,5 +15,4 @@ test("host can open the admin editor for a created room", async ({ page, context
 
 	await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 	await expect(adminPage.getByRole("button", { name: "Open host control" })).toBeVisible();
-	await expect(adminPage.getByRole("heading", { name: "Room Editor" })).toBeVisible();
 });

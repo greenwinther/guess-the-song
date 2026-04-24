@@ -28,8 +28,9 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 
 		await expect(page.getByRole("button", { name: "Alice" })).toBeVisible();
 
-		page.once("dialog", (dialog) => dialog.accept());
 		await page.getByRole("button", { name: "Alice" }).click();
+		await page.getByRole("button", { name: "Kick", exact: true }).click();
+		await expect(page.getByRole("heading", { name: "Kick player?" })).toBeVisible();
 		await page.getByRole("button", { name: "Kick" }).click();
 
 		await expect(

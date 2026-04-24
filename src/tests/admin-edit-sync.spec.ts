@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("admin theme and detail edits sync into host control status", async ({ page, context }) => {
+test("admin theme and bonus question edits persist in the editor", async ({ page, context }) => {
 	await page.goto("/");
 	await page.getByRole("button", { name: "Host" }).click();
 	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
@@ -18,9 +18,12 @@ test("admin theme and detail edits sync into host control status", async ({ page
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").fill("Movie Night");
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").press("Enter");
 
-	await adminPage.getByPlaceholder("Detail question (e.g., Year released)").fill("Release year");
-	await adminPage.getByPlaceholder("Detail question (e.g., Year released)").press("Enter");
+	await adminPage.getByPlaceholder("Bonus question (e.g., Year released)").fill("Release year");
+	await adminPage.getByPlaceholder("Bonus question (e.g., Year released)").press("Enter");
 
-	await expect(page.getByText("Theme set: Yes")).toBeVisible();
-	await expect(page.getByText("Detail question: Yes")).toBeVisible();
+	await adminPage.reload();
+	await expect(adminPage.getByPlaceholder("Secret theme (e.g., Disney)")).toHaveValue("Movie Night");
+	await expect(adminPage.getByPlaceholder("Bonus question (e.g., Year released)")).toHaveValue(
+		"Release year"
+	);
 });

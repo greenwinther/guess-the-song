@@ -24,15 +24,12 @@ test("admin editor becomes read-only after the live game starts", async ({
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
 		.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-	await adminPage.getByPlaceholder("Your name").fill("Bob");
+	await adminPage.getByPlaceholder("Submitter").fill("Bob");
 	await adminPage.getByRole("button", { name: "Add Song" }).click();
-	await expect(page.getByText("Songs prepared: 1")).toBeVisible();
+	await expect(page.getByText("1 song added")).toBeVisible();
 
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").fill("Movie Night");
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").press("Enter");
-
-	await adminPage.getByText("1").click();
-	await expect(adminPage.getByLabel("Remove song")).toBeVisible();
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -47,19 +44,12 @@ test("admin editor becomes read-only after the live game starts", async ({
 
 		await page.getByRole("button", { name: "Start Game" }).click();
 
-		await expect(adminPage.getByText("Locked after start")).toBeVisible();
-		await expect(adminPage.getByRole("button", { name: "Show setup" })).toBeVisible();
-		await adminPage.getByRole("button", { name: "Show setup" }).click();
-		await expect(
-			adminPage.getByText("Setup is read-only once the live game has started.")
-		).toBeVisible();
-		await expect(adminPage.getByRole("button", { name: "Save theme" })).toBeDisabled();
-		await expect(adminPage.getByRole("button", { name: "Save question" })).toBeDisabled();
-		await expect(adminPage.getByPlaceholder("Secret theme (e.g., Disney)")).toBeDisabled();
-		await expect(adminPage.getByPlaceholder("Detail question (e.g., Year released)")).toBeDisabled();
-		await expect(adminPage.getByRole("button", { name: "Add Song" })).toBeDisabled();
-		await expect(adminPage.locator("#admin-hardcore-required")).toBeDisabled();
-		await expect(adminPage.getByLabel("Remove song")).toHaveCount(0);
+		await expect(adminPage.getByRole("heading", { name: "Guess History" })).toBeVisible();
+		await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toHaveCount(0);
+		await expect(adminPage.getByPlaceholder("Secret theme (e.g., Disney)")).toHaveCount(0);
+		await expect(adminPage.getByPlaceholder("Bonus question (e.g., Year released)")).toHaveCount(0);
+		await expect(adminPage.getByRole("button", { name: "Add Song" })).toHaveCount(0);
+		await expect(adminPage.getByRole("button", { name: "Remove" })).toHaveCount(0);
 	} finally {
 		await playerContext.close();
 	}

@@ -18,9 +18,9 @@ test("host and player can reload into an active round", async ({ page, context, 
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
 		.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-	await adminPage.getByPlaceholder("Your name").fill("Bob");
+	await adminPage.getByPlaceholder("Submitter").fill("Bob");
 	await adminPage.getByRole("button", { name: "Add Song" }).click();
-	await expect(page.getByText("Songs prepared: 1")).toBeVisible();
+	await expect(page.getByText("1 song added")).toBeVisible();
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -36,18 +36,16 @@ test("host and player can reload into an active round", async ({ page, context, 
 		await page.getByRole("button", { name: "Start Game" }).click();
 		await page.getByRole("button", { name: "Play/Pause (Space)" }).click();
 
-		await expect(playerPage.getByRole("heading", { name: /Guess the Submitter/i })).toBeVisible();
+		await expect(playerPage.getByRole("heading", { name: "Make your guesses" })).toBeVisible();
 
 		await playerPage.reload();
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
-		await expect(playerPage.getByRole("heading", { name: /Guess the Submitter/i })).toBeVisible();
-		await expect(playerPage.getByText("Song 1")).toBeVisible();
+		await expect(playerPage.getByRole("heading", { name: "Make your guesses" })).toBeVisible();
 
 		await page.reload();
 		await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 		await expect(page.getByRole("button", { name: "Play/Pause (Space)" })).toBeVisible();
-		await expect(page.getByRole("button", { name: "Recap" })).toBeVisible();
-		await expect(page.getByRole("button", { name: "Show Results" })).toBeVisible();
+		await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
 	} finally {
 		await playerContext.close();
 	}

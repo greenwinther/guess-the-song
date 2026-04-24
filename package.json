@@ -16,7 +16,7 @@
         "start:next": "next start",
         "lint": "eslint .",
         "knip": "knip --no-progress",
-        "test:unit": "tsx --test \"src/tests/**/*.unit.test.ts\"",
+        "test:unit": "node scripts/run-unit-tests.cjs",
         "test:e2e": "playwright test",
         "wipe": "tsx src/scripts/wipeAll.ts",
         "test:smoke": "tsx src/scripts/smokeTest.ts"

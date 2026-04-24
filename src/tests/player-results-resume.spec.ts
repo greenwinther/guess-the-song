@@ -22,9 +22,9 @@ test("player can reload into results after the game has ended", async ({
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
 		.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-	await adminPage.getByPlaceholder("Your name").fill("Bob");
+	await adminPage.getByPlaceholder("Submitter").fill("Bob");
 	await adminPage.getByRole("button", { name: "Add Song" }).click();
-	await expect(page.getByText("Songs prepared: 1")).toBeVisible();
+	await expect(page.getByText("1 song added")).toBeVisible();
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -48,7 +48,7 @@ test("player can reload into results after the game has ended", async ({
 
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(playerPage.getByRole("heading", { name: "Results" })).toBeVisible();
-		await expect(playerPage.getByText("Your total correct:")).toBeVisible();
+		await expect(playerPage.getByText("Final score")).toBeVisible();
 	} finally {
 		await playerContext.close();
 	}
