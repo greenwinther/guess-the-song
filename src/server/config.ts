@@ -1,8 +1,14 @@
 import dotenv from "dotenv";
 import { z } from "zod";
 
-dotenv.config({ path: ".env.local", quiet: true });
-dotenv.config({ quiet: true });
+const isHostedRuntime = Boolean(
+	process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RENDER || process.env.NODE_ENV === "production"
+);
+
+if (!isHostedRuntime) {
+	dotenv.config({ path: ".env.local", quiet: true });
+	dotenv.config({ quiet: true });
+}
 
 const optionalUrlSchema = z.preprocess((value) => {
 	if (value == null) return undefined;
@@ -50,7 +56,7 @@ if (!parsed.success) {
 const raw = parsed.data;
 const isProduction = raw.NODE_ENV === "production";
 const clientUrl = raw.CLIENT_URL ?? (isProduction ? undefined : "http://localhost:3000");
-const socketPort = raw.PORT ?? raw.SOCKET_PORT ?? 4000;
+const socketPort = isProduction ? (raw.PORT ?? 4000) : (raw.PORT ?? raw.SOCKET_PORT ?? 4000);
 
 if (isProduction && !clientUrl) {
 	throw new Error("Missing CLIENT_URL in production");

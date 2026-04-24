@@ -13,6 +13,7 @@ import { serverConfig } from "./config";
 const log = scopedLogger("socketServer");
 
 const allowedOrigins = serverConfig.allowedOrigins;
+const listenHost = "0.0.0.0";
 
 const app = express();
 app.disable("x-powered-by");
@@ -99,8 +100,17 @@ io.on("connection", (socket) => {
 	registerSocketHandlers(io, socket);
 });
 
-httpServer.listen(serverConfig.socketPort, () => {
-	log.info({ port: serverConfig.socketPort }, "Socket.IO + Express server listening");
+httpServer.listen(serverConfig.socketPort, listenHost, () => {
+	log.info(
+		{
+			host: listenHost,
+			port: serverConfig.socketPort,
+			envPort: process.env.PORT ?? null,
+			nodeEnv: serverConfig.nodeEnv,
+			allowedOrigins,
+		},
+		"Socket.IO + Express server listening"
+	);
 	startCleanupScheduler(io, serverConfig.cleanupIntervalMs);
 });
 
