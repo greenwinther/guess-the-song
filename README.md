@@ -1,30 +1,25 @@
 # guess-the-song
 
-Real-time multiplayer "guess the submitter" game built with Next.js, React, Socket.io, Express, and TypeScript.
+Real-time multiplayer "guess the submitter" game built with Next.js, React, Express, Socket.IO, and TypeScript.
 
-The app is now organized around three separate flows:
+The app has three main runtime surfaces:
 
-- Public/player flow: join a room, wait in the lobby, play rounds, and see results.
-- Admin/editor flow: prepare songs, theme, detail answers, and room settings ahead of time.
-- Host/control flow: run the live session, play songs, reveal answers, and show results.
+- player flow: join a room, ready up, play rounds, and view results
+- host flow: run the live game, control playback, and reveal results
+- admin flow: prepare songs, themes, and bonus questions before the game starts
 
-## Current Routes
+## Routes
+
+Current App Router routes:
 
 - `/`
-  Public entry shell with an in-card `join` / `host` switch.
-- `/play/[code]`
-  Player runtime shell. The room phase decides whether the player sees lobby, gameplay, or results.
-- `/control/[code]`
-  Host control shell. The room phase decides whether the host sees pre-game control or live playback.
-- `/admin/[code]`
-  Admin/editor surface plus live dashboard.
-
-Legacy compatibility routes still exist and redirect:
-
+  Home screen with `Join` / `Host` entry
 - `/join/[code]`
-- `/join/[code]/game`
+  Player room runtime
 - `/host/[code]`
-- `/host/[code]/game`
+  Host control runtime
+- `/admin/[code]`
+  Admin/editor runtime
 
 ## Stack
 
@@ -32,62 +27,61 @@ Legacy compatibility routes still exist and redirect:
 - React 18
 - TypeScript
 - Tailwind CSS
-- Socket.io
 - Express
+- Socket.IO
 - Zod
-- `@dnd-kit/*` for drag-and-drop ordering
+- `@dnd-kit/*`
 
-## Architecture
+## Project Layout
 
 ### Client
 
 - `src/app`
-  App Router pages and route layouts.
+  App Router pages and layouts
 - `src/components/player`
-  Player-facing UI pieces.
-- `src/components/control`
-  Host-control and shared editor/control widgets.
+  Player UI
+- `src/components/host`
+  Host UI
 - `src/components/admin`
-  Admin/editor-specific surfaces.
+  Admin/editor UI
 - `src/contexts/gameContext`
-  Room/runtime React state for mounted shells.
+  Shared mounted room/runtime state
 - `src/contexts/SocketContext.tsx`
-  Shared Socket.io client connection.
+  Shared browser Socket.IO connection
 
 ### Server
 
+- `src/server/socketServer.ts`
+  Express + Socket.IO entrypoint
 - `src/server/socket`
-  Socket event handlers and live game flow.
+  Socket event handlers
 - `src/server/http/registerHttpRoutes.ts`
-  Express HTTP routes.
+  HTTP endpoints
 - `src/server/store`
-  In-memory room storage and mutations.
+  In-memory room store
 - `src/server/state`
-  Game snapshots, persistence, and public room projection.
+  Persistence and runtime snapshots
 
-Room HTTP endpoints now live in one place only: the Express server. The duplicate App Router room APIs were removed.
+## Prerequisites
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
+- Node.js 22.x
 - npm
 - YouTube Data API key
 
-### Install
+## Install
 
 ```bash
 npm install
 ```
 
-### Environment
+## Local Environment
 
 Create `.env.local` in the project root:
 
-```bash
+```env
 NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
 NEXT_PUBLIC_API_URL=http://localhost:4000
+SOCKET_PORT=4000
 CLIENT_URL=http://localhost:3000
 YOUTUBE_API_KEY=your_youtube_api_key
 ```
@@ -97,10 +91,15 @@ Useful optional variables:
 - `CLIENT_URL_2`
 - `LOG_LEVEL`
 - `PORT`
-- `SOCKET_PORT`
 - `CLEANUP_INTERVAL_MS`
 
-### Run Locally
+Notes:
+
+- `.env.local` is used for local development
+- hosted production deploys should use platform environment variables instead
+- in hosted production, the backend listens on platform `PORT`
+
+## Run Locally
 
 ```bash
 npm run dev
@@ -109,41 +108,50 @@ npm run dev
 This starts:
 
 - Next.js on `http://localhost:3000`
-- Express + Socket.io on `http://localhost:4000`
+- Express + Socket.IO on `http://localhost:4000`
 
-## Available Scripts
+## Scripts
 
 - `npm run dev`
-  Start Next.js and the socket server together.
+  Start Next.js and the socket server together
 - `npm run dev:next`
-  Start only the Next.js app.
+  Start only Next.js
 - `npm run dev:socket`
-  Start only the socket/Express server.
+  Start only the Express + Socket.IO server
 - `npm run build`
-  Build the Next.js app and the server bundle.
+  Build the Next.js app and the server bundle
 - `npm run build:server`
-  Build only the server bundle into `dist/`.
-- `npm run start:next`
-  Start the production Next.js app.
+  Build only the backend bundle into `dist/`
+- `npm run build:railway`
+  Build target used for Railway
+- `npm run build:render`
+  Build target used for Render
+- `npm run start:server`
+  Start the compiled backend from `dist/`
 - `npm run start:railway`
-  Start the compiled server bundle.
+  Railway start target
+- `npm run start:render`
+  Render start target
+- `npm run start:next`
+  Start the production Next.js app
 - `npm run lint`
-  Run ESLint across the repo.
+  Run ESLint
 - `npm run test:unit`
-  Run unit tests with `tsx --test`.
+  Run unit tests
 - `npm run test:e2e`
-  Run Playwright end-to-end tests.
+  Run Playwright end-to-end tests
 - `npm run test:smoke`
-  Run the smoke test script.
+  Run the smoke-test script
 - `npm run wipe`
-  Clear persisted game data.
+  Remove persisted local state
 - `npm run knip`
-  Check for unused files and exports.
+  Check for unused files and exports
 
 ## HTTP Endpoints
 
-These are served by the Express server:
+Served by the Express backend:
 
+- `GET /`
 - `GET /health`
 - `GET /api/youtube-search?q=...`
 - `GET /api/youtube-title?id=...`
@@ -151,91 +159,80 @@ These are served by the Express server:
 - `GET /api/rooms/:code`
 - `POST /api/rooms/:code/songs`
 
-## Deploying For Free
+## Deployment
 
-Recommended setup for this repo:
+This repo is designed as a split deploy:
 
-- frontend on Vercel Hobby
-- socket/Express server on Render Free
+- frontend on Vercel
+- backend on a long-running Node host such as Render or Railway
 
-Why this split:
+### Frontend Environment
 
-- the frontend is a normal Next.js app and fits Vercel well
-- the backend needs a long-running Socket.io server, which belongs on Render rather than Vercel Functions
+Set these on Vercel:
 
-### Backend On Render
+- `NEXT_PUBLIC_SOCKET_URL`
+  Public backend URL, for example `https://your-backend.up.railway.app`
+- `NEXT_PUBLIC_API_URL`
+  Same backend URL
 
-This repo includes [render.yaml](./render.yaml) for the socket server.
+### Backend Environment
 
-Required Render environment variables:
+Set these on the backend host:
 
+- `NODE_ENV=production`
 - `CLIENT_URL`
-  Your deployed frontend URL, for example `https://your-app.vercel.app`
+  Exact frontend origin, for example `https://your-app.vercel.app`
 - `YOUTUBE_API_KEY`
-  Your YouTube Data API key
 
-Optional Render environment variables:
+Optional:
 
 - `CLIENT_URL_2`
-  Secondary allowed origin if you want an extra frontend domain
+  Secondary allowed frontend origin
 - `CLEANUP_INTERVAL_MS`
 - `LOG_LEVEL`
 
-Notes:
+Do not set a custom `PORT` unless the platform explicitly requires it. Hosted platforms such as Render and Railway provide `PORT` automatically.
 
-- Render sets `PORT` automatically; the server now supports that directly
-- the health check endpoint is `GET /health`
+### Render
 
-### Frontend On Vercel
+This repo includes [render.yaml](./render.yaml) for the backend service.
 
-Required Vercel environment variables:
+### Railway
 
-- `NEXT_PUBLIC_SOCKET_URL`
-  Your Render backend URL, for example `https://guess-the-song-socket.onrender.com`
-- `NEXT_PUBLIC_API_URL`
-  The same Render backend URL
+Typical Railway commands:
+
+- build: `npm run build:railway`
+- start: `npm run start:railway`
+
+If needed, pin Railway's Node runtime with:
+
+```env
+NIXPACKS_NODE_VERSION=22
+```
 
 ### Deployment Order
 
-1. Deploy the backend to Render.
-2. Copy the public Render service URL.
-3. Deploy the frontend to Vercel with `NEXT_PUBLIC_SOCKET_URL` and `NEXT_PUBLIC_API_URL` set to that backend URL.
-4. Set `CLIENT_URL` on Render to the final Vercel frontend URL.
-5. Redeploy Render once more so CORS matches the live frontend.
+1. Deploy the backend.
+2. Confirm backend health with `/health`.
+3. Configure Vercel with `NEXT_PUBLIC_SOCKET_URL` and `NEXT_PUBLIC_API_URL`.
+4. Deploy the frontend.
+5. Set backend `CLIENT_URL` to the exact frontend origin.
+6. Redeploy the backend if CORS settings changed.
 
-### Important Limitation
+## CI
 
-On free hosting, the backend may sleep or restart, and persisted state may not survive like a dedicated production server would. This setup is fine for hobby use and testing, but it is not a durable production environment.
-
-## How The Flows Work
-
-### Player Flow
-
-1. Join from `/`.
-2. Enter `/play/[code]`.
-3. Wait in lobby until the room leaves `LOBBY`.
-4. Guess submitters and optional detail answers during gameplay.
-5. View final scoring and results.
-
-### Admin Flow
-
-1. Open `/admin/[code]`.
-2. Add songs, set theme, configure detail question, and manage lobby rules.
-3. Return later if needed before the live session begins.
-
-### Host Flow
-
-1. Open `/control/[code]`.
-2. Watch readiness and room setup status.
-3. Start the game.
-4. Play clips, advance rounds, reveal submitters/detail answers, and show results.
-
-## Testing And CI
-
-CI runs:
+GitHub Actions currently runs:
 
 - `npm run lint`
 - `npm run test:unit`
 - `npm run build`
+- `npm run test:e2e`
 
-Run the same checks locally before pushing if you are changing core flow or server behavior.
+## Notes
+
+- The backend uses in-memory room state with file persistence for local/server runtime recovery.
+- Free hosts may sleep, restart, or lose state between deployments.
+- If the frontend shows the socket status banner in production, check:
+  - frontend `NEXT_PUBLIC_SOCKET_URL`
+  - backend `CLIENT_URL` / `CLIENT_URL_2`
+  - backend `/health`
