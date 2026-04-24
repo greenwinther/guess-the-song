@@ -10,6 +10,7 @@ import AvatarRandomizeButton from "@/components/home/components/avatar/AvatarRan
 import {
 	AVATAR_STORAGE_KEY,
 	LAYER_TRANSITION_MS,
+	avatarAssets,
 	avatarLayerControls,
 	cycleAvatarLayer,
 	defaultAvatar,
@@ -26,6 +27,7 @@ import type { AvatarConfig } from "@/types/avatar";
 export { default as DiceIcon } from "@/components/home/components/avatar/DiceIcon";
 
 let cachedAvatarConfig: AvatarConfig | null = null;
+const preloadedAvatarSrcs = new Set<string>();
 
 const getStoredAvatar = (): AvatarConfig => {
 	if (typeof window === "undefined") return defaultAvatar;
@@ -40,6 +42,14 @@ const getStoredAvatar = (): AvatarConfig => {
 	} catch {
 		return defaultAvatar;
 	}
+};
+
+const preloadAvatarSrc = (src: string) => {
+	if (typeof window === "undefined" || !src || preloadedAvatarSrcs.has(src)) return;
+	const image = new window.Image();
+	image.decoding = "async";
+	image.src = src;
+	preloadedAvatarSrcs.add(src);
 };
 
 const createEmptyTransitions = (): Record<AvatarLayer, LayerTransition | null> => ({
@@ -103,6 +113,40 @@ export default function AvatarPicker({
 	}, []);
 
 	const layerSrcs = useMemo(() => getAvatarLayerSrcs(config), [config]);
+
+	useEffect(() => {
+		if (!isHydrated) return;
+
+		for (const layer of avatarLayerControls) {
+			const currentId = config[layer.key];
+			const nextId = cycleAvatarLayer(layer.key, currentId, 1);
+			const previousId = cycleAvatarLayer(layer.key, currentId, -1);
+
+			preloadAvatarSrc(getAvatarLayerSrc(layer.key, currentId));
+			preloadAvatarSrc(getAvatarLayerSrc(layer.key, nextId));
+			preloadAvatarSrc(getAvatarLayerSrc(layer.key, previousId));
+		}
+	}, [config, isHydrated]);
+
+	useEffect(() => {
+		if (!isHydrated) return;
+
+		const warmAllAssets = () => {
+			for (const assets of Object.values(avatarAssets)) {
+				for (const asset of assets) {
+					preloadAvatarSrc(asset.src);
+				}
+			}
+		};
+
+		if (typeof window.requestIdleCallback === "function") {
+			const handle = window.requestIdleCallback(() => warmAllAssets());
+			return () => window.cancelIdleCallback(handle);
+		}
+
+		const timeout = globalThis.setTimeout(warmAllAssets, 250);
+		return () => globalThis.clearTimeout(timeout);
+	}, [isHydrated]);
 
 	const scheduleTransitionCleanup = (layer: AvatarLayer) => {
 		const existingTimer = transitionTimers.current[layer];
