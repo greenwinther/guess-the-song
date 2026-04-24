@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-const appUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
-const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://127.0.0.1:4000";
+const appUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000";
 
 export default defineConfig({
 	testDir: "./src/tests",

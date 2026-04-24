@@ -1,0 +1,70 @@
+
+Running 9 tests using 1 worker
+
+[1A[2K[1/9] src\tests\admin-access.spec.ts:3:5 › host can open the admin editor for a created room
+[1A[2K  1) src\tests\admin-access.spec.ts:3:5 › host can open the admin editor for a created room ────────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('form').getByRole('button', { name: 'Create Lobby' })[22m
+
+
+      4 | 	await page.goto("/");
+      5 | 	await page.getByRole("button", { name: "Host" }).click();
+    > 6 | 	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+        | 	                                                                         ^
+      7 | 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
+      8 | 	await expect(page.getByRole("heading", { name: "Song Setup" })).toBeVisible();
+      9 |
+        at C:\Users\Doniz\Documents\School Projects\guess-the-song\src\tests\admin-access.spec.ts:6:75
+
+    Error Context: test-results\admin-access-host-can-open-ffc03-n-editor-for-a-created-room\error-context.md
+
+
+[1A[2K[2/9] src\tests\admin-edit-sync.spec.ts:3:5 › admin theme and bonus question edits persist in the editor
+[1A[2K  2) src\tests\admin-edit-sync.spec.ts:3:5 › admin theme and bonus question edits persist in the editor 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('form').getByRole('button', { name: 'Create Lobby' })[22m
+
+
+      4 | 	await page.goto("/");
+      5 | 	await page.getByRole("button", { name: "Host" }).click();
+    > 6 | 	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+        | 	                                                                         ^
+      7 | 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
+      8 |
+      9 | 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
+        at C:\Users\Doniz\Documents\School Projects\guess-the-song\src\tests\admin-edit-sync.spec.ts:6:75
+
+    Error Context: test-results\admin-edit-sync-admin-them-57359-edits-persist-in-the-editor\error-context.md
+
+
+[1A[2K[3/9] src\tests\admin-lock-after-start.spec.ts:3:5 › admin editor becomes read-only after the live game starts
+[1A[2K  3) src\tests\admin-lock-after-start.spec.ts:3:5 › admin editor becomes read-only after the live game starts 
+
+    [31mTest timeout of 90000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('form').getByRole('button', { name: 'Create Lobby' })[22m
+
+
+      10 | 	await page.goto("/");
+      11 | 	await page.getByRole("button", { name: "Host" }).click();
+    > 12 | 	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+         | 	                                                                         ^
+      13 | 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
+      14 |
+      15 | 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
+        at C:\Users\Doniz\Documents\School Projects\guess-the-song\src\tests\admin-lock-after-start.spec.ts:12:75
+
+    Error Context: test-results\admin-lock-after-start-adm-acec3--after-the-live-game-starts\error-context.md
+
+
+[1A[2K[4/9] src\tests\gameplay-flow.spec.ts:3:5 › host, admin, and player can complete a minimal live game flow

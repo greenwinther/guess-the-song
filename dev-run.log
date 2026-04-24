@@ -1,0 +1,62 @@
+
+> my-app@0.1.0 dev
+> concurrently -k -n next,socket -c auto "npm:dev:next" "npm:dev:socket"
+
+[next] 
+[next] > my-app@0.1.0 dev:next
+[next] > next dev
+[next] 
+[socket] 
+[socket] > my-app@0.1.0 dev:socket
+[socket] > tsx src/server/socketServer.ts
+[socket] 
+[next] ▲ Next.js 16.2.4 (Turbopack)
+[next] - Local:         http://localhost:3000
+[next] - Network:       http://192.168.8.37:3000
+[next] - Environments: .env.local, .env
+[next] ✓ Ready in 902ms
+[next] Creating turbopack project {
+[next]   dir: 'C:\\Users\\Doniz\\Documents\\School Projects\\guess-the-song',
+[next]   testMode: true
+[next] }
+[socket] [2026-04-24 20:11:20.502 +0200] [32mINFO[39m (guess-the-song-server): [36mSocket.IO + Express server listening[39m [90m{"scope":"socketServer","host":"0.0.0.0","port":4000,"envPort":null,"nodeEnv":"development","allowedOrigins":["http://127.0.0.1:3000"]}[39m
+[next] 
+[next]  GET / 200 in 757ms (next.js: 283ms, application-code: 474ms)
+[next]  GET / 200 in 61ms (next.js: 4ms, application-code: 56ms)
+[next]  GET / 200 in 69ms (next.js: 4ms, application-code: 65ms)
+[next] ⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
+[next] Cross-origin access to Next.js dev resources is blocked by default for safety.
+[next] 
+[next] To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+[next] 
+[next] // next.config.js
+[next] module.exports = {
+[next]   allowedDevOrigins: ['127.0.0.1'],
+[next] }
+[next] 
+[next] Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+[next]  GET / 200 in 79ms (next.js: 7ms, application-code: 72ms)
+[next]  GET / 200 in 130ms (next.js: 5ms, application-code: 125ms)
+[next]  GET / 200 in 97ms (next.js: 4ms, application-code: 92ms)
+[next]  GET / 200 in 62ms (next.js: 3ms, application-code: 59ms)
+[next]  GET / 200 in 98ms (next.js: 6ms, application-code: 92ms)
+[next]  GET / 200 in 93ms (next.js: 7ms, application-code: 85ms)
+[next]  GET / 200 in 64ms (next.js: 3ms, application-code: 61ms)
+[next]  GET / 200 in 85ms (next.js: 5ms, application-code: 80ms)
+[next]  GET / 200 in 62ms (next.js: 5ms, application-code: 56ms)
+[next]  GET / 200 in 165ms (next.js: 4ms, application-code: 160ms)
+[next]  GET / 200 in 91ms (next.js: 8ms, application-code: 83ms)
+[next]  GET / 200 in 110ms (next.js: 5ms, application-code: 104ms)
+[next]  GET / 200 in 111ms (next.js: 6ms, application-code: 105ms)
+[next]  GET / 200 in 59ms (next.js: 4ms, application-code: 55ms)
+[next]  GET / 200 in 58ms (next.js: 3ms, application-code: 55ms)
+[next]  GET / 200 in 164ms (next.js: 5ms, application-code: 160ms)
+[next]  GET / 200 in 114ms (next.js: 7ms, application-code: 107ms)
+[next]  GET / 200 in 181ms (next.js: 7ms, application-code: 174ms)
+[next]  GET / 200 in 60ms (next.js: 3ms, application-code: 58ms)
+[next]  GET / 200 in 95ms (next.js: 4ms, application-code: 92ms)
+[next] [browser] Image with src "/avatars/base/base-01.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+[next] Read more: https://nextjs.org/docs/app/api-reference/components/image#loading (file://C:/Users/Doniz/Documents/School Projects/guess-the-song/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)
+[socket] [2026-04-24 20:21:49.001 +0200] [32mINFO[39m (guess-the-song-server): [36msocket connected[39m [90m{"scope":"socketServer","socketId":"m3XXtP6JBQnBY_EAAAAB"}[39m
+[socket] [2026-04-24 20:21:50.149 +0200] [32mINFO[39m (guess-the-song-server): [36msocket disconnected[39m [90m{"scope":"socket.disconnect","socketId":"m3XXtP6JBQnBY_EAAAAB","reason":"transport close"}[39m
+[next]  GET / 200 in 143ms (next.js: 5ms, application-code: 138ms)
