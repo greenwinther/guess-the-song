@@ -1,5 +1,4 @@
 // src/server/store/roomStore.ts
-import { customAlphabet } from "nanoid";
 import type { AvatarConfig } from "@/types/avatar";
 import type { Member } from "@/types/member";
 import type { Submission } from "@/types/submission";
@@ -17,7 +16,14 @@ const normalizeName = (name: string) => name.trim().toLowerCase();
 const KICK_TTL_MS = 1000 * 60 * 10; // 10 minutes
 
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const generateCode = customAlphabet(ROOM_ALPHABET, 4);
+const generateCode = () => {
+	let code = "";
+	for (let index = 0; index < 4; index += 1) {
+		const nextIndex = Math.floor(Math.random() * ROOM_ALPHABET.length);
+		code += ROOM_ALPHABET[nextIndex];
+	}
+	return code;
+};
 
 const createUniqueCode = () => {
 	let code = generateCode();
