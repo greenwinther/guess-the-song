@@ -101,9 +101,9 @@ export const themeGuessHandler = (
 			return;
 		}
 
-		// First time solved -> +1 point, broadcast solved
+		// First time solved -> award configured theme points, broadcast solved
 		markSolved(normalizedCode, resolvedName);
-		const newTotal = addPointsByCodeName(normalizedCode, resolvedName, 1);
+		const newTotal = addPointsByCodeName(normalizedCode, resolvedName, room.rules.themeGuessPoints);
 		io.to(normalizedCode).emit("THEME_SOLVED", { playerName: resolvedName });
 		io.to(normalizedCode).emit("scoreUpdated", { playerName: resolvedName, total: newTotal });
 		void emitAdminDashboardToHosts(io, normalizedCode);

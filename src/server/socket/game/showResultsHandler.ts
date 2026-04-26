@@ -40,6 +40,9 @@ export const showResultHandler = (
 				room,
 				rounds: roundsForCode,
 				themePointsByPlayer: themePoints,
+				guessPoints: room.rules.guessPoints,
+				detailGuessPoints: room.rules.detailGuessPoints,
+				themeGuessPoints: room.rules.themeGuessPoints,
 				hardcoreMultiplier: room.rules.hardcoreMultiplier,
 			});
 			const hostNames = new Set(room.players.filter((player) => player.isHost).map((player) => player.name));

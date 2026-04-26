@@ -5,6 +5,9 @@ export type RoomState = Room & {
 	createdAt: number;
 	updatedAt: number;
 	rules: {
+		guessPoints: number;
+		detailGuessPoints: number;
+		themeGuessPoints: number;
 		hardcoreMultiplier: number;
 		hardcoreRequired: boolean;
 	};

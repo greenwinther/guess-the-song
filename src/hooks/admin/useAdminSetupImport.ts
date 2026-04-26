@@ -58,6 +58,23 @@ export function useAdminSetupImport({
 				throw new Error("Could not update hardcore mode.");
 			}
 
+			const scoringOk = await emitWithResult<boolean>((cb) =>
+				socket.emit(
+					"SCORE_RULES",
+					{
+						code: room.code,
+						guessPoints: imported.setup.scoring.guessPoints,
+						detailGuessPoints: imported.setup.scoring.detailGuessPoints,
+						themeGuessPoints: imported.setup.scoring.themeGuessPoints,
+						hardcoreMultiplier: imported.setup.scoring.hardcoreMultiplier,
+					},
+					cb,
+				),
+			);
+			if (!scoringOk) {
+				throw new Error("Could not update scoring rules.");
+			}
+
 			socket.emit("THEME_EDIT", { code: room.code, theme: imported.setup.theme });
 			socket.emit("DETAIL_QUESTION", { code: room.code, question: imported.setup.detailQuestion });
 

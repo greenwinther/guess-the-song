@@ -1,6 +1,7 @@
 // src/server/store/roomStore.ts
 import type { AvatarConfig } from "@/types/avatar";
 import type { Member } from "@/types/member";
+import type { RoomScoring } from "@/types/room";
 import type { Submission } from "@/types/submission";
 import type { RoomState } from "@/server/state/roomState";
 import { notifyStateChange } from "@/server/state/saveBus";
@@ -14,6 +15,12 @@ let nextSongId = 1;
 const normalizeCode = (code: string) => code.trim().toUpperCase();
 const normalizeName = (name: string) => name.trim().toLowerCase();
 const KICK_TTL_MS = 1000 * 60 * 10; // 10 minutes
+const DEFAULT_SCORING: RoomScoring = {
+	guessPoints: 1,
+	detailGuessPoints: 1,
+	themeGuessPoints: 1,
+	hardcoreMultiplier: 1.5,
+};
 
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const generateCode = () => {
@@ -68,13 +75,17 @@ export function createRoom(
 		theme: theme?.trim() || undefined,
 		detailQuestion: undefined,
 		backgroundUrl: backgroundUrl ?? null,
+		scoring: { ...DEFAULT_SCORING },
 		players: [host],
 		songs: [],
 		createdAt: now,
 		updatedAt: now,
 		kicked: {},
 		rules: {
-			hardcoreMultiplier: 1.5,
+			guessPoints: DEFAULT_SCORING.guessPoints,
+			detailGuessPoints: DEFAULT_SCORING.detailGuessPoints,
+			themeGuessPoints: DEFAULT_SCORING.themeGuessPoints,
+			hardcoreMultiplier: DEFAULT_SCORING.hardcoreMultiplier,
 			hardcoreRequired: false,
 		},
 	};
@@ -259,6 +270,19 @@ export function setHardcoreRequired(code: string, required: boolean): RoomState 
 	return room;
 }
 
+export function setScoringRules(code: string, scoring: RoomScoring): RoomState | null {
+	const room = getRoom(code);
+	if (!room) return null;
+	room.scoring = { ...scoring };
+	room.rules.guessPoints = scoring.guessPoints;
+	room.rules.detailGuessPoints = scoring.detailGuessPoints;
+	room.rules.themeGuessPoints = scoring.themeGuessPoints;
+	room.rules.hardcoreMultiplier = scoring.hardcoreMultiplier;
+	touch(room);
+	notifyStateChange();
+	return room;
+}
+
 export function setPlayerHardcore(code: string, playerName: string, hardcore: boolean): RoomState | null {
 	const room = getRoom(code);
 	if (!room) return null;
@@ -327,6 +351,9 @@ export function exportRoomStoreState(): RoomStoreSnapshot {
 			songs: room.songs.map((s) => ({ ...s })),
 			kicked: room.kicked ? { ...room.kicked } : {},
 			rules: {
+				guessPoints: room.rules.guessPoints,
+				detailGuessPoints: room.rules.detailGuessPoints,
+				themeGuessPoints: room.rules.themeGuessPoints,
 				hardcoreMultiplier: room.rules.hardcoreMultiplier,
 				hardcoreRequired: room.rules.hardcoreRequired,
 			},
@@ -350,6 +377,15 @@ export function importRoomStoreState(snapshot: RoomStoreSnapshot | null | undefi
 		const restored: RoomState = {
 			...room,
 			code: normalized,
+			scoring: {
+				guessPoints: room.scoring?.guessPoints ?? room.rules?.guessPoints ?? DEFAULT_SCORING.guessPoints,
+				detailGuessPoints:
+					room.scoring?.detailGuessPoints ?? room.rules?.detailGuessPoints ?? DEFAULT_SCORING.detailGuessPoints,
+				themeGuessPoints:
+					room.scoring?.themeGuessPoints ?? room.rules?.themeGuessPoints ?? DEFAULT_SCORING.themeGuessPoints,
+				hardcoreMultiplier:
+					room.scoring?.hardcoreMultiplier ?? room.rules?.hardcoreMultiplier ?? DEFAULT_SCORING.hardcoreMultiplier,
+			},
 			players: (room.players ?? []).map((p) => ({
 				...p,
 				connected: false,
@@ -359,7 +395,10 @@ export function importRoomStoreState(snapshot: RoomStoreSnapshot | null | undefi
 			songs: (room.songs ?? []).map((s) => ({ ...s })),
 			kicked: room.kicked ? { ...room.kicked } : {},
 			rules: {
-				hardcoreMultiplier: room.rules?.hardcoreMultiplier ?? 1.5,
+				guessPoints: room.rules?.guessPoints ?? DEFAULT_SCORING.guessPoints,
+				detailGuessPoints: room.rules?.detailGuessPoints ?? DEFAULT_SCORING.detailGuessPoints,
+				themeGuessPoints: room.rules?.themeGuessPoints ?? DEFAULT_SCORING.themeGuessPoints,
+				hardcoreMultiplier: room.rules?.hardcoreMultiplier ?? DEFAULT_SCORING.hardcoreMultiplier,
 				hardcoreRequired: room.rules?.hardcoreRequired ?? false,
 			},
 		};

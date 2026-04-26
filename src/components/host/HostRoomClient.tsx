@@ -19,6 +19,12 @@ export default function HostRoomClient({ code }: Props) {
 			theme: "",
 			backgroundUrl: null,
 			hardcoreRequired: false,
+			scoring: {
+				guessPoints: 1,
+				detailGuessPoints: 1,
+				themeGuessPoints: 1,
+				hardcoreMultiplier: 1.5,
+			},
 			players: [],
 			songs: [],
 		}),

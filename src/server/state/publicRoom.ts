@@ -12,6 +12,12 @@ export function toPublicRoom(room: RoomState): PublicRoom {
 		detailQuestion: room.detailQuestion,
 		backgroundUrl: room.backgroundUrl ?? null,
 		hardcoreRequired: room.rules.hardcoreRequired,
+		scoring: {
+			guessPoints: room.rules.guessPoints,
+			detailGuessPoints: room.rules.detailGuessPoints,
+			themeGuessPoints: room.rules.themeGuessPoints,
+			hardcoreMultiplier: room.rules.hardcoreMultiplier,
+		},
 		players: room.players.map((p) => ({ ...p })),
 		songs: room.songs.map((s) => ({ ...s })),
 	};

@@ -16,6 +16,7 @@ import { submitAllOrdersHandler } from "./guesses/submitAllOrdersHandler";
 import { hardcoreRequiredHandler } from "./player-settings/hardcoreRequiredHandler";
 import { playerHardcoreHandler } from "./player-settings/playerHardcoreHandler";
 import { playerReadyHandler } from "./player-settings/playerReadyHandler";
+import { scoreRulesHandler } from "./player-settings/scoreRulesHandler";
 import { addSongHandler } from "./playlist/addSongHandler";
 import { removeSongHandler } from "./playlist/removeSongHandler";
 import { updateSongHandler } from "./playlist/updateSongHandler";
@@ -62,6 +63,7 @@ export const registerSocketHandlers = (
 	themeGuessHandler(io, socket);
 
 	hardcoreRequiredHandler(io, socket);
+	scoreRulesHandler(io, socket);
 	playerHardcoreHandler(io, socket);
 	playerReadyHandler(io, socket);
 

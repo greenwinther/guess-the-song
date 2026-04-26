@@ -193,6 +193,22 @@ export const hardcoreRequiredPayloadSchema = z.object({
 	required: boolSchema(false),
 });
 
+export const scoreRulesPayloadSchema = z.object({
+	code: roomCodeSchema,
+	guessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
+	detailGuessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
+	themeGuessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
+	hardcoreMultiplier: z.preprocess((value) => {
+		if (value == null || value === "") return undefined;
+		if (typeof value === "number") return value;
+		if (typeof value === "string") {
+			const parsed = Number(value);
+			return Number.isFinite(parsed) ? parsed : value;
+		}
+		return value;
+	}, z.number().min(1).max(10)),
+});
+
 export const playerHardcorePayloadSchema = z.object({
 	code: roomCodeSchema,
 	hardcore: boolSchema(false),

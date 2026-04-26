@@ -4,6 +4,7 @@ import {
 	addSongPayloadSchema,
 	joinRoomPayloadSchema,
 	revealedSongsPayloadSchema,
+	scoreRulesPayloadSchema,
 	submitAllOrdersPayloadSchema,
 	validateWithZod,
 } from "@/server/schemas";
@@ -52,4 +53,20 @@ test("submitAllOrdersPayloadSchema validates guess map keys", () => {
 	assert.equal(result.ok, false);
 	if (result.ok) return;
 	assert.ok(result.issues.some((issue) => issue.path.includes("guesses")));
+});
+
+test("scoreRulesPayloadSchema parses scoring values", () => {
+	const result = validateWithZod(scoreRulesPayloadSchema, {
+		code: "AB12",
+		guessPoints: "3",
+		detailGuessPoints: "2",
+		themeGuessPoints: "4",
+		hardcoreMultiplier: "1.75",
+	});
+	assert.equal(result.ok, true);
+	if (!result.ok) return;
+	assert.equal(result.data.guessPoints, 3);
+	assert.equal(result.data.detailGuessPoints, 2);
+	assert.equal(result.data.themeGuessPoints, 4);
+	assert.equal(result.data.hardcoreMultiplier, 1.75);
 });

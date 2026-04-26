@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import type { Room } from "@/types/room";
 import type { Submission } from "@/types/submission";
 import AdminHeader from "@/components/admin/common/AdminHeader";
+import AdminSettingsModal from "@/components/admin/common/AdminSettingsModal";
 import AdminPlaylistPanel from "./playlist/AdminPlaylistPanel";
 import AdminSongSetupPanel from "./song-setup/AdminSongSetupPanel";
 
 export default function AdminPregameView({ room, roomCode }: { room: Room | null; roomCode: string }) {
 	const [editingSong, setEditingSong] = useState<Submission | null>(null);
+	const [settingsOpen, setSettingsOpen] = useState(false);
 
 	useEffect(() => {
 		if (!room || !editingSong) return;
@@ -29,7 +31,13 @@ export default function AdminPregameView({ room, roomCode }: { room: Room | null
 
 	return (
 		<section className="flex w-full flex-col gap-5">
-			<AdminHeader roomCode={roomCode} />
+			<AdminHeader roomCode={roomCode} onOpenSettings={() => setSettingsOpen(true)} />
+			<AdminSettingsModal
+				open={settingsOpen}
+				room={room}
+				inLobby={inLobby}
+				onClose={() => setSettingsOpen(false)}
+			/>
 
 			<div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.72fr)]">
 				<AdminSongSetupPanel

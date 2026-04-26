@@ -1,6 +1,6 @@
 import type { AvatarConfig } from "@/types/avatar";
 import type { Member } from "@/types/member";
-import type { Room } from "@/types/room";
+import type { Room, RoomScoring } from "@/types/room";
 import type { Submission } from "@/types/submission";
 
 export type SocketRoomMeta = { code: string; playerName: string };
@@ -93,6 +93,7 @@ export type ThemeGuessPayload = {
 };
 export type ThemeRevealPayload = { code: string };
 export type HardcoreRequiredPayload = { code: string; required: boolean };
+export type ScoreRulesPayload = { code: string } & RoomScoring;
 export type PlayerHardcorePayload = { code: string; hardcore: boolean };
 export type PlayerReadyPayload = { code: string; ready: boolean };
 export type RevealedSongsPayload = { code: string; revealed: number[] };
@@ -196,6 +197,7 @@ export type ClientToServerEvents = {
 	THEME_GUESS: (data: ThemeGuessPayload) => void;
 	THEME_REVEAL: (data: ThemeRevealPayload) => void;
 	HARDCORE_REQUIRED: (data: HardcoreRequiredPayload, cb?: (ok: boolean) => void) => void;
+	SCORE_RULES: (data: ScoreRulesPayload, cb?: (ok: boolean) => void) => void;
 	PLAYER_HARDCORE: (data: PlayerHardcorePayload, cb?: (ok: boolean) => void) => void;
 	PLAYER_READY: (data: PlayerReadyPayload, cb?: (ok: boolean) => void) => void;
 	revealedSongs: (data: RevealedSongsPayload) => void;

@@ -47,6 +47,9 @@ test("computeScoreBoard excludes the host from seeded and calculated scores", ()
 		room,
 		rounds,
 		themePointsByPlayer: { Host: 5, Alice: 1 },
+		guessPoints: room.rules.guessPoints,
+		detailGuessPoints: room.rules.detailGuessPoints,
+		themeGuessPoints: room.rules.themeGuessPoints,
 		hardcoreMultiplier: 1.5,
 	});
 
@@ -84,6 +87,9 @@ test("computeScoreBoard awards points for correct bonus detail answers", () => {
 		room,
 		rounds,
 		themePointsByPlayer: {},
+		guessPoints: room.rules.guessPoints,
+		detailGuessPoints: room.rules.detailGuessPoints,
+		themeGuessPoints: room.rules.themeGuessPoints,
 		hardcoreMultiplier: 1.5,
 	});
 
@@ -93,4 +99,47 @@ test("computeScoreBoard awards points for correct bonus detail answers", () => {
 	assert.equal(board.byPlayer.Bob?.correctGuesses, 1);
 	assert.equal(board.byPlayer.Bob?.correctDetailGuesses, 1);
 	assert.equal(board.byPlayer.Bob?.total, 3);
+});
+
+test("computeScoreBoard respects configured scoring values", () => {
+	const room = baseRoom();
+	room.rules.guessPoints = 3;
+	room.rules.detailGuessPoints = 2;
+	room.rules.themeGuessPoints = 4;
+	room.rules.hardcoreMultiplier = 2;
+
+	const rounds: Record<number, RoundData> = {
+		1: {
+			correctAnswer: "Alice",
+			orders: {
+				Alice: ["Alice"],
+				Bob: ["Alice"],
+			},
+			submitters: ["Alice", "Bob"],
+			locks: {},
+			detailCorrectAnswer: "1999",
+			detailAnswers: ["1999", "2002"],
+			detailOrders: {
+				Alice: ["1999"],
+			},
+			detailLocks: {},
+		},
+	};
+
+	const board = computeScoreBoard({
+		room,
+		rounds,
+		themePointsByPlayer: { Alice: 1 },
+		guessPoints: room.rules.guessPoints,
+		detailGuessPoints: room.rules.detailGuessPoints,
+		themeGuessPoints: room.rules.themeGuessPoints,
+		hardcoreMultiplier: room.rules.hardcoreMultiplier,
+	});
+
+	assert.equal(board.byPlayer.Alice?.correctGuesses, 3);
+	assert.equal(board.byPlayer.Alice?.correctDetailGuesses, 2);
+	assert.equal(board.byPlayer.Alice?.themeBonuses, 4);
+	assert.equal(board.byPlayer.Alice?.total, 9);
+	assert.equal(board.byPlayer.Bob?.correctGuesses, 3);
+	assert.equal(board.byPlayer.Bob?.total, 6);
 });

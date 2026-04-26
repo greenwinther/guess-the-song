@@ -6,6 +6,9 @@ type ScoreInputs = {
 	room: Room;
 	rounds: Record<number, RoundData>;
 	themePointsByPlayer: Record<string, number>;
+	guessPoints?: number;
+	detailGuessPoints?: number;
+	themeGuessPoints?: number;
 	hardcoreMultiplier?: number;
 };
 
@@ -13,6 +16,9 @@ export function computeScoreBoard({
 	room,
 	rounds,
 	themePointsByPlayer,
+	guessPoints = 1,
+	detailGuessPoints = 1,
+	themeGuessPoints = 1,
 	hardcoreMultiplier = 1.5,
 }: ScoreInputs): ScoreBoard {
 	const byPlayer: Record<string, ScoreRow> = {};
@@ -41,7 +47,7 @@ export function computeScoreBoard({
 		for (const [playerName, order] of Object.entries(rd.orders)) {
 			if (!scoringNames.has(playerName)) continue;
 			if (order[0] === rd.correctAnswer) {
-				ensure(playerName).correctGuesses += 1;
+				ensure(playerName).correctGuesses += guessPoints;
 			}
 		}
 	}
@@ -52,7 +58,7 @@ export function computeScoreBoard({
 		for (const [playerName, order] of Object.entries(rd.detailOrders)) {
 			if (!scoringNames.has(playerName)) continue;
 			if (order[0] === rd.detailCorrectAnswer) {
-				ensure(playerName).correctDetailGuesses += 1;
+				ensure(playerName).correctDetailGuesses += detailGuessPoints;
 			}
 		}
 	}
@@ -60,7 +66,7 @@ export function computeScoreBoard({
 	// Theme bonuses (tracked in lib/score)
 	for (const [playerName, points] of Object.entries(themePointsByPlayer)) {
 		if (!scoringNames.has(playerName)) continue;
-		ensure(playerName).themeBonuses += points;
+		ensure(playerName).themeBonuses += points * themeGuessPoints;
 	}
 
 	// Hardcore multiplier (apply on base)

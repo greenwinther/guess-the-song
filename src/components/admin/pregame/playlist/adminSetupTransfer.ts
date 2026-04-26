@@ -17,6 +17,12 @@ export type AdminSetupExportV1 = {
 		theme: string;
 		detailQuestion: string;
 		hardcoreRequired: boolean;
+		scoring: {
+			guessPoints: number;
+			detailGuessPoints: number;
+			themeGuessPoints: number;
+			hardcoreMultiplier: number;
+		};
 		songs: ExportedSong[];
 	};
 };
@@ -52,6 +58,10 @@ export const parseAdminSetupImport = (raw: string): AdminSetupExportV1 => {
 		typeof setup.theme !== "string" ||
 		typeof setup.detailQuestion !== "string" ||
 		typeof setup.hardcoreRequired !== "boolean" ||
+		typeof (setup.scoring as Record<string, unknown> | undefined)?.guessPoints !== "number" ||
+		typeof (setup.scoring as Record<string, unknown> | undefined)?.detailGuessPoints !== "number" ||
+		typeof (setup.scoring as Record<string, unknown> | undefined)?.themeGuessPoints !== "number" ||
+		typeof (setup.scoring as Record<string, unknown> | undefined)?.hardcoreMultiplier !== "number" ||
 		!setup.songs.every(isExportedSong)
 	) {
 		throw new Error("Setup file has an invalid shape.");
@@ -70,6 +80,12 @@ export const parseAdminSetupImport = (raw: string): AdminSetupExportV1 => {
 			theme: setup.theme,
 			detailQuestion: setup.detailQuestion,
 			hardcoreRequired: setup.hardcoreRequired,
+			scoring: {
+				guessPoints: (setup.scoring as Record<string, number>).guessPoints,
+				detailGuessPoints: (setup.scoring as Record<string, number>).detailGuessPoints,
+				themeGuessPoints: (setup.scoring as Record<string, number>).themeGuessPoints,
+				hardcoreMultiplier: (setup.scoring as Record<string, number>).hardcoreMultiplier,
+			},
 			songs: setup.songs,
 		},
 	};
@@ -83,6 +99,12 @@ export const buildAdminSetupExport = (room: Room): AdminSetupExportV1 => ({
 		theme: room.theme ?? "",
 		detailQuestion: room.detailQuestion ?? "",
 		hardcoreRequired: !!room.hardcoreRequired,
+		scoring: {
+			guessPoints: room.scoring.guessPoints,
+			detailGuessPoints: room.scoring.detailGuessPoints,
+			themeGuessPoints: room.scoring.themeGuessPoints,
+			hardcoreMultiplier: room.scoring.hardcoreMultiplier,
+		},
 		songs: room.songs.map((song) => ({
 			url: song.url,
 			submitter: song.submitter,
