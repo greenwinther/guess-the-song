@@ -27,6 +27,9 @@ export type RuntimeStateContextType = {
 	bgThumbnail: string | null;
 	setBgThumbnail: React.Dispatch<React.SetStateAction<string | null>>;
 
+	useSongArtworkBackground: boolean;
+	setUseSongArtworkBackground: React.Dispatch<React.SetStateAction<boolean>>;
+
 	scores: Record<string, number> | null;
 	setScores: React.Dispatch<React.SetStateAction<Record<string, number> | null>>;
 

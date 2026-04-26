@@ -1,9 +1,9 @@
-// src/components/ui/LeftSidebar.tsx
 "use client";
+
 import { FaCheck, FaLock, FaQuestion } from "react-icons/fa6";
-import RoomPlayerList from "./RoomPlayerList";
-import type { Member } from "@/types/member";
 import toast from "react-hot-toast";
+import type { Member } from "@/types/member";
+import RoomPlayerList from "./RoomPlayerList";
 
 export default function RoomSidebar({
 	roomCode,
@@ -11,8 +11,8 @@ export default function RoomSidebar({
 	submittedPlayers = [],
 	fallbackName,
 	allPlayersReady,
-	lockedNames, // 👈 NEW (optional)
-	lockedCounts, // 👈 NEW
+	lockedNames,
+	lockedCounts,
 	solvedByTheme = [],
 	lockedForThisRound = [],
 	showGameplayLegend = true,
@@ -26,10 +26,10 @@ export default function RoomSidebar({
 	showHostBadge?: boolean;
 	fallbackName?: string;
 	allPlayersReady?: boolean;
-	lockedNames?: string[]; // names locked for the *current* song
-	lockedCounts?: Record<string, number>; // total songs locked per player
-	solvedByTheme?: string[]; // who has solved the theme
-	lockedForThisRound?: string[]; // who has locked in a guess for this round
+	lockedNames?: string[];
+	lockedCounts?: Record<string, number>;
+	solvedByTheme?: string[];
+	lockedForThisRound?: string[];
 	showGameplayLegend?: boolean;
 	showLockCounts?: boolean;
 	playerStatusMode?: "game" | "lobby";
@@ -54,9 +54,9 @@ export default function RoomSidebar({
 							toast.success("Room code copied.");
 						}
 					}}
-					onKeyDown={(e) => {
-						if (e.key !== "Enter" && e.key !== " ") return;
-						e.preventDefault();
+					onKeyDown={(event) => {
+						if (event.key !== "Enter" && event.key !== " ") return;
+						event.preventDefault();
 						if (!roomCode) return;
 						if (navigator?.clipboard?.writeText) {
 							navigator.clipboard.writeText(roomCode);
@@ -65,7 +65,7 @@ export default function RoomSidebar({
 					}}
 					title="Click to copy"
 				>
-					{roomCode ?? "—"}
+					{roomCode ?? "-"}
 				</p>
 			</div>
 

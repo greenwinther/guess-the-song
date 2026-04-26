@@ -17,6 +17,8 @@ type HostPlaylistPanelProps = {
 	allPlayed?: boolean;
 	showSongDetails?: boolean;
 	showRevealControls?: boolean;
+	useSongArtworkBackground?: boolean;
+	onToggleSongArtworkBackground?: () => void;
 };
 
 export default function HostPlaylistPanel({
@@ -28,6 +30,8 @@ export default function HostPlaylistPanel({
 	allPlayed: allPlayedProp,
 	showSongDetails = false,
 	showRevealControls = true,
+	useSongArtworkBackground,
+	onToggleSongArtworkBackground,
 }: HostPlaylistPanelProps) {
 	const { room } = useRoomState();
 	const viewRoom = roomOverride ?? room;
@@ -46,8 +50,17 @@ export default function HostPlaylistPanel({
 
 	return (
 		<aside className="order-2 lg:order-none w-full min-h-0 lg:col-span-3 p-4 sm:p-4 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
-			<div className="mb-3 sm:mb-4">
+			<div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
 				<h2 className="text-lg sm:text-xl font-semibold text-text">Playlist</h2>
+				{onToggleSongArtworkBackground && (
+					<button
+						type="button"
+						className="shrink-0 rounded-md border border-border/55 bg-card/25 px-1 py-1 text-[11px] text-text/80 transition-colors hover:bg-card/40 hover:text-text"
+						onClick={onToggleSongArtworkBackground}
+					>
+						{useSongArtworkBackground ? "Artwork: On" : "Artwork: Off"}
+					</button>
+				)}
 			</div>
 
 			<div className="scrollbar-hidden min-h-[12rem] max-h-72 flex-1 space-y-1 overflow-y-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:max-h-80 lg:max-h-[calc(100vh-15rem)]">

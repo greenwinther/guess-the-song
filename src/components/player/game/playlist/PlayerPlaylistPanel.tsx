@@ -6,11 +6,15 @@ export default function PlayerPlaylistPanel({
 	revealedIds,
 	currentSongId = null,
 	variant = "game",
+	useSongArtworkBackground,
+	onToggleSongArtworkBackground,
 }: {
 	songs: Submission[];
 	revealedIds: number[];
 	currentSongId?: number | null;
 	variant?: "game" | "lobby";
+	useSongArtworkBackground?: boolean;
+	onToggleSongArtworkBackground?: () => void;
 }) {
 	const isLobby = variant === "lobby";
 
@@ -20,8 +24,17 @@ export default function PlayerPlaylistPanel({
 				"order-3 w-full min-h-0 border-t border-border p-4 sm:p-4 lg:order-none lg:col-span-3 lg:border-l lg:border-t-0 flex flex-col"
 			)}
 		>
-			<div className="mb-3 sm:mb-4">
+			<div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
 				<h2 className="text-lg font-semibold text-text sm:text-xl">Playlist</h2>
+				{onToggleSongArtworkBackground && (
+					<button
+						type="button"
+						className="shrink-0 rounded-md border border-border/55 bg-card/25 px-1 py-1 text-[11px] text-text/80 transition-colors hover:bg-card/40 hover:text-text"
+						onClick={onToggleSongArtworkBackground}
+					>
+						{useSongArtworkBackground ? "Artwork: On" : "Artwork: Off"}
+					</button>
+				)}
 			</div>
 			<div className="scrollbar-hidden min-h-[12rem] max-h-72 flex-1 space-y-1 overflow-y-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:max-h-80 lg:max-h-[calc(100vh-12rem)]">
 				{songs.length === 0 && (

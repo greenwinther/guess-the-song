@@ -1,5 +1,5 @@
 // src/contexts/gameContext/useGameState.ts
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Clip, RoomStateContextType, RuntimeStateContextType } from "./types";
 import { Room } from "@/types/room";
 import type { Member } from "@/types/member";
@@ -43,6 +43,10 @@ export const useRuntimeStateValue = (): RuntimeStateContextType => {
 	const [currentClip, setCurrentClip] = useState<Clip | null>(null);
 	const [currentSong, setCurrentSong] = useState<Submission | null>(null);
 	const [bgThumbnail, setBgThumbnail] = useState<string | null>(null);
+	const [useSongArtworkBackground, setUseSongArtworkBackground] = useState<boolean>(() => {
+		if (typeof window === "undefined") return true;
+		return window.localStorage.getItem("gts_use_song_artwork_background") !== "0";
+	});
 	const [scores, setScores] = useState<Record<string, number> | null>(null);
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
@@ -54,6 +58,14 @@ export const useRuntimeStateValue = (): RuntimeStateContextType => {
 	const [themeHint, setThemeHint] = useState<string | null>(null);
 	const [themeRevealed, setThemeRevealed] = useState(false);
 
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		window.localStorage.setItem(
+			"gts_use_song_artwork_background",
+			useSongArtworkBackground ? "1" : "0"
+		);
+	}, [useSongArtworkBackground]);
+
 	return {
 		currentClip,
 		setCurrentClip,
@@ -61,6 +73,8 @@ export const useRuntimeStateValue = (): RuntimeStateContextType => {
 		setCurrentSong,
 		bgThumbnail,
 		setBgThumbnail,
+		useSongArtworkBackground,
+		setUseSongArtworkBackground,
 		scores,
 		setScores,
 		revealedSongs,

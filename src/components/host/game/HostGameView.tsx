@@ -43,6 +43,8 @@ export default function HostGameView({
 		currentClip,
 		submittedPlayers,
 		bgThumbnail,
+		useSongArtworkBackground,
+		setUseSongArtworkBackground,
 		solvedByTheme,
 		lockedForThisRound,
 	} = useGameRuntime();
@@ -102,7 +104,7 @@ export default function HostGameView({
 		onToggleDebug: toggleDebug,
 	});
 
-	const bgImage = bgThumbnail ?? viewRoom?.backgroundUrl ?? null;
+	const bgImage = useSongArtworkBackground ? (bgThumbnail ?? viewRoom?.backgroundUrl ?? null) : (viewRoom?.backgroundUrl ?? null);
 	const isDev = process.env.NODE_ENV !== "production";
 	const confirmKick = () => {
 		if (!playerToKick) return;
@@ -189,6 +191,8 @@ export default function HostGameView({
 				currentSongId={currentSong?.id ?? null}
 				onSelect={playSong}
 				allPlayed={allPlayed}
+				useSongArtworkBackground={useSongArtworkBackground}
+				onToggleSongArtworkBackground={() => setUseSongArtworkBackground((current) => !current)}
 			/>
 
 			{isDev && showDebug && (

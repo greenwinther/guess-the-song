@@ -37,6 +37,8 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const { room } = useRoomState();
 	const {
 		bgThumbnail,
+		useSongArtworkBackground,
+		setUseSongArtworkBackground,
 		scores,
 		revealedSongs,
 		submittedPlayers,
@@ -482,7 +484,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 		);
 	};
 
-	const bgImage = bgThumbnail ?? room.backgroundUrl ?? null;
+	const bgImage = useSongArtworkBackground ? (bgThumbnail ?? room.backgroundUrl ?? null) : (room.backgroundUrl ?? null);
 	const isResultsMode = room.phase === "RESULTS" && Boolean(scores);
 	const correctList = room.songs.map((s) => s.submitter);
 	const detailCorrectList = hasDetailQuestion ? room.songs.map((s) => s.detailAnswer ?? "") : [];
@@ -580,6 +582,8 @@ export default function PlayerGameView({ code, playerName }: Props) {
 				songs={room.songs}
 				revealedIds={revealedSongs}
 				currentSongId={currentSongId}
+				useSongArtworkBackground={useSongArtworkBackground}
+				onToggleSongArtworkBackground={() => setUseSongArtworkBackground((current) => !current)}
 			/>
 		</BackgroundShell>
 	);
