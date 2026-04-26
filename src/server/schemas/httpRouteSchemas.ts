@@ -16,6 +16,17 @@ export const youtubeTitleQuerySchema = z.object({
 	id: optionalTrimmedTextSchema.optional(),
 });
 
+export const youtubePlaylistQuerySchema = z.object({
+	url: optionalTrimmedTextSchema.optional(),
+	limit: z.preprocess(
+		(value) => {
+			const first = firstValue(value);
+			return first == null || first === "" ? undefined : first;
+		},
+		z.coerce.number().int().min(1).max(25).optional(),
+	),
+});
+
 export const roomCodeParamsSchema = z.object({
 	code: z.preprocess((value) => parseRoomCode(firstValue(value)), z.string().min(1)),
 });

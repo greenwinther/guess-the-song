@@ -5,6 +5,7 @@ import {
 	createRoomBodySchema,
 	roomCodeParamsSchema,
 	validateWithZod,
+	youtubePlaylistQuerySchema,
 	youtubeSearchQuerySchema,
 } from "@/server/schemas";
 
@@ -23,6 +24,17 @@ test("youtubeSearchQuerySchema trims query and accepts empty", () => {
 	const empty = validateWithZod(youtubeSearchQuerySchema, { q: "   " });
 	assert.equal(empty.ok, true);
 	if (empty.ok) assert.equal(empty.data.q, undefined);
+});
+
+test("youtubePlaylistQuerySchema trims url and parses limit", () => {
+	const result = validateWithZod(youtubePlaylistQuerySchema, {
+		url: "  https://www.youtube.com/playlist?list=PL123  ",
+		limit: "10",
+	});
+	assert.equal(result.ok, true);
+	if (!result.ok) return;
+	assert.equal(result.data.url, "https://www.youtube.com/playlist?list=PL123");
+	assert.equal(result.data.limit, 10);
 });
 
 test("createRoomBodySchema applies defaults", () => {

@@ -19,3 +19,18 @@ export function getYouTubeID(url: string): string | null {
 
 	return null;
 }
+
+/** Extracts the "list=" playlist ID from a YouTube URL, or null if none */
+export function getYouTubePlaylistID(url: string): string | null {
+	const trimmed = (url ?? "").trim();
+	if (!trimmed) return null;
+
+	try {
+		const parsed = new URL(trimmed);
+		const playlistId = parsed.searchParams.get("list")?.trim();
+		return playlistId || null;
+	} catch {
+		const match = trimmed.match(/[?&]list=([^&]+)/);
+		return match?.[1] ?? null;
+	}
+}

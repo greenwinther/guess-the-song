@@ -6,11 +6,15 @@ import {
 	createRoomBodySchema,
 	roomCodeParamsSchema,
 	validateWithZod,
+	youtubePlaylistQuerySchema,
 	youtubeSearchQuerySchema,
 	youtubeTitleQuerySchema,
 } from "@/server/schemas";
 import type { ZodValidationFailure } from "@/server/schemas";
 import { serverConfig } from "@/server/config";
+import { getYouTubePlaylistID } from "@/lib/youtube";
+
+const PLAYLIST_IMPORT_LIMIT = 25;
 
 function jsonError(res: Response, status: number, message: string) {
 	return res.status(status).json({ error: message });
@@ -87,6 +91,80 @@ export function registerHttpRoutes(app: Express) {
 			return res.json({ title: body.items?.[0]?.snippet?.title ?? "" });
 		} catch {
 			return jsonError(res, 500, "Failed to resolve YouTube title");
+		}
+	});
+
+	app.get("/api/youtube-playlist", async (req, res) => {
+		try {
+			const query = validateWithZod(youtubePlaylistQuerySchema, req.query);
+			if (!query.ok) return jsonValidationError(res, query);
+
+			const rawUrl = query.data.url ?? "";
+			const playlistId = getYouTubePlaylistID(rawUrl);
+			if (!playlistId) {
+				return jsonError(res, 400, "Enter a valid YouTube playlist URL.");
+			}
+
+			const key = serverConfig.youtubeApiKey;
+			if (!key) return jsonError(res, 500, "Missing YOUTUBE_API_KEY");
+
+			const limit = Math.min(query.data.limit ?? PLAYLIST_IMPORT_LIMIT, PLAYLIST_IMPORT_LIMIT);
+			const items: Array<{ videoId: string; title: string; url: string }> = [];
+			const seenVideoIds = new Set<string>();
+			let nextPageToken: string | undefined;
+			let truncated = false;
+
+			do {
+				const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+				url.searchParams.set("part", "snippet,contentDetails");
+				url.searchParams.set("playlistId", playlistId);
+				url.searchParams.set("maxResults", String(Math.min(50, limit - items.length)));
+				url.searchParams.set("key", key);
+				if (nextPageToken) url.searchParams.set("pageToken", nextPageToken);
+
+				const upstream = await fetch(url.toString());
+				if (!upstream.ok) {
+					if (upstream.status === 403 || upstream.status === 404) {
+						return jsonError(res, 400, "Playlist not found or it is private.");
+					}
+					return jsonError(res, 502, `YouTube playlist lookup failed (${upstream.status})`);
+				}
+
+				const body = (await upstream.json()) as {
+					nextPageToken?: string;
+					items?: Array<{
+						snippet?: { title?: string };
+						contentDetails?: { videoId?: string };
+					}>;
+				};
+
+				for (const item of body.items ?? []) {
+					const videoId = item.contentDetails?.videoId?.trim();
+					const title = item.snippet?.title?.trim();
+					if (!videoId || !title || title === "Private video" || title === "Deleted video") {
+						continue;
+					}
+					if (seenVideoIds.has(videoId)) continue;
+					seenVideoIds.add(videoId);
+					items.push({
+						videoId,
+						title,
+						url: `https://www.youtube.com/watch?v=${videoId}`,
+					});
+					if (items.length >= limit) break;
+				}
+
+				nextPageToken = body.nextPageToken;
+				truncated = Boolean(nextPageToken) && items.length >= limit;
+			} while (nextPageToken && items.length < limit);
+
+			return res.json({
+				items,
+				limit,
+				truncated,
+			});
+		} catch {
+			return jsonError(res, 500, "Failed to import YouTube playlist");
 		}
 	});
 
