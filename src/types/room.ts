@@ -11,7 +11,7 @@ export type RoomScoring = {
 export type Room = {
 	id: number;
 	code: string;
-	phase?: "LOBBY" | "GUESSING" | "RECAP" | "RESULTS";
+	phase?: "LOBBY" | "GUESSING" | "RECAP" | "REVEAL" | "RESULTS" | "ENDED";
 	theme?: string;
 	detailQuestion?: string;
 	backgroundUrl?: string | null;

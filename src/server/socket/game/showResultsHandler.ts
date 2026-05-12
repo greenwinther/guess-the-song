@@ -1,11 +1,24 @@
-// // src/server/socket/showResultHandler.ts
-import { getRoundsForCode } from "@/lib/game";
 import type { Server, Socket } from "socket.io";
-import { setFinalScores } from "@/server/state/gameState";
-import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, ShowResultsPayload, SocketData } from "@/types/socket";
+import {
+	finalizeDetailForPlayers,
+	finalizeSongForPlayers,
+	getDetailLockedPlayers,
+	getLockedPlayers,
+} from "@/lib/game";
+import {
+	getRoomGameState,
+	setActiveSong,
+	setFinalScores,
+	setRevealedSubmitters,
+} from "@/server/state/gameState";
+import type {
+	ClientToServerEvents,
+	InterServerEvents,
+	ServerToClientEvents,
+	ShowResultsPayload,
+	SocketData,
+} from "@/types/socket";
 import { requireHost, requireRoom } from "@/server/logic/guards";
-import { computeScoreBoard } from "@/server/logic/score";
-import { getRoomScores } from "@/lib/score";
 import { getRoom } from "@/lib/rooms";
 import { isPhase } from "@/server/logic/phase";
 import { setPhase } from "@/server/store/roomStore";
@@ -31,34 +44,46 @@ export const showResultHandler = (
 			if (!boundRoom) return;
 			if (boundRoom.code !== code) return callback(false);
 			if (!requireHost(socket, boundRoom, () => callback(false))) return;
-			if (!isPhase(boundRoom, ["GUESSING", "RECAP"])) return callback(false);
+			if (!isPhase(boundRoom, ["RECAP", "REVEAL"])) return callback(false);
 
 			const room = await getRoom(code);
-			const roundsForCode = getRoundsForCode(code);
-			const themePoints = getRoomScores(code);
-			const board = computeScoreBoard({
-				room,
-				rounds: roundsForCode,
-				themePointsByPlayer: themePoints,
-				guessPoints: room.rules.guessPoints,
-				detailGuessPoints: room.rules.detailGuessPoints,
-				themeGuessPoints: room.rules.themeGuessPoints,
-				hardcoreMultiplier: room.rules.hardcoreMultiplier,
-			});
-			const hostNames = new Set(room.players.filter((player) => player.isHost).map((player) => player.name));
-			const finalScores = Object.fromEntries(
-				Object.entries(board.byPlayer)
-					.filter(([name]) => !hostNames.has(name))
-					.map(([name, row]) => [name, row.total])
-			);
-
-			// 1) cache them
-			setFinalScores(code, finalScores);
-
-			// 2) broadcast the end-of-game
-			const updated = setPhase(code, "RESULTS");
-			io.to(code).emit("gameOver", { scores: finalScores });
+			if (!room.songs.length) return callback(false);
+			const updated = setPhase(code, "REVEAL");
 			if (updated) io.to(code).emit("roomData", toPublicRoom(updated));
+
+			const players = room.players.filter((player) => !player.isHost).map((player) => player.name);
+			for (const song of room.songs) {
+				const submitterLocks = finalizeSongForPlayers(code, song.id, players, {
+					multiplierEligible: false,
+				});
+				const lockedNames = getLockedPlayers(code, song.id);
+				io.to(code).emit("songFinalized", {
+					songId: song.id,
+					mode: "snapshot",
+					counts: submitterLocks,
+					lockedNames,
+				});
+				const detailLocks = finalizeDetailForPlayers(code, song.id, players, {
+					multiplierEligible: false,
+				});
+				if (detailLocks.total > 0) {
+					io.to(code).emit("detailFinalized", {
+						songId: song.id,
+						mode: "snapshot",
+						counts: detailLocks,
+						lockedNames: getDetailLockedPlayers(code, song.id),
+					});
+				}
+			}
+
+			// Enter reveal phase; final scoring happens when reveal playback reaches the end.
+			setFinalScores(code, null);
+			const existingRevealed = getRoomGameState(code).revealedSubmitters ?? [];
+			setRevealedSubmitters(code, boundRoom.phase === "REVEAL" ? existingRevealed : []);
+			io.to(code).emit("revealedSubmitters", getRoomGameState(code).revealedSubmitters ?? []);
+			const firstSongId = room.songs[0]?.id ?? null;
+			setActiveSong(code, firstSongId);
+			io.to(code).emit("songChanged", { songId: firstSongId });
 			callback(true);
 		} catch (err) {
 			log.error({ err, code: data.code }, "showResults error");

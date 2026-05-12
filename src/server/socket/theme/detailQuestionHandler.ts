@@ -8,7 +8,7 @@ import type {
 } from "@/types/socket";
 import { setDetailQuestion, getRoom } from "@/server/store/roomStore";
 import { toPublicRoom } from "@/server/state/publicRoom";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
 import { detailQuestionPayloadSchema, validateWithZod } from "@/server/schemas";
 
@@ -25,7 +25,7 @@ export const detailQuestionHandler = (
 
 		const room = requireRoom(socket);
 		if (!room || room.code !== code) return;
-		if (!requireHost(socket, room)) return;
+		if (!requireHostOrAdmin(socket, room)) return;
 		if (!isPhase(room, "LOBBY")) return;
 
 		setDetailQuestion(code, question);

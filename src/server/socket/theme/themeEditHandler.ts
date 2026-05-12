@@ -4,7 +4,7 @@ import { setRoomTheme } from "@/lib/rooms";
 import { emitAdminDashboardToHosts } from "@/server/socket/admin/adminDashboard";
 import { toPublicRoom } from "@/server/state/publicRoom";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, ThemeEditPayload } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
 import { themeEditPayloadSchema, validateWithZod } from "@/server/schemas";
 
@@ -21,7 +21,7 @@ export const themeEditHandler = (
 		const { code: normalizedCode, theme: trimmed } = payload.data;
 		const boundRoom = requireRoom(socket);
 		if (!boundRoom || boundRoom.code !== normalizedCode) return;
-		if (!requireHost(socket, boundRoom)) return;
+		if (!requireHostOrAdmin(socket, boundRoom)) return;
 		if (!isPhase(boundRoom, "LOBBY")) return;
 
 		// Update in-memory room (Room.theme)

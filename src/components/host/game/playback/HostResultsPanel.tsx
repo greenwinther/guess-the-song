@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/shared/Button";
 import AvatarStack from "@/components/shared/AvatarStack";
 import type { Member } from "@/types/member";
+import { useSocket } from "@/contexts/SocketContext";
 
 type RankedRow = {
 	name: string;
@@ -18,6 +19,8 @@ type ScoreGroup = {
 };
 
 type HostResultsPanelProps = {
+	code: string;
+	resultsFinalized: boolean;
 	players: Member[];
 	scores: Record<string, number>;
 	theme: string;
@@ -105,12 +108,15 @@ function PodiumParticipant({
 }
 
 export default function HostResultsPanel({
+	code,
+	resultsFinalized,
 	players,
 	scores,
 	theme,
 	themeRevealed,
 	onRevealTheme,
 }: HostResultsPanelProps) {
+	const socket = useSocket();
 	const playersByName = useMemo(() => {
 		const map = new Map<string, Member>();
 		for (const player of players) map.set(player.name.toLowerCase(), player);
@@ -138,10 +144,18 @@ export default function HostResultsPanel({
 	}, [rankedRows]);
 
 	const [revealedIndexes, setRevealedIndexes] = useState<number[]>([]);
+	const finalizedSentRef = useRef(false);
 
 	useEffect(() => {
-		setRevealedIndexes([]);
-	}, [scores]);
+		const target = resultsFinalized ? topGroups.map((_, index) => index) : [];
+		setRevealedIndexes((prev) => {
+			if (prev.length === target.length && prev.every((value, index) => value === target[index])) {
+				return prev;
+			}
+			return target;
+		});
+		finalizedSentRef.current = false;
+	}, [scores, resultsFinalized, topGroups]);
 
 	const reveal = (index: number) =>
 		setRevealedIndexes((prev) => (prev.includes(index) ? prev : [...prev, index]));
@@ -158,40 +172,52 @@ export default function HostResultsPanel({
 	};
 
 	const allRevealed = topGroups.length === 0 || revealedIndexes.length >= topGroups.length;
+	const hasTheme = Boolean(theme?.trim());
+	const requiresThemeReveal = hasTheme && !themeRevealed;
+	const revealSequenceComplete = allRevealed && !requiresThemeReveal;
 	const revealLabel =
-		revealNextIndex === null
-			? "All revealed"
-			: `Reveal ${placeLabel(topGroups[revealNextIndex]?.rank ?? revealNextIndex + 1)}`;
+		requiresThemeReveal
+			? "Reveal theme"
+			: revealNextIndex === null
+				? "All revealed"
+				: `Reveal ${placeLabel(topGroups[revealNextIndex]?.rank ?? revealNextIndex + 1)}`;
+
+	useEffect(() => {
+		if (!revealSequenceComplete || resultsFinalized) return;
+		if (finalizedSentRef.current) return;
+		finalizedSentRef.current = true;
+		socket.emit("finalizeResults", { code }, (ok?: boolean) => {
+			if (ok === false) finalizedSentRef.current = false;
+		});
+	}, [revealSequenceComplete, code, socket, resultsFinalized]);
 
 	return (
 		<section className="flex min-h-0 flex-1 flex-col items-center gap-5">
 			<div className="text-center">
 				<h2 className="text-2xl font-semibold text-text">Final Results</h2>
 				<p className="mt-1 text-sm text-text-muted">
-					Reveal the podium, then export the full game report.
+					Reveal the final sequence, then export the full game report.
 				</p>
 			</div>
 
-			<div className="flex w-full max-w-4xl flex-col gap-2 rounded-lg border border-border/70 bg-card/45 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] sm:flex-row sm:items-center sm:justify-between">
-				<div className="min-w-0">
-					<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">Theme</p>
-					<p
-						className="mt-0.5 truncate text-lg font-semibold text-text"
-						title={themeRevealed ? theme || "No theme set" : "Hidden until revealed"}
-					>
-						{themeRevealed ? theme || "No theme set" : "Hidden until revealed"}
-					</p>
+			{hasTheme && (
+				<div className="flex w-full max-w-4xl flex-col gap-2 rounded-lg border border-border/70 bg-card/45 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] sm:flex-row sm:items-center sm:justify-between">
+					<div className="min-w-0">
+						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">Theme</p>
+						<p
+							className="mt-0.5 truncate text-lg font-semibold text-text"
+							title={themeRevealed ? theme : "Hidden until revealed"}
+						>
+							{themeRevealed ? theme : "Hidden until revealed"}
+						</p>
+					</div>
+					{themeRevealed && (
+						<span className="inline-flex w-fit shrink-0 items-center rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-200">
+							Revealed
+						</span>
+					)}
 				</div>
-				{themeRevealed ? (
-					<span className="inline-flex w-fit shrink-0 items-center rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-200">
-						Revealed
-					</span>
-				) : (
-					<Button variant="secondary" size="sm" onClick={onRevealTheme} className="w-fit">
-						Reveal theme
-					</Button>
-				)}
-			</div>
+			)}
 
 			<div className="w-full max-w-4xl">
 				<div className="grid gap-3 sm:grid-cols-3 sm:items-end sm:gap-0">
@@ -273,7 +299,7 @@ export default function HostResultsPanel({
 				</div>
 			</div>
 
-			{allRevealed ? (
+			{revealSequenceComplete ? (
 				<div className="scrollbar-hidden min-h-0 max-h-60 w-full max-w-4xl overflow-y-auto overflow-x-hidden rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:max-h-64 lg:max-h-72">
 					<table className="w-full table-fixed text-sm">
 						<colgroup>
@@ -318,9 +344,19 @@ export default function HostResultsPanel({
 				</div>
 			)}
 
-			{!allRevealed && (
+			{!revealSequenceComplete && (
 				<div className="flex w-full max-w-4xl justify-center">
-					<Button variant="secondary" size="md" onClick={revealNext}>
+					<Button
+						variant="secondary"
+						size="md"
+						onClick={() => {
+							if (requiresThemeReveal) {
+								onRevealTheme();
+								return;
+							}
+							revealNext();
+						}}
+					>
 						{revealLabel}
 					</Button>
 				</div>

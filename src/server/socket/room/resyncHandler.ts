@@ -9,7 +9,7 @@ import {
 	getLockedPlayers,
 	lockCounts,
 } from "@/lib/game";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { toPublicRoom } from "@/server/state/publicRoom";
 import {
 	getHint,
@@ -62,7 +62,7 @@ export const resyncHandler = (
 			const boundRoom = requireRoom(socket, () => cb?.(false));
 			if (!boundRoom) return;
 			if (boundRoom.code !== code) return cb?.(false);
-			if (!requireHost(socket, boundRoom, () => cb?.(false))) return;
+			if (!requireHostOrAdmin(socket, boundRoom, () => cb?.(false))) return;
 
 			const room = await getRoom(code);
 			const viewRoom = toPublicRoom(room);
@@ -70,6 +70,7 @@ export const resyncHandler = (
 
 			const gameState = getRoomGameState(code);
 			io.to(code).emit("revealedSongs", gameState.revealedSongs || []);
+			io.to(code).emit("revealedSubmitters", gameState.revealedSubmitters || []);
 			io.to(code).emit("songChanged", { songId: gameState.activeSongId ?? null });
 
 			if (gameState.activeSongId) {

@@ -1,5 +1,6 @@
 import type { Server } from "socket.io";
 import { getRoundsForCode } from "@/lib/game";
+import { getRoomScores } from "@/lib/score";
 import {
 	getHint,
 	getLockedThisRoundList,
@@ -7,6 +8,7 @@ import {
 	getThemeGuessesThisRound,
 	isRevealed,
 } from "@/lib/theme";
+import { computeScoreBoard } from "@/server/logic/score";
 import { getRoom } from "@/server/store/roomStore";
 import { getRoomGameState } from "@/server/state/gameState";
 import type {
@@ -22,6 +24,10 @@ const toGuessLabel = (order: string[]) => {
 	if (order.length === 1) return order[0] || "—";
 	return order.filter(Boolean).join(" > ") || "—";
 };
+
+const isMultiplierEligible = (
+	lock: { multiplierEligible?: boolean; hardcoreEligible?: boolean } | undefined
+) => lock?.multiplierEligible ?? lock?.hardcoreEligible ?? false;
 
 export function buildAdminDashboard(code: string): AdminDashboardPayload | null {
 	const room = getRoom(code);
@@ -45,6 +51,16 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		...getThemeGuessesThisRound(code),
 		...(activeRound?.themeGuesses ?? {}),
 	};
+
+	const scoreBoard = computeScoreBoard({
+		room,
+		rounds,
+		themePointsByPlayer: getRoomScores(code),
+		guessPoints: room.rules.guessPoints,
+		detailGuessPoints: room.rules.detailGuessPoints,
+		themeGuessPoints: room.rules.themeGuessPoints,
+		hardcoreMultiplier: room.rules.hardcoreMultiplier,
+	});
 
 	const currentSongRows = room.players
 		.filter((player) => !player.isHost)
@@ -74,26 +90,48 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		.filter((player) => !player.isHost)
 		.map((player) => ({
 			playerName: player.name,
+			themeBonusPoints: scoreBoard.byPlayer[player.name]?.themeBonuses ?? 0,
 			rounds: room.songs.map((song, index) => {
 				const rd = rounds[song.id];
 				const lockInfo = rd?.locks?.[player.name];
 				const detailLockInfo = rd?.detailLocks?.[player.name];
 				const guessOrder = rd?.orders?.[player.name] ?? [];
 				const detailGuessOrder = rd?.detailOrders?.[player.name] ?? [];
+				const correctAnswer = rd?.correctAnswer ?? song.submitter ?? "";
+				const detailCorrectAnswer = rd?.detailCorrectAnswer ?? song.detailAnswer ?? null;
+				const submitterCorrect = guessOrder[0] === correctAnswer;
+				const detailCorrect =
+					!!detailCorrectAnswer &&
+					detailCorrectAnswer.trim().length > 0 &&
+					detailGuessOrder[0] === detailCorrectAnswer;
+				const submitterPoints = submitterCorrect ? room.rules.guessPoints : 0;
+				const detailPoints = detailCorrect ? room.rules.detailGuessPoints : 0;
+				const multiplierBonus =
+					(submitterCorrect && isMultiplierEligible(lockInfo)
+						? room.rules.guessPoints * (room.rules.hardcoreMultiplier - 1)
+						: 0) +
+					(detailCorrect && isMultiplierEligible(detailLockInfo)
+						? room.rules.detailGuessPoints * (room.rules.hardcoreMultiplier - 1)
+						: 0);
+				const totalPoints = Math.round((submitterPoints + detailPoints + multiplierBonus) * 100) / 100;
 				return {
 					songId: song.id,
 					songIndex: index + 1,
 					songTitle: song.title ?? "",
 					guessOrder,
 					guessLabel: toGuessLabel(guessOrder),
-					correctAnswer: rd?.correctAnswer ?? song.submitter ?? "",
+					correctAnswer,
 					locked: !!lockInfo?.locked,
 					lockedAt: lockInfo?.lockedAt ?? null,
 					detailGuessOrder,
 					detailGuessLabel: toGuessLabel(detailGuessOrder),
-					detailCorrectAnswer: rd?.detailCorrectAnswer ?? song.detailAnswer ?? null,
+					detailCorrectAnswer,
 					detailLocked: !!detailLockInfo?.locked,
 					detailLockedAt: detailLockInfo?.lockedAt ?? null,
+					submitterPoints,
+					detailPoints,
+					multiplierBonus,
+					totalPoints,
 					themeGuess: rd?.themeGuesses?.[player.name] ?? null,
 				};
 			}),
@@ -102,6 +140,7 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 	return {
 		code: room.code,
 		phase: room.phase ?? null,
+		resultsFinalized: room.phase === "ENDED" && !!game.finalScores,
 		activeSongId,
 		activeSongIndex: activeSongIndex >= 0 ? activeSongIndex + 1 : null,
 		currentSongTitle: currentSong?.title ?? null,

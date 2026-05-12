@@ -7,6 +7,16 @@ import useAvatarPreviewTilt from "@/hooks/home/useAvatarPreviewTilt";
 import { getStoredAvatar } from "@/lib/avatarStorage";
 import { firstFieldIssue, joinLobbyFormSchema } from "@/shared/schemas";
 
+const getClientId = () => {
+	const key = "gts-client-id";
+	let value = localStorage.getItem(key);
+	if (!value) {
+		value = crypto.randomUUID();
+		localStorage.setItem(key, value);
+	}
+	return value;
+};
+
 export function useHomePageState() {
 	const router = useRouter();
 	const socket = useSocket();
@@ -59,9 +69,21 @@ export function useHomePageState() {
 					setCreating(false);
 					return;
 				}
+				if (!resp.adminToken || !resp.hostToken) {
+					setError("Could not initialize room access.");
+					setCreating(false);
+					return;
+				}
 
 				try {
-					localStorage.setItem(`gts-host-room-${resp.code}`, JSON.stringify({ name: "Host" }));
+					localStorage.setItem(
+						`gts-admin-room-${resp.code}`,
+						JSON.stringify({
+							adminToken: resp.adminToken,
+							hostToken: resp.hostToken,
+							hostName: "Host",
+						})
+					);
 				} catch {}
 
 				router.push(`/admin/${resp.code}`);
@@ -90,15 +112,45 @@ export function useHomePageState() {
 		const code = validation.data.roomCode;
 		const playerName = validation.data.name;
 		const avatar = getStoredAvatar();
+		const clientId = getClientId();
+		let deniedReason:
+			| "kicked"
+			| "closed"
+			| "not_found"
+			| "name_taken"
+			| "unauthorized"
+			| "error"
+			| null = null;
+		const onJoinDenied = (data: {
+			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error";
+		}) => {
+			deniedReason = data.reason;
+		};
+		socket.on("joinDenied", onJoinDenied);
 
-		socket.emit("joinRoom", { code, name: playerName, avatar: avatar ?? undefined }, (ok: boolean) => {
+		socket.emit(
+			"joinRoom",
+			{ code, name: playerName, clientId, avatar: avatar ?? undefined },
+			(ok: boolean) => {
+				socket.off("joinDenied", onJoinDenied);
 			if (ok) {
 				router.push(`/join/${code}?name=${encodeURIComponent(playerName)}`);
 			} else {
-				setError("Failed to join - check the room code and try again.");
+				if (deniedReason === "name_taken") {
+					setError("That name is already taken in this room.");
+				} else if (deniedReason === "not_found") {
+					setError("Room not found. Check the room code and try again.");
+				} else if (deniedReason === "closed") {
+					setError("This room is closed.");
+				} else if (deniedReason === "kicked") {
+					setError("You were kicked from this room.");
+				} else {
+					setError("Failed to join - check the room code and try again.");
+				}
 				setJoining(false);
 			}
-		});
+			},
+		);
 	};
 
 	const joinLocked = joining;

@@ -5,6 +5,7 @@ type RoomCode = string;
 type RoomGameState = {
 	activeSongId: number | null;
 	revealedSongs: number[];
+	revealedSubmitters: number[];
 	finalScores: Record<string, number> | null;
 	gameStarted: boolean;
 };
@@ -14,6 +15,7 @@ const byRoom = new Map<RoomCode, RoomGameState>();
 const defaultState = (): RoomGameState => ({
 	activeSongId: null,
 	revealedSongs: [],
+	revealedSubmitters: [],
 	finalScores: null,
 	gameStarted: false,
 });
@@ -48,6 +50,24 @@ export function addRevealedSong(code: RoomCode, songId: number) {
 	return s;
 }
 
+export function setRevealedSubmitters(code: RoomCode, ids: number[]) {
+	const s = getRoomGameState(code);
+	s.revealedSubmitters = ids;
+	notifyStateChange();
+	return s;
+}
+
+export function addRevealedSubmitter(code: RoomCode, songId: number) {
+	const s = getRoomGameState(code);
+	if (!s.revealedSubmitters.includes(songId)) s.revealedSubmitters.push(songId);
+	notifyStateChange();
+	return s;
+}
+
+export function isSubmitterRevealed(code: RoomCode, songId: number): boolean {
+	return getRoomGameState(code).revealedSubmitters.includes(songId);
+}
+
 export function setFinalScores(code: RoomCode, scores: Record<string, number> | null) {
 	const s = getRoomGameState(code);
 	s.finalScores = scores;
@@ -73,6 +93,7 @@ export function exportGameState(): Record<string, RoomGameState> {
 		snapshot[code] = {
 			activeSongId: state.activeSongId,
 			revealedSongs: [...state.revealedSongs],
+			revealedSubmitters: [...state.revealedSubmitters],
 			finalScores: state.finalScores ? { ...state.finalScores } : null,
 			gameStarted: state.gameStarted,
 		};
@@ -87,6 +108,7 @@ export function importGameState(snapshot: Record<string, RoomGameState> | null |
 		byRoom.set(code.toUpperCase(), {
 			activeSongId: state.activeSongId ?? null,
 			revealedSongs: Array.isArray(state.revealedSongs) ? [...state.revealedSongs] : [],
+			revealedSubmitters: Array.isArray(state.revealedSubmitters) ? [...state.revealedSubmitters] : [],
 			finalScores: state.finalScores ? { ...state.finalScores } : null,
 			gameStarted: !!state.gameStarted,
 		});

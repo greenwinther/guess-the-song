@@ -6,8 +6,8 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
-import { addSong, getRoom, joinRoom } from "@/lib/rooms";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
+import { addSong, getRoom, joinRoomWithIdentity } from "@/lib/rooms";
 import { setDetailQuestion, setPlayerReady } from "@/server/store/roomStore";
 import { toPublicRoom } from "@/server/state/publicRoom";
 import type { AvatarConfig } from "@/types/avatar";
@@ -75,7 +75,7 @@ export const devSeedHandler = (
 
 		const room = requireRoom(socket, () => cb?.(false));
 		if (!room || room.code !== code) return;
-		if (!requireHost(socket, room, () => cb?.(false))) return;
+		if (!requireHostOrAdmin(socket, room, () => cb?.(false))) return;
 
 		const players = payload.data.players ?? 10;
 		const songs = payload.data.songs ?? 10;
@@ -87,7 +87,14 @@ export const devSeedHandler = (
 
 		for (let i = 0; i < players; i++) {
 			const name = `Player${i + 1}`;
-			const { created } = await joinRoom(code, name, false, makeAvatar(i));
+			const { created } = await joinRoomWithIdentity(
+				code,
+				name,
+				false,
+				`dev-seed-${code}-${name}`,
+				undefined,
+				makeAvatar(i)
+			);
 			if (created && ready) setPlayerReady(code, name, true);
 		}
 

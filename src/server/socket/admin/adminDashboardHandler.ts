@@ -7,9 +7,10 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireMember, requireRoom } from "@/server/logic/guards";
 import { buildAdminDashboard } from "@/server/socket/admin/adminDashboard";
 import { adminGetDashboardPayloadSchema, validateWithZod } from "@/server/schemas";
+import { getRoomGameState } from "@/server/state/gameState";
 
 export const adminDashboardHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -26,7 +27,20 @@ export const adminDashboardHandler = (
 
 			const room = requireRoom(socket, () => cb({ ok: false, error: "NOT_AUTHORIZED" }));
 			if (!room || room.code !== code) return cb({ ok: false, error: "NOT_AUTHORIZED" });
-			if (!requireHost(socket, room, () => cb({ ok: false, error: "NOT_AUTHORIZED" }))) return;
+			const auth = requireHostOrAdmin(socket, room);
+			if (!auth) {
+				const member = requireMember(socket, room);
+				const gameState = getRoomGameState(code);
+				const allSubmittersRevealed =
+					room.songs.length > 0 && gameState.revealedSubmitters.length >= room.songs.length;
+				const canPlayerExport =
+					!!member &&
+					!member.isHost &&
+					room.phase === "ENDED" &&
+					!!gameState.finalScores &&
+					allSubmittersRevealed;
+				if (!canPlayerExport) return cb({ ok: false, error: "NOT_AUTHORIZED" });
+			}
 
 			const dashboard = buildAdminDashboard(code);
 			if (!dashboard) return cb({ ok: false, error: "ROOM_NOT_FOUND" });

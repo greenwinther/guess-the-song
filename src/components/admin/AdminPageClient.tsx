@@ -15,7 +15,7 @@ export default function AdminPageClient({ roomCode }: { roomCode: string }) {
 	const { status } = useSocketStatus();
 	const socketError = useReconnectNotice();
 	const code = String(roomCode || "").toUpperCase();
-	const { access, room, setAccess } = useAdminHostAccess(code);
+	const { access, room, setAccess, hostLink } = useAdminHostAccess(code);
 	const dashboard = useAdminDashboard({ code, access, onAccessChange: setAccess });
 	const { selectedHistoryPlayer, selectedHistoryRows, setSelectedHistoryPlayer } =
 		useAdminSelectedHistoryPlayer(dashboard);
@@ -47,7 +47,7 @@ export default function AdminPageClient({ roomCode }: { roomCode: string }) {
 			contentClassName={`${styles.workspace} gap-4 p-0`}
 		>
 			{inLobby ? (
-				<AdminPregameView room={room} roomCode={dashboard.code} />
+				<AdminPregameView room={room} roomCode={dashboard.code} hostLink={hostLink} />
 			) : (
 				<AdminGameView
 					dashboard={dashboard}

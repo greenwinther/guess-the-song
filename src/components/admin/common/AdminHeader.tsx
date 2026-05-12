@@ -6,10 +6,11 @@ import styles from "@/components/admin/admin.module.css";
 
 type AdminHeaderProps = {
 	roomCode: string;
+	hostLink?: string | null;
 	onOpenSettings?: () => void;
 };
 
-export default function AdminHeader({ roomCode, onOpenSettings }: AdminHeaderProps) {
+export default function AdminHeader({ roomCode, hostLink = null, onOpenSettings }: AdminHeaderProps) {
 	return (
 		<header
 			className={`${styles.panel} ${styles.panelOpen} ${styles.panelPrimary} z-20 grid items-center gap-4 rounded-b-2xl border border-border/70 border-t-0 p-4 md:grid-cols-[1fr_auto_1fr]`}
@@ -27,14 +28,30 @@ export default function AdminHeader({ roomCode, onOpenSettings }: AdminHeaderPro
 						Settings
 					</Button>
 				)}
-				<Button
-					variant="secondary"
-					size="sm"
-					className="border-border/45 bg-card/10 text-text/78 hover:bg-card/18 hover:text-text"
-					onClick={() => window.open(`/host/${roomCode}`, "_blank", "noopener,noreferrer")}
-				>
-					Open host control
-				</Button>
+				{hostLink && (
+					<>
+						<Button
+							variant="secondary"
+							size="sm"
+							className="border-border/45 bg-card/10 text-text/78 hover:bg-card/18 hover:text-text"
+							onClick={async () => {
+								try {
+									await navigator.clipboard.writeText(`${window.location.origin}${hostLink}`);
+								} catch {}
+							}}
+						>
+							Copy host link
+						</Button>
+						<Button
+							variant="secondary"
+							size="sm"
+							className="border-border/45 bg-card/10 text-text/78 hover:bg-card/18 hover:text-text"
+							onClick={() => window.open(hostLink, "_blank", "noopener,noreferrer")}
+						>
+							Open host control
+						</Button>
+					</>
+				)}
 			</div>
 		</header>
 	);

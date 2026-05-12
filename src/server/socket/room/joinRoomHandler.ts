@@ -1,5 +1,5 @@
 import { activeRounds, detailLockCounts, getDetailLockedPlayers, getLockedPlayers, lockCounts } from "@/lib/game";
-import { getRoom, joinRoom } from "@/lib/rooms";
+import { getRoom, joinRoomWithIdentity } from "@/lib/rooms";
 import type { Server, Socket } from "socket.io";
 import { getRoomGameState } from "@/server/state/gameState";
 import type { ClientToServerEvents, InterServerEvents, JoinRoomPayload, ServerToClientEvents, SocketData } from "@/types/socket";
@@ -55,7 +55,7 @@ export const joinRoomHandler = (
 				});
 				if (!payload.ok) return callback?.(false);
 
-				const { code, name, hardcore, avatar } = payload.data;
+				const { code, name, hardcore, clientId, hostToken, avatar } = payload.data;
 				const normalizeName = (value: string) => value.trim().toLowerCase();
 
 				// prevent duplicate joins from same socket, but still send snapshot
@@ -67,6 +67,7 @@ export const joinRoomHandler = (
 					socket.emit("roomData", toPublicRoom(room));
 					const gameState = getRoomGameState(code);
 					socket.emit("revealedSongs", gameState.revealedSongs || []);
+					socket.emit("revealedSubmitters", gameState.revealedSubmitters || []);
 				const activeId = gameState.activeSongId ?? null;
 				socket.emit("songChanged", { songId: activeId });
 				if (activeId) {
@@ -94,7 +95,14 @@ export const joinRoomHandler = (
 					return;
 				}
 
-				const { player, created } = await joinRoom(code, name, hardcore, avatar);
+				const { player, created } = await joinRoomWithIdentity(
+					code,
+					name,
+					hardcore,
+					clientId,
+					hostToken,
+					avatar
+				);
 				socket.join(code);
 
 				socket.data.roomMeta = { code, playerName: player.name };
@@ -109,6 +117,7 @@ export const joinRoomHandler = (
 				const gameState = getRoomGameState(code);
 				const revealed = gameState.revealedSongs || [];
 				socket.emit("revealedSongs", revealed);
+				socket.emit("revealedSubmitters", gameState.revealedSubmitters || []);
 
 				const roundsForCode = activeRounds[code];
 				if (roundsForCode && Object.keys(roundsForCode).length > 0) {
@@ -150,6 +159,10 @@ export const joinRoomHandler = (
 							? "closed"
 							: err instanceof Error && err.message === "Room not found"
 								? "not_found"
+								: err instanceof Error && err.message === "NameTaken"
+									? "name_taken"
+								: err instanceof Error && err.message === "Unauthorized"
+									? "unauthorized"
 								: "error";
 				socket.emit("joinDenied", { reason });
 				callback?.(false);

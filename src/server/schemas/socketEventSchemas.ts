@@ -64,15 +64,24 @@ export const joinRoomPayloadSchema = z
 		code: roomCodeSchema,
 		name: z.preprocess((value) => parseName(value, "Player"), z.string()),
 		hardcore: z.preprocess((value) => parseBool(value, false), z.boolean()),
-		clientId: z.unknown().optional(),
+		clientId: z.preprocess((value) => parseOptionalText(value), z.string().optional()),
+		hostToken: z.preprocess((value) => parseOptionalText(value), z.string().optional()),
 		avatar: avatarSchema.optional(),
 	})
 	.transform((input) => ({
 		code: input.code,
 		name: input.name,
 		hardcore: input.hardcore,
+		clientId: input.clientId,
+		hostToken: input.hostToken,
 		avatar: input.avatar,
 	}));
+
+export const joinAdminRoomPayloadSchema = z.object({
+	code: roomCodeSchema,
+	adminToken: z.preprocess((value) => parseOptionalText(value) ?? "", z.string().min(1)),
+	clientId: z.preprocess((value) => parseOptionalText(value) ?? "", z.string().min(1)),
+});
 
 export const addSongPayloadSchema = z
 	.object({
@@ -132,7 +141,15 @@ export const nextSongPayloadSchema = z.object({
 	code: roomCodeSchema,
 });
 
+export const beginRecapPayloadSchema = z.object({
+	code: roomCodeSchema,
+});
+
 export const showResultsPayloadSchema = z.object({
+	code: roomCodeSchema,
+});
+
+export const finalizeResultsPayloadSchema = z.object({
 	code: roomCodeSchema,
 });
 

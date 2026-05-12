@@ -4,6 +4,8 @@ type LockInfo = {
 	locked: boolean;
 	lockedAt?: number;
 	method?: "manual" | "auto"; // optional analytics
+	multiplierEligible?: boolean;
+	hardcoreEligible?: boolean; // legacy persisted key
 };
 
 export type RoundData = {
@@ -79,7 +81,12 @@ export function storeThemeGuess(code: string, songId: number, playerName: string
 }
 
 // --- Manual lock (from "Lock answer" button) ---
-export function manualLock(code: string, songId: number, playerName: string): boolean {
+export function manualLock(
+	code: string,
+	songId: number,
+	playerName: string,
+	options?: { multiplierEligible?: boolean }
+): boolean {
 	const rd = rounds[code]?.[songId];
 	if (!rd) return false;
 
@@ -93,6 +100,8 @@ export function manualLock(code: string, songId: number, playerName: string): bo
 		locked: true,
 		lockedAt: Date.now(),
 		method: "manual",
+		multiplierEligible: options?.multiplierEligible ?? false,
+		hardcoreEligible: options?.multiplierEligible ?? false,
 	};
 	notifyStateChange();
 	return true;
@@ -127,7 +136,12 @@ export function tryUndoDetailLock(code: string, songId: number, playerName: stri
 	return true;
 }
 
-export function manualDetailLock(code: string, songId: number, playerName: string): boolean {
+export function manualDetailLock(
+	code: string,
+	songId: number,
+	playerName: string,
+	options?: { multiplierEligible?: boolean }
+): boolean {
 	const rd = rounds[code]?.[songId];
 	if (!rd || !rd.detailOrders || !rd.detailLocks) return false;
 
@@ -135,7 +149,13 @@ export function manualDetailLock(code: string, songId: number, playerName: strin
 	if (li.locked) return false;
 
 	rd.detailOrders[playerName] = rd.detailOrders[playerName] ?? [];
-	rd.detailLocks[playerName] = { locked: true, lockedAt: Date.now(), method: "manual" };
+	rd.detailLocks[playerName] = {
+		locked: true,
+		lockedAt: Date.now(),
+		method: "manual",
+		multiplierEligible: options?.multiplierEligible ?? false,
+		hardcoreEligible: options?.multiplierEligible ?? false,
+	};
 	notifyStateChange();
 	return true;
 }
@@ -178,7 +198,12 @@ export function getDetailLockedPlayers(code: string, songId: number): string[] {
 }
 
 // Lock only specific players for a given song (auto lock)
-export function finalizeSongForPlayers(code: string, songId: number, playerNames: string[]) {
+export function finalizeSongForPlayers(
+	code: string,
+	songId: number,
+	playerNames: string[],
+	options?: { multiplierEligible?: boolean }
+) {
 	const rd = activeRounds[code]?.[songId];
 	if (!rd) return { locked: 0, total: playerNames.length };
 
@@ -187,7 +212,14 @@ export function finalizeSongForPlayers(code: string, songId: number, playerNames
 		const already = rd.locks?.[name]?.locked;
 		if (!already) {
 			rd.orders[name] = rd.orders[name] ?? []; // empty = no guess
-			rd.locks[name] = { locked: true, lockedAt: Date.now(), method: "auto" };
+			const eligible = options?.multiplierEligible ?? false;
+			rd.locks[name] = {
+				locked: true,
+				lockedAt: Date.now(),
+				method: "auto",
+				multiplierEligible: eligible,
+				hardcoreEligible: eligible,
+			};
 		}
 		if (rd.locks[name]?.locked) locked++;
 	}
@@ -195,7 +227,12 @@ export function finalizeSongForPlayers(code: string, songId: number, playerNames
 	return { locked, total: playerNames.length };
 }
 
-export function finalizeDetailForPlayers(code: string, songId: number, playerNames: string[]) {
+export function finalizeDetailForPlayers(
+	code: string,
+	songId: number,
+	playerNames: string[],
+	options?: { multiplierEligible?: boolean }
+) {
 	const rd = activeRounds[code]?.[songId];
 	if (!rd || !rd.detailOrders || !rd.detailLocks) return { locked: 0, total: playerNames.length };
 
@@ -204,7 +241,14 @@ export function finalizeDetailForPlayers(code: string, songId: number, playerNam
 		const already = rd.detailLocks?.[name]?.locked;
 		if (!already) {
 			rd.detailOrders[name] = rd.detailOrders[name] ?? [];
-			rd.detailLocks[name] = { locked: true, lockedAt: Date.now(), method: "auto" };
+			const eligible = options?.multiplierEligible ?? false;
+			rd.detailLocks[name] = {
+				locked: true,
+				lockedAt: Date.now(),
+				method: "auto",
+				multiplierEligible: eligible,
+				hardcoreEligible: eligible,
+			};
 		}
 		if (rd.detailLocks[name]?.locked) locked++;
 	}

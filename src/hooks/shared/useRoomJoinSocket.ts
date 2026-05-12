@@ -14,13 +14,18 @@ const getClientId = () => {
 	return v;
 };
 
-export function useRoomJoinSocket(code: string, name: string) {
+export function useRoomJoinSocket(
+	code: string,
+	name: string,
+	options?: { hostToken?: string | null; onJoinSuccess?: () => void }
+) {
 	const socket = useSocket();
 	const joinedRef = useRef(false);
 	const errorRef = useRef<string | null>(null);
 	const codeRef = useRef(code);
 	const nameRef = useRef(name);
 	const clientIdRef = useRef<string>();
+	const onJoinSuccessRef = useRef<(() => void) | undefined>(options?.onJoinSuccess);
 
 	useEffect(() => {
 		codeRef.current = code;
@@ -28,11 +33,16 @@ export function useRoomJoinSocket(code: string, name: string) {
 	useEffect(() => {
 		nameRef.current = name;
 	}, [name]);
+	useEffect(() => {
+		onJoinSuccessRef.current = options?.onJoinSuccess;
+	}, [options?.onJoinSuccess]);
 
 	useEffect(() => {
 		clientIdRef.current = clientIdRef.current || getClientId();
 		if (!socket) return;
-		const emitJoinDenied = (reason: "kicked" | "closed" | "not_found" | "error") => {
+		const emitJoinDenied = (
+			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error"
+		) => {
 			try {
 				localStorage.setItem(
 					"gts-join-denied",
@@ -41,7 +51,9 @@ export function useRoomJoinSocket(code: string, name: string) {
 				window.dispatchEvent(new Event("gts-join-denied"));
 			} catch {}
 		};
-		const onJoinDenied = (data: { reason: "kicked" | "closed" | "not_found" | "error" }) => {
+		const onJoinDenied = (data: {
+			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error";
+		}) => {
 			if (data.reason === "kicked") {
 				toast.error("You were kicked from this room.");
 				emitJoinDenied("kicked");
@@ -55,6 +67,16 @@ export function useRoomJoinSocket(code: string, name: string) {
 			if (data.reason === "not_found") {
 				toast.error("Room not found.");
 				emitJoinDenied("not_found");
+				return;
+			}
+			if (data.reason === "name_taken") {
+				toast.error("That name is already taken in this room.");
+				emitJoinDenied("name_taken");
+				return;
+			}
+			if (data.reason === "unauthorized") {
+				toast.error("You are not authorized to access this room.");
+				emitJoinDenied("unauthorized");
 				return;
 			}
 			toast.error("Unable to join room.");
@@ -75,6 +97,7 @@ export function useRoomJoinSocket(code: string, name: string) {
 					code: codeRef.current,
 					name: nameRef.current,
 					clientId: clientIdRef.current,
+					hostToken: options?.hostToken ?? undefined,
 					avatar: avatar ?? undefined,
 				},
 				(ok: boolean) => {
@@ -86,7 +109,9 @@ export function useRoomJoinSocket(code: string, name: string) {
 							toast.error("This room is closed or unavailable.");
 						}
 						// (optional) toast/console here
+						return;
 					}
+					onJoinSuccessRef.current?.();
 				}
 			);
 		};
@@ -111,5 +136,5 @@ export function useRoomJoinSocket(code: string, name: string) {
 			window.removeEventListener("gts-socket-synced", onSocketSynced);
 			joinedRef.current = false;
 		};
-	}, [socket]);
+	}, [socket, options?.hostToken]);
 }

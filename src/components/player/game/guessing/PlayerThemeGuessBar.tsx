@@ -33,6 +33,7 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 	}, [iLockedThisRound]);
 
 	if (!room?.theme) return null;
+	if (room.phase && room.phase !== "GUESSING" && room.phase !== "RECAP") return null;
 
 	// ✅ If I solved it: show message instead of the form
 	if (iSolved) {

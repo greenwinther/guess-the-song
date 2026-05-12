@@ -14,12 +14,12 @@ import { useSubmissionOrder } from "@/hooks/player/useSubmissionOrder";
 import { useDetailOrder } from "@/hooks/player/useDetailOrder";
 import BackgroundShell from "@/components/shared/BackgroundShell";
 import RoomSidebar from "@/components/shared/RoomSidebar";
-import ExportGameReportButton from "@/components/shared/ExportGameReportButton";
 
 import PlayerPlaylistPanel from "@/components/player/game/playlist/PlayerPlaylistPanel";
 import { PlayerGuessPanel } from "@/components/player/game/guessing/PlayerGuessPanel";
 import { PlayerResultsPanel } from "@/components/player/game/results/PlayerResultsPanel";
 import PlayerJoinDeniedBanner from "@/components/player/common/PlayerJoinDeniedBanner";
+import ExportGameReportButton from "@/components/shared/ExportGameReportButton";
 import type { OrderItem } from "@/components/player/game/guessing/PlayerGuessOrderList";
 import { useThemeSocketSync } from "@/hooks/shared/useThemeSocketSync";
 import { PlayerThemeGuessBar } from "@/components/player/game/guessing/PlayerThemeGuessBar";
@@ -48,6 +48,9 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	} = useGameRuntime();
 	const [undoUntil, setUndoUntil] = useState<number | null>(null);
 	const [detailUndoUntil, setDetailUndoUntil] = useState<number | null>(null);
+	const [resultRowPoints, setResultRowPoints] = useState<number[] | null>(null);
+	const [themeBonusPoints, setThemeBonusPoints] = useState<number>(0);
+	const [exportReady, setExportReady] = useState(false);
 	const { clearJoinDenied, joinDenied } = usePlayerJoinDenied();
 	const resolvedPlayerName = useMemo(() => {
 		if (!room) return playerName;
@@ -485,7 +488,9 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	};
 
 	const bgImage = useSongArtworkBackground ? (bgThumbnail ?? room.backgroundUrl ?? null) : (room.backgroundUrl ?? null);
-	const isResultsMode = room.phase === "RESULTS" && Boolean(scores);
+	const isEndedMode = room.phase === "ENDED" && Boolean(scores);
+	const isRevealFlowMode = room.phase === "REVEAL" || room.phase === "RESULTS";
+	const guessesLockedForPhase = isRevealFlowMode;
 	const correctList = room.songs.map((s) => s.submitter);
 	const detailCorrectList = hasDetailQuestion ? room.songs.map((s) => s.detailAnswer ?? "") : [];
 
@@ -493,9 +498,42 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const canLock = Boolean(order[currentIndex]?.name) && !selfLocked.has(currentIndex);
 	const canLockDetail =
 		hasDetailQuestion && Boolean(detailOrder[currentIndex]?.name) && !detailSelfLocked.has(currentIndex);
+	const effectiveSubmitted = submitted || guessesLockedForPhase;
 	const currentLockedNames = Array.from(
 		lockedBySong.get(currentSongId ?? -1) ?? new Set<string>()
 	);
+
+	useEffect(() => {
+		if (!socket || !room) return;
+		if (room.phase !== "ENDED") {
+			setResultRowPoints(null);
+			setThemeBonusPoints(0);
+			setExportReady(false);
+			return;
+		}
+
+		socket.emit("ADMIN_GET_DASHBOARD", { code: room.code }, (res) => {
+			if (!res.ok) {
+				setResultRowPoints(null);
+				setThemeBonusPoints(0);
+				setExportReady(false);
+				return;
+			}
+
+			setExportReady(Boolean(res.dashboard.resultsFinalized));
+			const history = res.dashboard.playerHistories.find(
+				(item) => item.playerName.toLowerCase() === resolvedPlayerName.toLowerCase()
+			);
+			if (!history) {
+				setResultRowPoints(null);
+				setThemeBonusPoints(0);
+				return;
+			}
+			setResultRowPoints(history.rounds.map((round) => round.totalPoints ?? 0));
+			setThemeBonusPoints(history.themeBonusPoints ?? 0);
+		});
+	}, [socket, room?.phase, room?.code, resolvedPlayerName]);
+
 	const handleBackToStart = () => {
 		clearJoinDenied();
 		router.push("/");
@@ -524,7 +562,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 
 			{/* CENTER */}
 			<main className="lg:col-span-6 p-4 sm:p-4 flex flex-col">
-				{isResultsMode ? (
+				{isEndedMode ? (
 					<>
 						<PlayerResultsPanel
 							order={order}
@@ -532,26 +570,30 @@ export default function PlayerGameView({ code, playerName }: Props) {
 							detailOrder={hasDetailQuestion ? detailOrder : undefined}
 							detailCorrectList={hasDetailQuestion ? detailCorrectList : undefined}
 							detailQuestion={hasDetailQuestion ? room.detailQuestion : undefined}
+							rowPoints={resultRowPoints ?? undefined}
 							theme={room.theme ?? null}
 							themeRevealed={themeRevealed}
 							themeSolved={solvedByTheme.includes(resolvedPlayerName)}
+							themeBonusPoints={themeBonusPoints}
 							finalScore={scores?.[resolvedPlayerName] ?? null}
 						/>
-						<div className="mt-4 flex justify-center">
-							<ExportGameReportButton
-								code={room.code}
-								scores={scores}
-								theme={room.theme}
-								variant="secondary"
-							/>
-						</div>
+						{exportReady && (
+							<div className="mt-4 flex justify-center">
+								<ExportGameReportButton
+									code={room.code}
+									scores={scores}
+									theme={room.theme ?? undefined}
+									variant="secondary"
+								/>
+							</div>
+						)}
 					</>
 				) : (
 					<PlayerGuessPanel
 						order={order}
 						detailOrder={detailOrder}
 						detailQuestion={hasDetailQuestion ? room.detailQuestion : undefined}
-						submitted={submitted}
+						submitted={effectiveSubmitted}
 						onReorder={onReorder}
 						onDetailReorder={onDetailReorder}
 						onLockCurrent={onLockCurrent}
@@ -559,15 +601,15 @@ export default function PlayerGameView({ code, playerName }: Props) {
 						currentIndex={currentIndex}
 						lockedIndices={Array.from(selfLocked)}
 						detailLockedIndices={Array.from(detailSelfLocked)}
-						canLock={canLock}
-						canLockDetail={canLockDetail}
+						canLock={!guessesLockedForPhase && canLock}
+						canLockDetail={!guessesLockedForPhase && canLockDetail}
 						undoVisible={undoVisible}
 						onUndo={onUndo}
 						detailUndoVisible={detailUndoVisible}
 						onDetailUndo={onUndoDetail}
 						onSubmitAll={handleSubmitAll}
-						showSubmitAll={!submitted}
-						scoreForMe={scores?.[resolvedPlayerName] ?? null}
+						showSubmitAll={!effectiveSubmitted}
+						scoreForMe={null}
 						themeGuessBar={
 							room.theme ? (
 								<PlayerThemeGuessBar code={code} playerName={resolvedPlayerName} />

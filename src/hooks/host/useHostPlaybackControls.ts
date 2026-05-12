@@ -31,6 +31,7 @@ export function useHostPlaybackControls({
 }: UseHostPlaybackControlsOptions) {
 	const socket = useSocket();
 	const [isPlaying, setIsPlaying] = useState(false);
+	const [nextPending, setNextPending] = useState(false);
 
 	const currentIndex = useMemo(
 		() => (currentSong ? songs.findIndex((song) => song.id === currentSong.id) : -1),
@@ -39,7 +40,8 @@ export function useHostPlaybackControls({
 
 	const playSong = useCallback(
 		(song: Submission) => {
-			socket.emit("playSong", { code, songId: song.id }, () => {
+			socket.emit("playSong", { code, songId: song.id }, (res?: { success?: boolean }) => {
+				if (res?.success === false) return;
 				if (!revealedSongs.includes(song.id)) {
 					const updated = [...revealedSongs, song.id];
 					setRevealedSongs(updated);
@@ -64,17 +66,20 @@ export function useHostPlaybackControls({
 	}, [currentIndex, playAtIndex]);
 
 	const playNext = useCallback(() => {
-		socket.emit("nextSong", { code }, () => {});
-
-		const lastIndex = totalSongs - 1;
-		if (currentIndex >= 0 && currentIndex < lastIndex) {
-			playAtIndex(currentIndex + 1);
-			return;
-		}
-
-		if (recapRunning) onStopRecap();
-		setIsPlaying(false);
-	}, [socket, code, totalSongs, currentIndex, playAtIndex, recapRunning, onStopRecap]);
+		if (nextPending) return;
+		setNextPending(true);
+		socket.emit("nextSong", { code }, (ok?: boolean) => {
+			const lastIndex = totalSongs - 1;
+			if (ok !== false && currentIndex >= 0 && currentIndex < lastIndex) {
+				playAtIndex(currentIndex + 1);
+				setNextPending(false);
+				return;
+			}
+			if (recapRunning) onStopRecap();
+			setIsPlaying(false);
+			setNextPending(false);
+		});
+	}, [socket, code, totalSongs, currentIndex, playAtIndex, recapRunning, onStopRecap, nextPending]);
 
 	const playOrPause = useCallback(() => {
 		if (!currentSong) {
@@ -115,6 +120,7 @@ export function useHostPlaybackControls({
 	return {
 		currentIndex,
 		isPlaying,
+		nextPending,
 		playNext,
 		playOrPause,
 		playPrevious,

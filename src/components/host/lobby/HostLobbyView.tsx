@@ -19,7 +19,15 @@ import HostStartGamePanel from "@/components/host/lobby/HostStartGamePanel";
 import type { Member } from "@/types/member";
 import type { Room } from "@/types/room";
 
-export default function HostLobbyView({ initialRoom }: { initialRoom: Room }) {
+export default function HostLobbyView({
+	initialRoom,
+	hostToken,
+	onJoinSuccess,
+}: {
+	initialRoom: Room;
+	hostToken?: string | null;
+	onJoinSuccess?: () => void;
+}) {
 	const socket = useSocket();
 	const [playerToKick, setPlayerToKick] = useState<Member | null>(null);
 	useThemeSocketSync();
@@ -27,7 +35,7 @@ export default function HostLobbyView({ initialRoom }: { initialRoom: Room }) {
 	const { room: ctxRoom } = useRoomState();
 	const { submittedPlayers } = useGameRuntime();
 
-	useHostLobbySocket(initialRoom);
+	useHostLobbySocket(initialRoom, hostToken, { onJoinSuccess });
 	const socketError = useReconnectNotice();
 	const { showDebug } = useHostDebugVisibility({ enableKeyboardShortcut: true });
 

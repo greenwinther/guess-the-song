@@ -6,9 +6,11 @@ type PlayerResultsPanelProps = {
 	detailOrder?: OrderItem[];
 	detailCorrectList?: string[];
 	detailQuestion?: string;
+	rowPoints?: number[];
 	theme?: string | null;
 	themeRevealed?: boolean;
 	themeSolved?: boolean;
+	themeBonusPoints?: number;
 	finalScore?: number | null;
 };
 
@@ -44,9 +46,11 @@ export function PlayerResultsPanel({
 	detailOrder,
 	detailCorrectList,
 	detailQuestion,
+	rowPoints,
 	theme,
 	themeRevealed = false,
 	themeSolved = false,
+	themeBonusPoints,
 	finalScore,
 }: PlayerResultsPanelProps) {
 	const totalCorrect = order.reduce(
@@ -64,7 +68,13 @@ export function PlayerResultsPanel({
 				0
 			)
 		: 0;
-	const localScore = totalCorrect + totalDetailCorrect + (themeSolved ? 1 : 0);
+	const rowPointsTotal = Array.isArray(rowPoints)
+		? rowPoints.reduce((sum, points) => sum + (Number.isFinite(points) ? points : 0), 0)
+		: null;
+	const hasTheme = Boolean(theme?.trim());
+	const themeText = theme?.trim() ?? "";
+	const derivedThemeBonus = themeBonusPoints ?? (themeSolved ? 1 : 0);
+	const localScore = (rowPointsTotal ?? (totalCorrect + totalDetailCorrect)) + derivedThemeBonus;
 	const displayScore = finalScore == null ? localScore : Math.max(finalScore, localScore);
 
 	return (
@@ -77,7 +87,7 @@ export function PlayerResultsPanel({
 				</p>
 			</div>
 
-			{theme && (
+			{hasTheme && (
 				<div className="flex w-full max-w-4xl flex-col gap-2 rounded-lg border border-border/70 bg-card/45 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] sm:flex-row sm:items-center sm:justify-between">
 					<div className="min-w-0">
 						<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
@@ -85,9 +95,9 @@ export function PlayerResultsPanel({
 						</p>
 						<p
 							className="mt-0.5 truncate text-lg font-semibold text-text"
-							title={themeRevealed ? theme : "Hidden until the host reveals it"}
+							title={themeRevealed ? themeText : "Hidden until the host reveals it"}
 						>
-							{themeRevealed ? theme : "Hidden until revealed"}
+							{themeRevealed ? themeText : "Hidden until revealed"}
 						</p>
 					</div>
 					<span
@@ -99,7 +109,11 @@ export function PlayerResultsPanel({
 								: "border-primary/40 bg-primary/10 text-primary"
 						}`}
 					>
-						{!themeRevealed ? "Hidden" : themeSolved ? "Solved +1" : "Not solved"}
+						{!themeRevealed
+							? "Hidden"
+							: themeSolved
+								? `Solved +${derivedThemeBonus}`
+								: "Not solved"}
 					</span>
 				</div>
 			)}
@@ -150,7 +164,8 @@ export function PlayerResultsPanel({
 						const detailGuess = detailOrder?.[idx]?.name ?? "";
 						const detailCorrect = detailCorrectList?.[idx] ?? "";
 						const detailIsCorrect = detailGuess === detailCorrect;
-						const rowPoints = (isCorrect ? 1 : 0) + (hasDetailResults && detailIsCorrect ? 1 : 0);
+						const baseRowPoints = (isCorrect ? 1 : 0) + (hasDetailResults && detailIsCorrect ? 1 : 0);
+						const points = rowPoints?.[idx] ?? baseRowPoints;
 						return (
 							<tr
 								key={item.id}
@@ -176,7 +191,7 @@ export function PlayerResultsPanel({
 									</>
 								)}
 								<td className="px-2 py-2 text-right">
-									<ResultBadge points={rowPoints} />
+									<ResultBadge points={points} />
 								</td>
 							</tr>
 						);

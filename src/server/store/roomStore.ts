@@ -5,6 +5,7 @@ import type { RoomScoring } from "@/types/room";
 import type { Submission } from "@/types/submission";
 import type { RoomState } from "@/server/state/roomState";
 import { notifyStateChange } from "@/server/state/saveBus";
+import { randomBytes } from "crypto";
 
 const rooms = new Map<string, RoomState>();
 
@@ -14,6 +15,7 @@ let nextSongId = 1;
 
 const normalizeCode = (code: string) => code.trim().toUpperCase();
 const normalizeName = (name: string) => name.trim().toLowerCase();
+const normalizeClientId = (clientId: string) => clientId.trim();
 const KICK_TTL_MS = 1000 * 60 * 10; // 10 minutes
 const DEFAULT_SCORING: RoomScoring = {
 	guessPoints: 1,
@@ -37,6 +39,7 @@ const createUniqueCode = () => {
 	while (rooms.has(code)) code = generateCode();
 	return code;
 };
+const createAccessToken = () => randomBytes(24).toString("hex");
 
 const touch = (room: RoomState) => {
 	room.updatedAt = Date.now();
@@ -65,6 +68,7 @@ export function createRoom(
 		name: hostName?.trim() || "Host",
 		isHost: true,
 		roomId,
+		ownerClientId: null,
 		avatar,
 	};
 
@@ -78,6 +82,10 @@ export function createRoom(
 		scoring: { ...DEFAULT_SCORING },
 		players: [host],
 		songs: [],
+		adminAccessToken: createAccessToken(),
+		hostAccessToken: createAccessToken(),
+		adminOwnerClientId: null,
+		hostOwnerClientId: null,
 		createdAt: now,
 		updatedAt: now,
 		kicked: {},
@@ -99,10 +107,44 @@ export function getRoom(code: string): RoomState | undefined {
 	return rooms.get(normalizeCode(code));
 }
 
+export function bindAdminAccess(code: string, adminToken: string, clientId: string): RoomState | null {
+	const room = getRoom(code);
+	if (!room) return null;
+	const normalizedClientId = normalizeClientId(clientId ?? "");
+	if (!normalizedClientId) return null;
+	if (!adminToken || adminToken !== room.adminAccessToken) return null;
+	if (room.adminOwnerClientId && room.adminOwnerClientId !== normalizedClientId) return null;
+	room.adminOwnerClientId = room.adminOwnerClientId ?? normalizedClientId;
+	touch(room);
+	notifyStateChange();
+	return room;
+}
+
+export function isAdminClientForRoom(code: string, clientId: string): boolean {
+	const room = getRoom(code);
+	if (!room) return false;
+	const normalizedClientId = normalizeClientId(clientId ?? "");
+	if (!normalizedClientId) return false;
+	return !!room.adminOwnerClientId && room.adminOwnerClientId === normalizedClientId;
+}
+
 export function joinRoom(code: string, name: string, hardcore: boolean, avatar?: AvatarConfig) {
+	return joinRoomWithIdentity(code, name, hardcore, undefined, undefined, avatar);
+}
+
+export function joinRoomWithIdentity(
+	code: string,
+	name: string,
+	hardcore: boolean,
+	clientId?: string,
+	hostToken?: string,
+	avatar?: AvatarConfig
+) {
 	const room = getRoom(code);
 	if (!room) throw new Error("Room not found");
 	pruneKicks(room);
+	const normalizedClientId = normalizeClientId(clientId ?? "");
+	if (!normalizedClientId) throw new Error("Unauthorized");
 
 	const displayName = name?.trim() || "Player";
 	const normalized = normalizeName(displayName);
@@ -112,14 +154,25 @@ export function joinRoom(code: string, name: string, hardcore: boolean, avatar?:
 	}
 	const existing = room.players.find((p) => normalizeName(p.name) === normalizeName(displayName));
 	if (existing) {
-		if (avatar) existing.avatar = avatar;
+		const isHost = !!existing.isHost;
+		if (isHost) {
+			if (!hostToken || hostToken !== room.hostAccessToken) throw new Error("Unauthorized");
+		} else {
+			if (existing.ownerClientId && existing.ownerClientId !== normalizedClientId) {
+				throw new Error("NameTaken");
+			}
+		}
+		if (!isHost) {
+			existing.ownerClientId = existing.ownerClientId ?? normalizedClientId;
+		}
+		if (avatar && !existing.avatar) existing.avatar = avatar;
 		existing.connected = true;
 		touch(room);
 		notifyStateChange();
 		return { player: existing, created: false };
 	}
 
-	if (room.phase === "RESULTS") {
+	if (room.phase === "RESULTS" || room.phase === "ENDED") {
 		throw new Error("Room closed");
 	}
 
@@ -129,6 +182,7 @@ export function joinRoom(code: string, name: string, hardcore: boolean, avatar?:
 		name: displayName,
 		isHost: false,
 		roomId: room.id,
+		ownerClientId: normalizedClientId,
 		hardcore: enforcedHardcore,
 		ready: false,
 		connected: true,
@@ -349,6 +403,8 @@ export function exportRoomStoreState(): RoomStoreSnapshot {
 			...room,
 			players: room.players.map((p) => ({ ...p })),
 			songs: room.songs.map((s) => ({ ...s })),
+			adminOwnerClientId: room.adminOwnerClientId ?? null,
+			hostOwnerClientId: room.hostOwnerClientId ?? null,
 			kicked: room.kicked ? { ...room.kicked } : {},
 			rules: {
 				guessPoints: room.rules.guessPoints,
@@ -386,8 +442,13 @@ export function importRoomStoreState(snapshot: RoomStoreSnapshot | null | undefi
 				hardcoreMultiplier:
 					room.scoring?.hardcoreMultiplier ?? room.rules?.hardcoreMultiplier ?? DEFAULT_SCORING.hardcoreMultiplier,
 			},
+			adminAccessToken: room.adminAccessToken ?? createAccessToken(),
+			hostAccessToken: room.hostAccessToken ?? createAccessToken(),
+			adminOwnerClientId: room.adminOwnerClientId ?? null,
+			hostOwnerClientId: room.hostOwnerClientId ?? null,
 			players: (room.players ?? []).map((p) => ({
 				...p,
+				ownerClientId: p.ownerClientId ?? null,
 				connected: false,
 				ready: p.ready ?? false,
 				hardcore: p.hardcore ?? false,

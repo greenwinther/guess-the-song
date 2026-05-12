@@ -4,9 +4,11 @@ import type { Room, RoomScoring } from "@/types/room";
 import type { Submission } from "@/types/submission";
 
 export type SocketRoomMeta = { code: string; playerName: string };
+export type SocketAdminMeta = { code: string; clientId: string };
 
 export interface SocketData {
 	roomMeta?: SocketRoomMeta;
+	adminMeta?: SocketAdminMeta;
 }
 
 export type CreateRoomPayload = {
@@ -21,6 +23,8 @@ export type CreateRoomResponse = {
 	theme?: string | null;
 	backgroundUrl?: string;
 	hostName: string;
+	adminToken?: string;
+	hostToken?: string;
 	error?: string;
 };
 
@@ -29,8 +33,17 @@ export type JoinRoomPayload = {
 	name: string;
 	hardcore?: boolean;
 	clientId?: string;
+	hostToken?: string;
 	avatar?: AvatarConfig;
 };
+export type JoinAdminRoomPayload = {
+	code: string;
+	adminToken: string;
+	clientId?: string;
+};
+export type JoinAdminRoomResponse =
+	| { ok: true }
+	| { ok: false; reason: "not_found" | "unauthorized" | "error" };
 
 export type AddSongPayload = {
 	code: string;
@@ -48,6 +61,8 @@ export type StartGamePayload = { code: string };
 export type PlaySongPayload = { code: string; songId: number };
 export type NextSongPayload = { code: string };
 export type ShowResultsPayload = { code: string };
+export type FinalizeResultsPayload = { code: string };
+export type BeginRecapPayload = { code: string };
 
 export type SelectOrderPayload = {
 	code: string;
@@ -106,6 +121,7 @@ export type DebugSnapshotPayload = { code: string };
 export type AdminDashboardPayload = {
 	code: string;
 	phase: Room["phase"] | null;
+	resultsFinalized: boolean;
 	activeSongId: number | null;
 	activeSongIndex: number | null;
 	currentSongTitle: string | null;
@@ -145,6 +161,7 @@ export type AdminDashboardPayload = {
 	}>;
 	playerHistories: Array<{
 		playerName: string;
+		themeBonusPoints: number;
 		rounds: Array<{
 			songId: number;
 			songIndex: number;
@@ -159,6 +176,10 @@ export type AdminDashboardPayload = {
 			detailCorrectAnswer: string | null;
 			detailLocked: boolean;
 			detailLockedAt: number | null;
+			submitterPoints: number;
+			detailPoints: number;
+			multiplierBonus: number;
+			totalPoints: number;
 			themeGuess: string | null;
 		}>;
 	}>;
@@ -172,6 +193,7 @@ export type AdminGetDashboardResponse =
 export type ClientToServerEvents = {
 	createRoom: (data: CreateRoomPayload, cb: (resp: CreateRoomResponse) => void) => void;
 	joinRoom: (data: JoinRoomPayload, cb?: (ok: boolean) => void) => void;
+	joinAdminRoom: (data: JoinAdminRoomPayload, cb: (res: JoinAdminRoomResponse) => void) => void;
 	addSong: (
 		data: AddSongPayload,
 		cb: (res: { success: boolean; song?: Submission; error?: string }) => void,
@@ -184,7 +206,9 @@ export type ClientToServerEvents = {
 	startGame: (data: StartGamePayload, cb: (ok: boolean) => void) => void;
 	playSong: (data: PlaySongPayload, cb: (res: { success: boolean; error?: string }) => void) => void;
 	nextSong: (data: NextSongPayload, cb?: (ok: boolean) => void) => void;
+	beginRecap: (data: BeginRecapPayload, cb?: (ok: boolean) => void) => void;
 	showResults: (data: ShowResultsPayload, cb: (ok: boolean) => void) => void;
+	finalizeResults: (data: FinalizeResultsPayload, cb?: (ok: boolean) => void) => void;
 	selectOrder: (data: SelectOrderPayload, cb?: (ok: boolean) => void) => void;
 	selectDetailOrder: (data: SelectDetailOrderPayload, cb?: (ok: boolean) => void) => void;
 	submitAllOrders: (data: SubmitAllOrdersPayload, cb: (ok: boolean) => void) => void;
@@ -266,8 +290,9 @@ export type ServerToClientEvents = {
 	HARDCORE_REQUIRED_UPDATED: (data: { required: boolean }) => void;
 	submitterRevealed: (data: { songId: number }) => void;
 	submitterRevealedAll: (data: { songIds: number[] }) => void;
-	joinDenied: (data: { reason: "kicked" | "closed" | "not_found" | "error" }) => void;
+	joinDenied: (data: { reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error" }) => void;
 	ADMIN_DASHBOARD: (data: { dashboard: AdminDashboardPayload }) => void;
+	revealedSubmitters: (songIds: number[]) => void;
 };
 
 export type InterServerEvents = Record<string, never>;

@@ -59,7 +59,7 @@ test("computeScoreBoard excludes the host from seeded and calculated scores", ()
 		["Alice", "Bob"]
 	);
 	assert.equal(board.byPlayer.Alice?.total, 1);
-	assert.equal(board.byPlayer.Bob?.total, 1.5);
+	assert.equal(board.byPlayer.Bob?.total, 1);
 });
 
 test("computeScoreBoard awards points for correct bonus detail answers", () => {
@@ -98,7 +98,7 @@ test("computeScoreBoard awards points for correct bonus detail answers", () => {
 	assert.equal(board.byPlayer.Alice?.total, 1);
 	assert.equal(board.byPlayer.Bob?.correctGuesses, 1);
 	assert.equal(board.byPlayer.Bob?.correctDetailGuesses, 1);
-	assert.equal(board.byPlayer.Bob?.total, 3);
+	assert.equal(board.byPlayer.Bob?.total, 2);
 });
 
 test("computeScoreBoard respects configured scoring values", () => {
@@ -141,5 +141,36 @@ test("computeScoreBoard respects configured scoring values", () => {
 	assert.equal(board.byPlayer.Alice?.themeBonuses, 4);
 	assert.equal(board.byPlayer.Alice?.total, 9);
 	assert.equal(board.byPlayer.Bob?.correctGuesses, 3);
-	assert.equal(board.byPlayer.Bob?.total, 6);
+	assert.equal(board.byPlayer.Bob?.total, 3);
+});
+
+test("computeScoreBoard applies multiplier only to multiplier-eligible locks", () => {
+	const room = baseRoom();
+	room.rules.hardcoreMultiplier = 1.5;
+	const rounds: Record<number, RoundData> = {
+		1: {
+			correctAnswer: "Alice",
+			orders: { Alice: ["Alice"], Bob: ["Alice"] },
+			submitters: ["Alice", "Bob"],
+			locks: {
+				Alice: { locked: true, multiplierEligible: true },
+				Bob: { locked: true, multiplierEligible: false },
+			},
+			detailOrders: {},
+			detailLocks: {},
+		},
+	};
+
+	const board = computeScoreBoard({
+		room,
+		rounds,
+		themePointsByPlayer: {},
+		guessPoints: room.rules.guessPoints,
+		detailGuessPoints: room.rules.detailGuessPoints,
+		themeGuessPoints: room.rules.themeGuessPoints,
+		hardcoreMultiplier: room.rules.hardcoreMultiplier,
+	});
+
+	assert.equal(board.byPlayer.Alice?.total, 1.5);
+	assert.equal(board.byPlayer.Bob?.total, 1);
 });

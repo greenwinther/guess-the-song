@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { getRoom } from "@/lib/rooms";
 import { toPublicRoom } from "@/server/state/publicRoom";
 import { getRoomGameState } from "@/server/state/gameState";
@@ -28,7 +28,7 @@ export const debugSnapshotHandler = (
 			const boundRoom = requireRoom(socket, () => cb?.(false));
 			if (!boundRoom) return;
 			if (boundRoom.code !== code) return cb?.(false);
-			if (!requireHost(socket, boundRoom, () => cb?.(false))) return;
+			if (!requireHostOrAdmin(socket, boundRoom, () => cb?.(false))) return;
 
 			const room = await getRoom(code);
 			const snapshot = {

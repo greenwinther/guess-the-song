@@ -1,5 +1,5 @@
 // src/hooks/host/useHostGameSocket.ts
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useSocket } from "@/contexts/SocketContext";
 import { useGameRuntime, useRoomState } from "@/contexts/gameContext";
 import { getYouTubeID } from "@/lib/youtube";
@@ -9,16 +9,19 @@ import { useRoomJoinSocket } from "@/hooks/shared/useRoomJoinSocket";
 
 /**
  * Host-side game socket wiring:
- * - gameStarted → seed room + reset bg
- * - playSong → set clip, currentSong, bg thumbnail, start playing
- * - playerJoined/Left → keep player list fresh
- * - playerSubmitted → collect submitters
- * - gameOver → set final scores
+ * - gameStarted -> seed room + reset bg
+ * - playSong -> set clip, currentSong, bg thumbnail, start playing
+ * - playerJoined/Left -> keep player list fresh
+ * - playerSubmitted -> collect submitters
+ * - gameOver -> set final scores
  */
-export function useHostGameSocket(code: string) {
+export function useHostGameSocket(
+	code: string,
+	hostToken?: string | null,
+	options?: { onJoinSuccess?: () => void }
+) {
 	const socket = useSocket();
-	useRoomJoinSocket(code, "Host");
-	const requestedRef = useRef(false);
+	useRoomJoinSocket(code, "Host", { hostToken, onJoinSuccess: options?.onJoinSuccess });
 	const { room, setRoom, addPlayer } = useRoomState();
 	const {
 		setCurrentClip,
@@ -45,23 +48,7 @@ export function useHostGameSocket(code: string) {
 		};
 	}, [socket, setRoom, setBgThumbnail]);
 
-	// Ensure we get a fresh room snapshot after listeners are attached
-	useEffect(() => {
-		if (!socket) return;
-		const request = () => {
-			if (requestedRef.current) return;
-			requestedRef.current = true;
-			socket.emit("joinRoom", { code, name: "Host" }, () => {});
-		};
-		if (socket.connected) request();
-		socket.on("connect", request);
-		return () => {
-			socket.off("connect", request);
-			requestedRef.current = false;
-		};
-	}, [socket, code]);
-
-	// playSong → set current clip, currentSong, bg thumb
+	// playSong -> set current clip, currentSong, bg thumb
 	useEffect(() => {
 		const onPlaySong = ({ songId, clipUrl }: { songId: number; clipUrl: string }) => {
 			setCurrentClip({ songId, clipUrl });
@@ -109,7 +96,7 @@ export function useHostGameSocket(code: string) {
 		};
 	}, [socket, addPlayer, setRoom]);
 
-	// playerSubmitted → track submitted players
+	// playerSubmitted -> track submitted players
 	useEffect(() => {
 		const onPlayerSubmitted = ({ playerName }: { playerName: string }) => {
 			setSubmittedPlayers((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
@@ -120,7 +107,7 @@ export function useHostGameSocket(code: string) {
 		};
 	}, [socket, setSubmittedPlayers]);
 
-	// gameOver → final scores
+	// gameOver -> final scores
 	useEffect(() => {
 		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
 			setScores(scores);

@@ -8,7 +8,8 @@ import type { Submission } from "@/types/submission";
 type HostPlaybackControlsProps = {
 	currentSong: Submission | null;
 	isPlaying: boolean;
-	recapRunning: boolean;
+	autoPlaybackRunning: boolean;
+	nextPending?: boolean;
 	onNext: () => void;
 	onPlayPause: () => void;
 	onPrev: () => void;
@@ -17,21 +18,44 @@ type HostPlaybackControlsProps = {
 export default function HostPlaybackControls({
 	currentSong,
 	isPlaying,
-	recapRunning,
+	autoPlaybackRunning,
+	nextPending = false,
 	onNext,
 	onPlayPause,
 	onPrev,
 }: HostPlaybackControlsProps) {
+	if (autoPlaybackRunning) {
+		return (
+			<div className="grid w-full max-w-md grid-cols-1 gap-2 sm:mx-auto sm:gap-3">
+				<Button
+					variant="primary"
+					size="md"
+					onClick={onPlayPause}
+					aria-keyshortcuts="Space"
+					aria-label="Play/Pause (Space)"
+					className="w-full py-4 text-lg"
+				>
+					{isPlaying ? (
+						<FaPause className="h-5 w-5" aria-hidden="true" />
+					) : (
+						<FaPlay className="h-5 w-5" aria-hidden="true" />
+					)}
+					{isPlaying ? "Pause" : "Play"}
+				</Button>
+			</div>
+		);
+	}
+
 	return (
-		<div className="grid w-full max-w-md grid-cols-2 gap-2 sm:mx-auto sm:grid-cols-[0.8fr_1.4fr_0.8fr] sm:items-center sm:gap-3">
+		<div className="grid w-full max-w-md grid-cols-2 gap-2 sm:mx-auto sm:grid-cols-[1fr_1.2fr_1fr] sm:items-center sm:gap-3">
 			<Button
 				variant="secondary"
-				size="sm"
+				size="md"
 				onClick={onPrev}
-				disabled={!currentSong || recapRunning}
-				className="w-full"
+				disabled={!currentSong}
+				className="w-full py-3"
 			>
-				<FaBackwardStep className="h-3 w-3" aria-hidden="true" />
+				<FaBackwardStep className="h-4 w-4" aria-hidden="true" />
 				Previous
 			</Button>
 
@@ -41,25 +65,25 @@ export default function HostPlaybackControls({
 				onClick={onPlayPause}
 				aria-keyshortcuts="Space"
 				aria-label="Play/Pause (Space)"
-				className="order-first col-span-2 w-full sm:order-none sm:col-span-1"
+				className="order-first col-span-2 w-full py-4 text-lg sm:order-none sm:col-span-1 sm:min-w-[11.5rem] sm:justify-self-center"
 			>
 				{isPlaying ? (
-					<FaPause className="h-3.5 w-3.5" aria-hidden="true" />
+					<FaPause className="h-5 w-5" aria-hidden="true" />
 				) : (
-					<FaPlay className="h-3.5 w-3.5" aria-hidden="true" />
+					<FaPlay className="h-5 w-5" aria-hidden="true" />
 				)}
 				{isPlaying ? "Pause" : "Play"}
 			</Button>
 
 			<Button
 				variant="secondary"
-				size="sm"
+				size="md"
 				onClick={onNext}
-				disabled={!currentSong || recapRunning}
-				className="w-full"
+				disabled={!currentSong || nextPending}
+				className="w-full py-3"
 			>
 				Next
-				<FaForwardStep className="h-3 w-3" aria-hidden="true" />
+				<FaForwardStep className="h-4 w-4" aria-hidden="true" />
 			</Button>
 		</div>
 	);

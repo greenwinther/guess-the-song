@@ -1,11 +1,12 @@
 import type { Server, Socket } from "socket.io";
-import { addRevealedSong, getRoomGameState, setActiveSong, setRevealedSongs } from "@/server/state/gameState";
+import { addRevealedSong, getRoomGameState, setRevealedSongs } from "@/server/state/gameState";
 import { getSong } from "@/lib/rooms";
 import type { ClientToServerEvents, InterServerEvents, PlaySongPayload, ServerToClientEvents, SocketData } from "@/types/socket";
 import { requireHost, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
 import { scopedLogger } from "@/server/logger";
 import { playSongPayloadSchema, validateWithZod } from "@/server/schemas";
+import { changeCurrentSong } from "./songNavigation";
 
 const log = scopedLogger("socket.playSong");
 
@@ -34,7 +35,7 @@ export const playSongHandler = (
 				const room = requireRoom(socket, () => callback({ success: false, error: "No room" }));
 				if (!room || room.code !== code) return;
 				if (!requireHost(socket, room, () => callback({ success: false, error: "Not host" }))) return;
-				if (!isPhase(room, ["GUESSING", "RECAP"])) {
+				if (!isPhase(room, ["GUESSING", "RECAP", "REVEAL"])) {
 					return callback({ success: false, error: "Room not in game" });
 				}
 
@@ -44,15 +45,17 @@ export const playSongHandler = (
 					return callback({ success: false, error: "Song not found." });
 				}
 
+				const current = getRoomGameState(code).activeSongId;
+				const changed = changeCurrentSong(io, room, current, song.id);
+				if (!changed.ok && changed.reason !== "NO_CHANGE") {
+					return callback({ success: false, error: "Song transition blocked." });
+				}
+
 				// 2) Broadcast the song to everyone in the room
 				io.to(code).emit("playSong", {
 					songId: song.id,
 					clipUrl: song.url,
 				});
-
-				// 3) Persist active song so refresh resumes at the same track
-				setActiveSong(code, songId);
-				io.to(code).emit("songChanged", { songId });
 
 				// 4) Update revealed songs in memory
 				addRevealedSong(code, songId);

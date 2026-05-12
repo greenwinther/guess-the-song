@@ -8,7 +8,7 @@ import type {
 	SocketData,
 	UpdateSongPayload,
 } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
 import { getYouTubeID } from "@/lib/youtube";
 import { scopedLogger } from "@/server/logger";
@@ -40,7 +40,8 @@ export const updateSongHandler = (
 				const { songId, code, url, submitter, title, detailAnswer } = payload.data;
 				const room = requireRoom(socket, () => callback({ success: false, error: "No room" }));
 				if (!room || room.code !== code) return;
-				if (!requireHost(socket, room, () => callback({ success: false, error: "Not host" }))) return;
+				if (!requireHostOrAdmin(socket, room, () => callback({ success: false, error: "Not authorized" })))
+					return;
 				if (!isPhase(room, "LOBBY")) {
 					return callback({ success: false, error: "Room not in lobby" });
 				}

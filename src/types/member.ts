@@ -5,6 +5,7 @@ export type Member = {
 	name: string;
 	isHost: boolean;
 	roomId: number;
+	ownerClientId?: string | null;
 	hardcore?: boolean;
 	ready?: boolean;
 	connected?: boolean;

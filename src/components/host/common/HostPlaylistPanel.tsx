@@ -37,6 +37,7 @@ export default function HostPlaylistPanel({
 	const viewRoom = roomOverride ?? room;
 	const canReveal = Boolean(allPlayedProp);
 	const hasDetailQuestion = !!viewRoom?.detailQuestion;
+	const hideSubmitterInPlaylist = viewRoom?.phase === "REVEAL" || viewRoom?.phase === "RESULTS";
 	const playlistReveals = useHostPlaylistReveals({
 		canReveal,
 		room: viewRoom,
@@ -49,8 +50,8 @@ export default function HostPlaylistPanel({
 	if (!viewRoom) return null;
 
 	return (
-		<aside className="order-2 lg:order-none w-full min-h-0 lg:col-span-3 p-4 sm:p-4 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
-			<div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+		<aside className="order-2 lg:order-none w-full h-full min-h-0 lg:col-span-3 p-4 sm:p-4 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
+			<div className="mb-2 flex h-16 items-center justify-between gap-3 sm:h-[4.5rem]">
 				<h2 className="text-lg sm:text-xl font-semibold text-text">Playlist</h2>
 				{onToggleSongArtworkBackground && (
 					<button
@@ -63,7 +64,7 @@ export default function HostPlaylistPanel({
 				)}
 			</div>
 
-			<div className="scrollbar-hidden min-h-[12rem] max-h-72 flex-1 space-y-1 overflow-y-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:max-h-80 lg:max-h-[calc(100vh-15rem)]">
+			<div className="scrollbar-hidden min-h-0 flex-1 space-y-1 overflow-y-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)]">
 				{songs.map((song, index) => (
 					<HostPlaylistSongRow
 						key={song.id}
@@ -74,7 +75,8 @@ export default function HostPlaylistPanel({
 							showSongDetails || playlistReveals.revealedDetailAnswers.includes(song.id)
 						}
 						isSubmitterRevealed={
-							showSongDetails || playlistReveals.revealedSubmitters.includes(song.id)
+							!hideSubmitterInPlaylist &&
+							(showSongDetails || playlistReveals.revealedSubmitters.includes(song.id))
 						}
 						isTitleRevealed={showSongDetails || revealedIds.includes(song.id)}
 						onSelect={onSelect}

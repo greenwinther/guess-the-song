@@ -7,6 +7,7 @@ import {
 	getRoom as getRoomFromStore,
 	getSong as getSongFromStore,
 	joinRoom as joinRoomInStore,
+	joinRoomWithIdentity as joinRoomWithIdentityInStore,
 	removeSong as removeSongInStore,
 	setRoomTheme as setRoomThemeInStore,
 	updateSong as updateSongInStore,
@@ -30,6 +31,17 @@ export async function joinRoom(
 	avatar?: AvatarConfig
 ): Promise<{ player: Member; created: boolean }> {
 	return joinRoomInStore(code, name, hardcore, avatar);
+}
+
+export async function joinRoomWithIdentity(
+	code: string,
+	name: string,
+	hardcore: boolean,
+	clientId?: string,
+	hostToken?: string,
+	avatar?: AvatarConfig
+): Promise<{ player: Member; created: boolean }> {
+	return joinRoomWithIdentityInStore(code, name, hardcore, clientId, hostToken, avatar);
 }
 
 export async function getRoom(code: string): Promise<RoomState> {

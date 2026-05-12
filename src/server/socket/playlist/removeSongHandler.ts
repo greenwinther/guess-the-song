@@ -2,7 +2,7 @@
 import { removeSong } from "@/lib/rooms";
 import type { Server, Socket } from "socket.io";
 import type { ClientToServerEvents, InterServerEvents, RemoveSongPayload, ServerToClientEvents, SocketData } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
 import { scopedLogger } from "@/server/logger";
 import { removeSongPayloadSchema, validateWithZod } from "@/server/schemas";
@@ -33,7 +33,8 @@ export const removeSongHandler = (
 
 				const room = requireRoom(socket, () => callback({ success: false, error: "No room" }));
 				if (!room || room.code !== code) return;
-				if (!requireHost(socket, room, () => callback({ success: false, error: "Not host" }))) return;
+				if (!requireHostOrAdmin(socket, room, () => callback({ success: false, error: "Not authorized" })))
+					return;
 				if (!isPhase(room, "LOBBY")) {
 					return callback({ success: false, error: "Room not in lobby" });
 				}

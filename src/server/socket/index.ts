@@ -1,7 +1,10 @@
 import type { Server, Socket } from "socket.io";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
 import { adminDashboardHandler } from "./admin/adminDashboardHandler";
+import { joinAdminRoomHandler } from "./admin/joinAdminRoomHandler";
 import { devSeedHandler } from "./dev/devSeedHandler";
+import { beginRecapHandler } from "./game/beginRecapHandler";
+import { finalizeResultsHandler } from "./game/finalizeResultsHandler";
 import { nextSongHandler } from "./game/nextSongHandler";
 import { playSongHandler } from "./game/playSongHandler";
 import { revealedSongsHandler } from "./game/revealedSongsHandler";
@@ -48,6 +51,8 @@ export const registerSocketHandlers = (
 	startGameHandler(io, socket);
 	playSongHandler(io, socket);
 	nextSongHandler(io, socket);
+	beginRecapHandler(io, socket);
+	finalizeResultsHandler(io, socket);
 	showResultHandler(io, socket);
 	revealedSongsHandler(io, socket);
 	revealSubmitterHandler(io, socket);
@@ -68,5 +73,6 @@ export const registerSocketHandlers = (
 	playerReadyHandler(io, socket);
 
 	adminDashboardHandler(io, socket);
+	joinAdminRoomHandler(io, socket);
 	devSeedHandler(io, socket);
 };

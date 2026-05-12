@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-export type PlayerJoinDeniedReason = "kicked" | "closed" | "not_found" | "error";
+export type PlayerJoinDeniedReason =
+	| "kicked"
+	| "closed"
+	| "not_found"
+	| "name_taken"
+	| "unauthorized"
+	| "error";
 
 export type PlayerJoinDenied = {
 	reason: PlayerJoinDeniedReason;

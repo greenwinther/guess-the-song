@@ -36,7 +36,9 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 	useEffect(() => {
 		if (!socket || !code || !playerName || joinedRef.current) return;
 
-		const emitJoinDenied = (reason: "kicked" | "closed" | "not_found" | "error") => {
+		const emitJoinDenied = (
+			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error"
+		) => {
 			try {
 				localStorage.setItem(
 					"gts-join-denied",
@@ -88,7 +90,11 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 		socket.on("playerJoined", onPlayerJoined);
 		socket.on("playSong", onPlaySong);
 		socket.on("revealedSongs", onRevealed);
-		const onJoinDenied = ({ reason }: { reason: "kicked" | "closed" | "not_found" | "error" }) => {
+		const onJoinDenied = ({
+			reason,
+		}: {
+			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error";
+		}) => {
 			if (reason === "kicked") {
 				toast.error("You were kicked from this room.");
 				emitJoinDenied("kicked");
@@ -102,6 +108,16 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 			if (reason === "not_found") {
 				toast.error("Room not found.");
 				emitJoinDenied("not_found");
+				return;
+			}
+			if (reason === "name_taken") {
+				toast.error("That name is already taken in this room.");
+				emitJoinDenied("name_taken");
+				return;
+			}
+			if (reason === "unauthorized") {
+				toast.error("This player slot belongs to another session.");
+				emitJoinDenied("unauthorized");
 				return;
 			}
 			toast.error("Unable to join room.");

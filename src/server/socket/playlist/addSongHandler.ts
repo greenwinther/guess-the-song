@@ -2,7 +2,7 @@ import type { Submission } from "@/types/submission";
 import type { Server, Socket } from "socket.io";
 import { addSong, getRoom } from "@/lib/rooms";
 import type { AddSongPayload, ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
 import { getYouTubeID } from "@/lib/youtube";
 import { scopedLogger } from "@/server/logger";
@@ -34,7 +34,8 @@ export const addSongHandler = (
 
 				const room = requireRoom(socket, () => callback({ success: false, error: "No room" }));
 				if (!room || room.code !== code) return;
-				if (!requireHost(socket, room, () => callback({ success: false, error: "Not host" }))) return;
+				if (!requireHostOrAdmin(socket, room, () => callback({ success: false, error: "Not authorized" })))
+					return;
 				if (!isPhase(room, "LOBBY")) {
 					return callback({ success: false, error: "Room not in lobby" });
 				}

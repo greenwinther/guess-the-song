@@ -4,6 +4,10 @@ import type { Room } from "@/types/room";
 export type RoomState = Room & {
 	createdAt: number;
 	updatedAt: number;
+	adminAccessToken: string;
+	hostAccessToken: string;
+	adminOwnerClientId?: string | null;
+	hostOwnerClientId?: string | null;
 	rules: {
 		guessPoints: number;
 		detailGuessPoints: number;

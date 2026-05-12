@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
-import { getStoredAvatar } from "@/lib/avatarStorage";
 import type { Room } from "@/types/room";
 import type { Submission } from "@/types/submission";
 
@@ -18,45 +17,48 @@ const getClientId = () => {
 	return value;
 };
 
-const hostKey = (code: string) => `gts-host-room-${code}`;
+type StoredAdminAccess = {
+	adminToken?: string;
+	hostToken?: string;
+	hostName?: string;
+};
+
+const adminKey = (code: string) => `gts-admin-room-${code}`;
 
 export function useAdminHostAccess(code: string) {
 	const socket = useSocket();
-	const [hostName, setHostName] = useState("Host");
 	const [room, setRoom] = useState<Room | null>(null);
 	const [access, setAccess] = useState<AdminAccessState>("checking");
-	const [canJoinAsHost, setCanJoinAsHost] = useState(false);
-	const joinDeniedRef = useRef<null | "kicked" | "closed" | "not_found" | "error">(null);
+	const [stored, setStored] = useState<StoredAdminAccess | null>(null);
+	const deniedRef = useRef<null | "not_found" | "unauthorized" | "error">(null);
 
 	useEffect(() => {
 		setRoom(null);
 		setAccess("checking");
-		setCanJoinAsHost(false);
-		joinDeniedRef.current = null;
+		setStored(null);
+		deniedRef.current = null;
 		try {
-			const raw = localStorage.getItem(hostKey(code));
+			const raw = localStorage.getItem(adminKey(code));
 			if (!raw) {
 				setAccess("unauthorized");
 				return;
 			}
-			const parsed = JSON.parse(raw) as { name?: string };
-			setHostName(parsed?.name?.trim() || "Host");
-			setCanJoinAsHost(true);
+			const parsed = JSON.parse(raw) as StoredAdminAccess;
+			if (!parsed?.adminToken || !parsed?.hostToken) {
+				setAccess("unauthorized");
+				return;
+			}
+			setStored(parsed);
 		} catch {
 			setAccess("unauthorized");
 		}
 	}, [code]);
 
 	useEffect(() => {
-		if (!socket || !canJoinAsHost || access === "unauthorized") return;
+		if (!socket || !stored || access === "unauthorized") return;
 
 		const onRoomData = (nextRoom: Room) => {
 			setRoom(nextRoom);
-			const me = nextRoom.players.find((player) => player.name === hostName);
-			if (!me?.isHost) {
-				setAccess("unauthorized");
-				return;
-			}
 			setAccess("authorized");
 		};
 		const onSongAdded = (song: Submission) => {
@@ -74,23 +76,18 @@ export function useAdminHostAccess(code: string) {
 			setRoom(nextRoom);
 			setAccess("authorized");
 		};
-		const onJoinDenied = ({ reason }: { reason: "kicked" | "closed" | "not_found" | "error" }) => {
-			joinDeniedRef.current = reason;
-			if (reason === "not_found" || reason === "closed") {
-				setAccess("not_found");
-				return;
-			}
-			setAccess("unauthorized");
-		};
-		const doJoin = () => {
-			const avatar = getStoredAvatar();
+		const doJoinAdmin = () => {
 			socket.emit(
-				"joinRoom",
-				{ code, name: hostName, clientId: getClientId(), avatar: avatar ?? undefined },
-				(ok: boolean) => {
-					if (!ok && !joinDeniedRef.current) {
+				"joinAdminRoom",
+				{ code, adminToken: stored.adminToken ?? "", clientId: getClientId() },
+				(res) => {
+					if (res.ok) return;
+					deniedRef.current = res.reason;
+					if (res.reason === "not_found") {
 						setAccess("not_found");
+						return;
 					}
+					setAccess("unauthorized");
 				},
 			);
 		};
@@ -100,9 +97,8 @@ export function useAdminHostAccess(code: string) {
 		socket.on("songRemoved", onSongRemoved);
 		socket.on("THEME_UPDATED", onThemeUpdated);
 		socket.on("gameStarted", onGameStarted);
-		socket.on("joinDenied", onJoinDenied);
-		if (socket.connected) doJoin();
-		socket.on("connect", doJoin);
+		if (socket.connected) doJoinAdmin();
+		socket.on("connect", doJoinAdmin);
 
 		return () => {
 			socket.off("roomData", onRoomData);
@@ -110,10 +106,14 @@ export function useAdminHostAccess(code: string) {
 			socket.off("songRemoved", onSongRemoved);
 			socket.off("THEME_UPDATED", onThemeUpdated);
 			socket.off("gameStarted", onGameStarted);
-			socket.off("joinDenied", onJoinDenied);
-			socket.off("connect", doJoin);
+			socket.off("connect", doJoinAdmin);
 		};
-	}, [socket, code, hostName, canJoinAsHost, access]);
+	}, [socket, code, stored, access]);
 
-	return { access, room, setAccess };
+	const hostLink = useMemo(() => {
+		if (!stored?.hostToken) return null;
+		return `/host/${code}?token=${encodeURIComponent(stored.hostToken)}`;
+	}, [code, stored?.hostToken]);
+
+	return { access, room, setAccess, hostLink };
 }

@@ -1,7 +1,6 @@
 import type { Server, Socket } from "socket.io";
-import { finalizeDetailForPlayers, finalizeSongForPlayers, getDetailLockedPlayers, getLockedPlayers } from "@/lib/game";
 import { getRoom } from "@/lib/rooms";
-import { getRoomGameState, setActiveSong } from "@/server/state/gameState";
+import { getRoomGameState, setRevealedSubmitters } from "@/server/state/gameState";
 import { clearRoundLocks, obfuscateTheme, setHint } from "@/lib/theme";
 import type { ClientToServerEvents, InterServerEvents, NextSongPayload, ServerToClientEvents, SocketData } from "@/types/socket";
 import { requireHost, requireRoom } from "@/server/logic/guards";
@@ -10,6 +9,11 @@ import { setPhase } from "@/server/store/roomStore";
 import { toPublicRoom } from "@/server/state/publicRoom";
 import { scopedLogger } from "@/server/logger";
 import { nextSongPayloadSchema, validateWithZod } from "@/server/schemas";
+import { changeCurrentSong } from "./songNavigation";
+import { computeScoreBoard } from "@/server/logic/score";
+import { getRoundsForCode } from "@/lib/game";
+import { getRoomScores } from "@/lib/score";
+import { setFinalScores } from "@/server/state/gameState";
 
 const log = scopedLogger("socket.nextSong");
 
@@ -32,51 +36,54 @@ export const nextSongHandler = (
 
 			const room = await getRoom(code);
 			if (!room) return cb?.(false);
-			if (!isPhase(room, ["GUESSING", "RECAP"])) return cb?.(false);
+			if (!isPhase(room, ["GUESSING", "RECAP", "REVEAL"])) return cb?.(false);
 
 			const current = getRoomGameState(code).activeSongId;
-
-			// Finalize hardcore players for the CURRENT song (unchanged)
-			if (current != null) {
-				const hcNames = room.players.filter((p) => p.hardcore).map((p) => p.name);
-				const { locked, total } = finalizeSongForPlayers(code, current, hcNames);
-
-				const names = getLockedPlayers(code, current);
-
-				io.to(code).emit("songFinalized", {
-					songId: current,
-					mode: "hardcoreOnly",
-					counts: { locked, total },
-					lockedNames: names, // needed for client-side self lock + counts
-				});
-
-				const detailLocked = finalizeDetailForPlayers(code, current, hcNames);
-				if (detailLocked.total > 0) {
-					const detailNames = getDetailLockedPlayers(code, current);
-					io.to(code).emit("detailFinalized", {
-						songId: current,
-						mode: "hardcoreOnly",
-						counts: detailLocked,
-						lockedNames: detailNames,
-					});
-				}
-			}
 
 			// advance to next song
 			const ids = room.songs.map((s) => s.id);
 			const idx = current ? ids.indexOf(current) : -1;
 			const nextId = ids[idx + 1] ?? null;
+			const changed = changeCurrentSong(io, room, current, nextId);
+			if (!changed.ok) {
+				if (changed.reason === "NO_CHANGE") return cb?.(true);
+				return cb?.(false);
+			}
 
-			setActiveSong(code, nextId);
-			io.to(code).emit("songChanged", { songId: nextId });
-
-			if (nextId === null) {
+			if (nextId === null && room.phase !== "REVEAL") {
 				const updated = setPhase(code, "RECAP");
+				if (updated) io.to(code).emit("roomData", toPublicRoom(updated));
+			}
+			if (nextId === null && room.phase === "REVEAL") {
+				const roundsForCode = getRoundsForCode(code);
+				const themePoints = getRoomScores(code);
+				const board = computeScoreBoard({
+					room,
+					rounds: roundsForCode,
+					themePointsByPlayer: themePoints,
+					guessPoints: room.rules.guessPoints,
+					detailGuessPoints: room.rules.detailGuessPoints,
+					themeGuessPoints: room.rules.themeGuessPoints,
+					hardcoreMultiplier: room.rules.hardcoreMultiplier,
+				});
+				const hostNames = new Set(room.players.filter((player) => player.isHost).map((player) => player.name));
+				const finalScores = Object.fromEntries(
+					Object.entries(board.byPlayer)
+						.filter(([name]) => !hostNames.has(name))
+						.map(([name, row]) => [name, row.total]),
+				);
+
+				setFinalScores(code, finalScores);
+				const allSongIds = room.songs.map((song) => song.id);
+				setRevealedSubmitters(code, allSongIds);
+				const updated = setPhase(code, "RESULTS");
+				io.to(code).emit("gameOver", { scores: finalScores });
+				io.to(code).emit("revealedSubmitters", allSongIds);
 				if (updated) io.to(code).emit("roomData", toPublicRoom(updated));
 			}
 
 			// 3) THEME side-game integration
-			if (nextId !== null) {
+			if (nextId !== null && room.phase === "GUESSING") {
 				// a) New round → unlock everyone's one guess
 				clearRoundLocks(code);
 				io.to(code).emit("THEME_ROUND_RESET");

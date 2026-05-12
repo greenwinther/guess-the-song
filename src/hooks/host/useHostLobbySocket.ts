@@ -7,13 +7,17 @@ import type { Member } from "@/types/member";
 import type { Submission } from "@/types/submission";
 import { useRoomJoinSocket } from "@/hooks/shared/useRoomJoinSocket";
 
-export function useHostLobbySocket(initialRoom: Room) {
+export function useHostLobbySocket(
+	initialRoom: Room,
+	hostToken?: string | null,
+	options?: { onJoinSuccess?: () => void }
+) {
 	const socket = useSocket();
 	const { setRoom, addPlayer, addSong, removeSong } = useRoomState();
 	const { setBgThumbnail } = useGameRuntime();
 
 	// Join as Host (idempotent, handles reconnects)
-	useRoomJoinSocket(initialRoom.code, "Host");
+	useRoomJoinSocket(initialRoom.code, "Host", { hostToken, onJoinSuccess: options?.onJoinSuccess });
 
 	// Seed room + lobby events
 	useEffect(() => {

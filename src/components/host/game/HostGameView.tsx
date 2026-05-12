@@ -1,6 +1,4 @@
-﻿"use client";
-
-// src/components/host/game/HostGameView.tsx
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -26,18 +24,27 @@ import type { Room } from "@/types/room";
 import type { Member } from "@/types/member";
 import { useThemeSocketSync } from "@/hooks/shared/useThemeSocketSync";
 
+const RECAP_CLIP_SECONDS = 15;
+const REVEAL_CLIP_SECONDS = 30;
+const REVEAL_DETAILS_DELAY_MS = 7000;
+
 export default function HostGameView({
 	code,
 	initialRoom,
+	hostToken,
+	onJoinSuccess,
 }: {
 	code: string;
 	initialRoom?: Room;
+	hostToken?: string | null;
+	onJoinSuccess?: () => void;
 }) {
 	const socket = useSocket();
 	const { room, setRoom } = useRoomState();
 	const {
 		scores,
 		revealedSongs,
+		revealedSubmitters,
 		setRevealedSongs,
 		currentSong,
 		currentClip,
@@ -52,11 +59,10 @@ export default function HostGameView({
 	useThemeSocketSync();
 
 	const [recapRunning, setRecapRunning] = useState(false);
+	const [revealRunning, setRevealRunning] = useState(false);
+	const [recapCompleted, setRecapCompleted] = useState(false);
+	const [showRevealDetails, setShowRevealDetails] = useState(false);
 	const [playerToKick, setPlayerToKick] = useState<Member | null>(null);
-	const [fastRecap, setFastRecap] = useState<boolean>(() => {
-		if (typeof window === "undefined") return false;
-		return localStorage.getItem("gts_fast_recap") === "1";
-	});
 	const { showDebug, toggleDebug } = useHostDebugVisibility();
 
 	useEffect(() => {
@@ -64,28 +70,26 @@ export default function HostGameView({
 	}, [initialRoom, setRoom]);
 
 	const viewRoom = room ?? initialRoom ?? null;
+	const phase = viewRoom?.phase ?? "LOBBY";
+	const isRevealPhase = phase === "REVEAL";
 
-	useHostGameSocket(code);
+	useHostGameSocket(code, hostToken, { onJoinSuccess });
 	useRevealedSongsSync();
 	useHostRevealedSubmittersSync();
 
-	useEffect(() => {
-		localStorage.setItem("gts_fast_recap", fastRecap ? "1" : "0");
-	}, [fastRecap]);
-
-	const recapSeconds = fastRecap ? 15 : 30;
-
+	const recapSeconds = isRevealPhase || revealRunning ? REVEAL_CLIP_SECONDS : RECAP_CLIP_SECONDS;
 	const socketError = useReconnectNotice();
 
 	const roomSongs = viewRoom?.songs;
 	const songs = useMemo(() => roomSongs ?? [], [roomSongs]);
 
 	const totalSongs = room?.songs.length ?? 0;
-	const allPlayed = totalSongs > 0 && !!room?.songs.every((s) => revealedSongs.includes(s.id));
+	const allPlayed = totalSongs > 0 && !!room?.songs.every((song) => revealedSongs.includes(song.id));
 	const { currentLockedNames, lockedCounts } = useHostLockedGuesses(currentSong?.id);
 	const {
 		currentIndex,
 		isPlaying,
+		nextPending,
 		playNext,
 		playOrPause,
 		playPrevious,
@@ -95,16 +99,58 @@ export default function HostGameView({
 		code,
 		currentClip,
 		currentSong,
-		recapRunning,
+		recapRunning: recapRunning || isRevealPhase,
 		revealedSongs,
 		setRevealedSongs,
 		songs,
 		totalSongs,
-		onStopRecap: () => setRecapRunning(false),
+		onStopRecap: () => {
+			if (recapRunning) {
+				setRecapRunning(false);
+				setRecapCompleted(true);
+			}
+			if (revealRunning) {
+				setRevealRunning(false);
+			}
+		},
 		onToggleDebug: toggleDebug,
 	});
 
-	const bgImage = useSongArtworkBackground ? (bgThumbnail ?? viewRoom?.backgroundUrl ?? null) : (viewRoom?.backgroundUrl ?? null);
+	useEffect(() => {
+		if (!isRevealPhase || !currentSong) return;
+		if (revealedSubmitters.includes(currentSong.id)) return;
+		socket.emit("revealSubmitter", { code, songId: currentSong.id });
+	}, [socket, code, isRevealPhase, currentSong, revealedSubmitters]);
+
+	useEffect(() => {
+		if (!isRevealPhase || !currentSong) {
+			setShowRevealDetails(false);
+			return;
+		}
+		setShowRevealDetails(false);
+		const timer = window.setTimeout(() => {
+			setShowRevealDetails(true);
+		}, REVEAL_DETAILS_DELAY_MS);
+		return () => window.clearTimeout(timer);
+	}, [isRevealPhase, currentSong?.id]);
+
+	const ensureRecapPhase = (onReady: () => void) => {
+		if (phase === "RECAP") {
+			onReady();
+			return;
+		}
+		socket.emit("beginRecap", { code }, (ok?: boolean) => {
+			if (!ok) {
+				toast.error("Could not enter recap mode.");
+				return;
+			}
+			onReady();
+		});
+	};
+
+	const bgImage = useSongArtworkBackground
+		? (bgThumbnail ?? viewRoom?.backgroundUrl ?? null)
+		: (viewRoom?.backgroundUrl ?? null);
 	const isDev = process.env.NODE_ENV !== "production";
 	const confirmKick = () => {
 		if (!playerToKick) return;
@@ -122,6 +168,7 @@ export default function HostGameView({
 			socketError={socketError}
 			shellSize="cinema"
 			transitionPreset="cinema-enter"
+			contentClassName="h-[calc(100vh-2rem)] sm:h-[calc(100vh-3rem)] lg:h-[calc(100vh-4rem)]"
 		>
 			<RoomSidebar
 				roomCode={viewRoom?.code ?? code}
@@ -150,37 +197,59 @@ export default function HostGameView({
 				onCancel={() => setPlayerToKick(null)}
 			/>
 
-			<main className="lg:col-span-6 p-4 pt-6 sm:p-4 flex flex-col">
+			<main className="lg:col-span-6 p-4 sm:p-4 flex min-h-0 flex-col">
 				<HostPlaybackPanel
 					code={code}
 					currentSong={currentSong ?? null}
+					revealSubmitterName={isRevealPhase ? (currentSong?.submitter ?? null) : null}
+					revealDetailAnswer={
+						isRevealPhase ? ((currentSong?.detailAnswer ?? "").trim() || null) : null
+					}
+					showRevealDetails={showRevealDetails}
 					isPlaying={isPlaying}
 					setIsPlaying={setIsPlaying}
 					onPrev={playPrevious}
 					onPlayPause={playOrPause}
 					onNext={playNext}
+					nextPending={nextPending}
 					scores={scores}
-					playedCount={
-						revealedSongs.filter((id) =>
-							(viewRoom?.songs ?? []).some((s) => s.id === id)
-						).length
-					}
+					playedCount={revealedSongs.filter((id) => (viewRoom?.songs ?? []).some((s) => s.id === id)).length}
 					totalSongs={totalSongs}
 					allPlayed={allPlayed}
-					onShowResults={() => {
+					onRevealResults={() => {
 						socket.emit("showResults", { code }, (ok: boolean) => {
-							if (!ok) toast.error("Failed to show results.");
+							if (!ok) {
+								toast.error("Failed to show results.");
+								return;
+							}
+							setRevealRunning(true);
+							setRecapRunning(false);
+							if (songs.length > 0) {
+								playSong(songs[0]);
+							}
 						});
 					}}
 					recapRunning={recapRunning}
-					onStartRecap={(fast) => {
-						setFastRecap(fast);
-						setRecapRunning(true);
-						if (songs.length > 0) {
-							playSong(songs[0]);
-						}
+					revealRunning={isRevealPhase || revealRunning}
+					recapCompleted={recapCompleted}
+					onStartRecap={() => {
+						ensureRecapPhase(() => {
+							setRecapRunning(true);
+							setRevealRunning(false);
+							setRecapCompleted(false);
+							if (songs.length > 0) {
+								playSong(songs[0]);
+							}
+						});
 					}}
-					onStopRecap={() => setRecapRunning(false)}
+					onSkipRecap={() => {
+						ensureRecapPhase(() => {
+							setRecapRunning(false);
+							setRevealRunning(false);
+							setRecapCompleted(true);
+							setIsPlaying(false);
+						});
+					}}
 					recapSeconds={recapSeconds}
 				/>
 			</main>
@@ -191,6 +260,7 @@ export default function HostGameView({
 				currentSongId={currentSong?.id ?? null}
 				onSelect={playSong}
 				allPlayed={allPlayed}
+				showRevealControls={false}
 				useSongArtworkBackground={useSongArtworkBackground}
 				onToggleSongArtworkBackground={() => setUseSongArtworkBackground((current) => !current)}
 			/>

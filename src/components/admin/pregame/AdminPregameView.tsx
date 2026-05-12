@@ -8,7 +8,15 @@ import AdminSettingsModal from "@/components/admin/common/AdminSettingsModal";
 import AdminPlaylistPanel from "./playlist/AdminPlaylistPanel";
 import AdminSongSetupPanel from "./song-setup/AdminSongSetupPanel";
 
-export default function AdminPregameView({ room, roomCode }: { room: Room | null; roomCode: string }) {
+export default function AdminPregameView({
+	room,
+	roomCode,
+	hostLink,
+}: {
+	room: Room | null;
+	roomCode: string;
+	hostLink: string | null;
+}) {
 	const [editingSong, setEditingSong] = useState<Submission | null>(null);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -31,7 +39,7 @@ export default function AdminPregameView({ room, roomCode }: { room: Room | null
 
 	return (
 		<section className="flex w-full flex-col gap-5">
-			<AdminHeader roomCode={roomCode} onOpenSettings={() => setSettingsOpen(true)} />
+			<AdminHeader roomCode={roomCode} hostLink={hostLink} onOpenSettings={() => setSettingsOpen(true)} />
 			<AdminSettingsModal
 				open={settingsOpen}
 				room={room}

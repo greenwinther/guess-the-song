@@ -47,7 +47,11 @@ export function computeScoreBoard({
 		for (const [playerName, order] of Object.entries(rd.orders)) {
 			if (!scoringNames.has(playerName)) continue;
 			if (order[0] === rd.correctAnswer) {
-				ensure(playerName).correctGuesses += guessPoints;
+				const row = ensure(playerName);
+				row.correctGuesses += guessPoints;
+				if (isMultiplierEligible(rd.locks?.[playerName])) {
+					row.hardcoreBonus += guessPoints * (hardcoreMultiplier - 1);
+				}
 			}
 		}
 	}
@@ -58,7 +62,11 @@ export function computeScoreBoard({
 		for (const [playerName, order] of Object.entries(rd.detailOrders)) {
 			if (!scoringNames.has(playerName)) continue;
 			if (order[0] === rd.detailCorrectAnswer) {
-				ensure(playerName).correctDetailGuesses += detailGuessPoints;
+				const row = ensure(playerName);
+				row.correctDetailGuesses += detailGuessPoints;
+				if (isMultiplierEligible(rd.detailLocks?.[playerName])) {
+					row.hardcoreBonus += detailGuessPoints * (hardcoreMultiplier - 1);
+				}
 			}
 		}
 	}
@@ -69,19 +77,16 @@ export function computeScoreBoard({
 		ensure(playerName).themeBonuses += points * themeGuessPoints;
 	}
 
-	// Hardcore multiplier (apply on base)
 	for (const player of scoringPlayers) {
 		const row = ensure(player.name);
 		const base = row.correctGuesses + row.correctDetailGuesses + row.themeBonuses;
-		if (player.hardcore) {
-			const boosted = Math.round(base * hardcoreMultiplier * 100) / 100;
-			row.hardcoreBonus = boosted - base;
-			row.total = boosted;
-		} else {
-			row.total = base;
-		}
+		row.hardcoreBonus = Math.round(row.hardcoreBonus * 100) / 100;
+		row.total = Math.round((base + row.hardcoreBonus) * 100) / 100;
 	}
 
 	const ranked = Object.values(byPlayer).sort((a, b) => b.total - a.total);
 	return { byPlayer, ranked };
 }
+	const isMultiplierEligible = (
+		lock: { multiplierEligible?: boolean; hardcoreEligible?: boolean } | undefined
+	) => lock?.multiplierEligible ?? lock?.hardcoreEligible ?? false;

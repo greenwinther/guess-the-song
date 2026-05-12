@@ -2,7 +2,7 @@
 import { startRoundData } from "@/lib/game";
 import { getRoom } from "@/lib/rooms";
 import type { Server, Socket } from "socket.io";
-import { setActiveSong, setGameStarted } from "@/server/state/gameState";
+import { setActiveSong, setFinalScores, setGameStarted, setRevealedSongs, setRevealedSubmitters } from "@/server/state/gameState";
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData, StartGamePayload } from "@/types/socket";
 import { requireHost, requireRoom } from "@/server/logic/guards";
 import { toPublicRoom } from "@/server/state/publicRoom";
@@ -63,9 +63,15 @@ export const startGameHandler = (
 			}
 
 			const firstId = room.songs[0]?.id ?? null;
+			const initialRevealedSongs = firstId != null ? [firstId] : [];
+			setRevealedSongs(code, initialRevealedSongs);
+			setRevealedSubmitters(code, []);
+			setFinalScores(code, null);
 			setActiveSong(code, firstId);
 
 			io.to(code).emit("songChanged", { songId: firstId });
+			io.to(code).emit("revealedSongs", initialRevealedSongs);
+			io.to(code).emit("revealedSubmitters", []);
 			io.to(code).emit("lockSnapshot", { songId: firstId, locked: [] });
 			if (hasDetailQuestion) {
 				io.to(code).emit("detailLockSnapshot", { songId: firstId, locked: [] });

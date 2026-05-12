@@ -46,6 +46,8 @@ export const createRoomHandler = (
 				theme: newRoom.theme,
 				backgroundUrl: newRoom.backgroundUrl || undefined,
 				hostName, // return this if needed on client
+				adminToken: newRoom.adminAccessToken,
+				hostToken: newRoom.hostAccessToken,
 			});
 
 			io.to(newRoom.code).emit("roomData", toPublicRoom(newRoom)); // includes host in players

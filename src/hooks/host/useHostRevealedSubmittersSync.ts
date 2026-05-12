@@ -20,13 +20,20 @@ export function useHostRevealedSubmittersSync() {
 			ref.current = merged;
 			setRevealedSubmitters(merged);
 		};
+		const onSnapshot = (songIds: number[]) => {
+			const merged = Array.from(new Set(songIds));
+			ref.current = merged;
+			setRevealedSubmitters(merged);
+		};
 
 		socket.on("submitterRevealed", onOne);
 		socket.on("submitterRevealedAll", onAll);
+		socket.on("revealedSubmitters", onSnapshot);
 
 		return () => {
 			socket.off("submitterRevealed", onOne);
 			socket.off("submitterRevealedAll", onAll);
+			socket.off("revealedSubmitters", onSnapshot);
 		};
 	}, [socket, setRevealedSubmitters]);
 }

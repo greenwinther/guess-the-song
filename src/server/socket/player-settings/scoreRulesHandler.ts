@@ -6,7 +6,7 @@ import type {
 	ServerToClientEvents,
 	SocketData,
 } from "@/types/socket";
-import { requireHost, requireRoom } from "@/server/logic/guards";
+import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { isPhase } from "@/server/logic/phase";
 import { scoreRulesPayloadSchema, validateWithZod } from "@/server/schemas";
 import { toPublicRoom } from "@/server/state/publicRoom";
@@ -25,7 +25,7 @@ export const scoreRulesHandler = (
 
 		const room = requireRoom(socket, () => cb?.(false));
 		if (!room || room.code !== code) return cb?.(false);
-		if (!requireHost(socket, room, () => cb?.(false))) return;
+		if (!requireHostOrAdmin(socket, room, () => cb?.(false))) return;
 		if (!isPhase(room, "LOBBY")) return cb?.(false);
 
 		const updated = setScoringRules(code, scoring);

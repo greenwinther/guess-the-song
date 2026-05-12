@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import { storeDetailOrder } from "@/lib/game";
-import { getRoomGameState } from "@/server/state/gameState";
+import { getRoomGameState, isSubmitterRevealed } from "@/server/state/gameState";
 import type {
 	ClientToServerEvents,
 	InterServerEvents,
@@ -32,9 +32,10 @@ export const selectDetailOrderHandler = (
 
 				const room = requireRoom(socket, () => cb?.(false));
 				if (!room || room.code !== code) return cb?.(false);
-				if (!isPhase(room, "GUESSING")) return cb?.(false);
+				if (!isPhase(room, ["GUESSING", "RECAP"])) return cb?.(false);
 				const member = requireNonHostMember(socket, room, () => cb?.(false));
 				if (!member) return;
+				if (isSubmitterRevealed(code, songId)) return cb?.(false);
 
 				if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
 				storeDetailOrder(code, songId, member.name, order);

@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import { getDetailLockedPlayers, manualDetailLock, tryUndoDetailLock } from "@/lib/game";
-import { getRoomGameState } from "@/server/state/gameState";
+import { getRoomGameState, isSubmitterRevealed } from "@/server/state/gameState";
 import type {
 	ClientToServerEvents,
 	InterServerEvents,
@@ -29,11 +29,14 @@ export const lockDetailAnswerHandler = (
 			const { code, songId } = payload.data;
 			const room = requireRoom(socket, () => cb?.(false));
 			if (!room || room.code !== code) return cb?.(false);
-			if (!isPhase(room, "GUESSING")) return cb?.(false);
+			if (!isPhase(room, ["GUESSING", "RECAP"])) return cb?.(false);
 			const member = requireNonHostMember(socket, room, () => cb?.(false));
 			if (!member) return;
+			if (isSubmitterRevealed(code, songId)) return cb?.(false);
 			if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
-			const ok = manualDetailLock(code, songId, member.name);
+			const ok = manualDetailLock(code, songId, member.name, {
+				multiplierEligible: isPhase(room, "GUESSING"),
+			});
 			if (ok) {
 				const locked = getDetailLockedPlayers(code, songId);
 				io.to(code).emit("detailLockSnapshot", { songId, locked });
@@ -55,9 +58,10 @@ export const lockDetailAnswerHandler = (
 			const { code, songId } = payload.data;
 			const room = requireRoom(socket, () => cb?.(false));
 			if (!room || room.code !== code) return cb?.(false);
-			if (!isPhase(room, "GUESSING")) return cb?.(false);
+			if (!isPhase(room, ["GUESSING", "RECAP"])) return cb?.(false);
 			const member = requireNonHostMember(socket, room, () => cb?.(false));
 			if (!member) return;
+			if (isSubmitterRevealed(code, songId)) return cb?.(false);
 			if (getRoomGameState(code).activeSongId !== songId) return cb?.(false);
 			const ok = tryUndoDetailLock(code, songId, member.name);
 			if (ok) {
