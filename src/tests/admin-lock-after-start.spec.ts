@@ -14,19 +14,20 @@ test("admin editor becomes read-only after the live game starts", async ({
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/host/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
-
-	const adminPage = await context.newPage();
-	await adminPage.goto(`/admin/${roomCode}`);
+	const adminPage = page;
 	await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toBeVisible();
+	const hostPagePromise = context.waitForEvent("page");
+	await adminPage.getByRole("button", { name: "Open host control" }).click();
+	const hostPage = await hostPagePromise;
+	await hostPage.waitForLoadState();
+	await expect(hostPage).toHaveURL(new RegExp(`/host/${roomCode}(\\?.*)?$`));
 
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
 		.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 	await adminPage.getByPlaceholder("Submitter").fill("Bob");
 	await adminPage.getByRole("button", { name: "Add Song" }).click();
-	await expect(page.getByText("1 song added")).toBeVisible();
+	await expect(adminPage.getByText("Submitted by Bob")).toBeVisible();
 
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").fill("Movie Night");
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").press("Enter");
@@ -42,7 +43,7 @@ test("admin editor becomes read-only after the live game starts", async ({
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await playerPage.locator("#player-ready").click();
 
-		await page.getByRole("button", { name: "Start Game" }).click();
+		await hostPage.getByRole("button", { name: "Start Game" }).click();
 
 		await expect(adminPage.getByRole("heading", { name: "Guess History" })).toBeVisible();
 		await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toHaveCount(0);

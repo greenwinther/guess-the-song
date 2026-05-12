@@ -318,6 +318,8 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	useRevealedSongsSync();
 	useThemeSocketSync();
 	const socketError = useReconnectNotice();
+	const roomPhase = room?.phase;
+	const roomCode = room?.code;
 
 	useEffect(() => {
 		if (!socket) return;
@@ -372,6 +374,37 @@ export default function PlayerGameView({ code, playerName }: Props) {
 		songIndexById,
 		detailOrder,
 	]);
+
+	useEffect(() => {
+		if (!socket || !roomCode) return;
+		if (roomPhase !== "ENDED") {
+			setResultRowPoints(null);
+			setThemeBonusPoints(0);
+			setExportReady(false);
+			return;
+		}
+
+		socket.emit("ADMIN_GET_DASHBOARD", { code: roomCode }, (res) => {
+			if (!res.ok) {
+				setResultRowPoints(null);
+				setThemeBonusPoints(0);
+				setExportReady(false);
+				return;
+			}
+
+			setExportReady(Boolean(res.dashboard.resultsFinalized));
+			const history = res.dashboard.playerHistories.find(
+				(item) => item.playerName.toLowerCase() === resolvedPlayerName.toLowerCase()
+			);
+			if (!history) {
+				setResultRowPoints(null);
+				setThemeBonusPoints(0);
+				return;
+			}
+			setResultRowPoints(history.rounds.map((round) => round.totalPoints ?? 0));
+			setThemeBonusPoints(history.themeBonusPoints ?? 0);
+		});
+	}, [socket, roomPhase, roomCode, resolvedPlayerName]);
 
 	// Guard: no room yet
 	if (!room) {
@@ -502,37 +535,6 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const currentLockedNames = Array.from(
 		lockedBySong.get(currentSongId ?? -1) ?? new Set<string>()
 	);
-
-	useEffect(() => {
-		if (!socket || !room) return;
-		if (room.phase !== "ENDED") {
-			setResultRowPoints(null);
-			setThemeBonusPoints(0);
-			setExportReady(false);
-			return;
-		}
-
-		socket.emit("ADMIN_GET_DASHBOARD", { code: room.code }, (res) => {
-			if (!res.ok) {
-				setResultRowPoints(null);
-				setThemeBonusPoints(0);
-				setExportReady(false);
-				return;
-			}
-
-			setExportReady(Boolean(res.dashboard.resultsFinalized));
-			const history = res.dashboard.playerHistories.find(
-				(item) => item.playerName.toLowerCase() === resolvedPlayerName.toLowerCase()
-			);
-			if (!history) {
-				setResultRowPoints(null);
-				setThemeBonusPoints(0);
-				return;
-			}
-			setResultRowPoints(history.rounds.map((round) => round.totalPoints ?? 0));
-			setThemeBonusPoints(history.themeBonusPoints ?? 0);
-		});
-	}, [socket, room?.phase, room?.code, resolvedPlayerName]);
 
 	const handleBackToStart = () => {
 		clearJoinDenied();

@@ -10,17 +10,18 @@ test("host and player can reload into an active round", async ({ page, context, 
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/host/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
-
-	const adminPage = await context.newPage();
-	await adminPage.goto(`/admin/${roomCode}`);
+	const adminPage = page;
+	const hostPagePromise = context.waitForEvent("page");
+	await adminPage.getByRole("button", { name: "Open host control" }).click();
+	const hostPage = await hostPagePromise;
+	await hostPage.waitForLoadState();
+	await expect(hostPage).toHaveURL(new RegExp(`/host/${roomCode}(\\?.*)?$`));
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
 		.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 	await adminPage.getByPlaceholder("Submitter").fill("Bob");
 	await adminPage.getByRole("button", { name: "Add Song" }).click();
-	await expect(page.getByText("1 song added")).toBeVisible();
+	await expect(adminPage.getByText("Submitted by Bob")).toBeVisible();
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -33,8 +34,8 @@ test("host and player can reload into an active round", async ({ page, context, 
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await playerPage.locator("#player-ready").click();
 
-		await page.getByRole("button", { name: "Start Game" }).click();
-		await page.getByRole("button", { name: "Play/Pause (Space)" }).click();
+		await hostPage.getByRole("button", { name: "Start Game" }).click();
+		await hostPage.getByRole("button", { name: "Play/Pause (Space)" }).click();
 
 		await expect(playerPage.getByRole("heading", { name: "Make your guesses" })).toBeVisible();
 
@@ -42,10 +43,10 @@ test("host and player can reload into an active round", async ({ page, context, 
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await expect(playerPage.getByRole("heading", { name: "Make your guesses" })).toBeVisible();
 
-		await page.reload();
-		await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
-		await expect(page.getByRole("button", { name: "Play/Pause (Space)" })).toBeVisible();
-		await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
+		await hostPage.reload();
+		await expect(hostPage).toHaveURL(new RegExp(`/host/${roomCode}$`));
+		await expect(hostPage.getByRole("button", { name: "Play/Pause (Space)" })).toBeVisible();
+		await expect(hostPage.getByRole("button", { name: "Next", exact: true })).toBeVisible();
 	} finally {
 		await playerContext.close();
 	}

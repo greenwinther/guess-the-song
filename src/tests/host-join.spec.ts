@@ -11,9 +11,12 @@ test("host can create room and player can join", async ({ page, context }) => {
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/host/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
-	await expect(page.getByText("Room code", { exact: true })).toBeVisible();
+	const hostPagePromise = context.waitForEvent("page");
+	await page.getByRole("button", { name: "Open host control" }).click();
+	const hostPage = await hostPagePromise;
+	await hostPage.waitForLoadState();
+	await expect(hostPage).toHaveURL(new RegExp(`/host/${roomCode}(\\?.*)?$`));
+	await expect(hostPage.getByText("Room code", { exact: true })).toBeVisible();
 
 	// Open a second context for the player
 	const playerPage = await context.newPage();
@@ -30,10 +33,10 @@ test("host can create room and player can join", async ({ page, context }) => {
 	await readyToggle.click();
 
 	// Verify host sees new player
-	await expect(page.getByRole("button", { name: "Alice" })).toBeVisible();
+	await expect(hostPage.getByRole("button", { name: "Alice" })).toBeVisible();
 
 	// Host can start game once ready
-	const startButton = page.locator('button:has-text("Start Game")');
+	const startButton = hostPage.locator('button:has-text("Start Game")');
 	await expect(startButton).toBeEnabled();
 	await startButton.click();
 });

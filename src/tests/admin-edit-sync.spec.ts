@@ -8,8 +8,6 @@ test("admin theme and bonus question edits persist in the editor", async ({ page
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/host/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
 
 	const adminPage = await context.newPage();
 	await adminPage.goto(`/admin/${roomCode}`);

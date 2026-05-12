@@ -72,6 +72,7 @@ export default function HostGameView({
 	const viewRoom = room ?? initialRoom ?? null;
 	const phase = viewRoom?.phase ?? "LOBBY";
 	const isRevealPhase = phase === "REVEAL";
+	const currentSongId = currentSong?.id ?? null;
 
 	useHostGameSocket(code, hostToken, { onJoinSuccess });
 	useRevealedSongsSync();
@@ -123,7 +124,7 @@ export default function HostGameView({
 	}, [socket, code, isRevealPhase, currentSong, revealedSubmitters]);
 
 	useEffect(() => {
-		if (!isRevealPhase || !currentSong) {
+		if (!isRevealPhase || currentSongId == null) {
 			setShowRevealDetails(false);
 			return;
 		}
@@ -132,7 +133,7 @@ export default function HostGameView({
 			setShowRevealDetails(true);
 		}, REVEAL_DETAILS_DELAY_MS);
 		return () => window.clearTimeout(timer);
-	}, [isRevealPhase, currentSong?.id]);
+	}, [isRevealPhase, currentSongId]);
 
 	const ensureRecapPhase = (onReady: () => void) => {
 		if (phase === "RECAP") {

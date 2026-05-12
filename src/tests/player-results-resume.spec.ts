@@ -14,17 +14,18 @@ test("player can reload into results after the game has ended", async ({
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/host/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
-
-	const adminPage = await context.newPage();
-	await adminPage.goto(`/admin/${roomCode}`);
+	const adminPage = page;
+	const hostPagePromise = context.waitForEvent("page");
+	await adminPage.getByRole("button", { name: "Open host control" }).click();
+	const hostPage = await hostPagePromise;
+	await hostPage.waitForLoadState();
+	await expect(hostPage).toHaveURL(new RegExp(`/host/${roomCode}(\\?.*)?$`));
 	await adminPage
 		.getByPlaceholder("Search or paste YouTube URL")
 		.fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 	await adminPage.getByPlaceholder("Submitter").fill("Bob");
 	await adminPage.getByRole("button", { name: "Add Song" }).click();
-	await expect(page.getByText("1 song added")).toBeVisible();
+	await expect(adminPage.getByText("Submitted by Bob")).toBeVisible();
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -37,10 +38,12 @@ test("player can reload into results after the game has ended", async ({
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await playerPage.locator("#player-ready").click();
 
-		await page.getByRole("button", { name: "Start Game" }).click();
-		await page.getByRole("button", { name: "Play/Pause (Space)" }).click();
-		await page.getByRole("button", { name: "Next", exact: true }).click();
-		await page.getByRole("button", { name: "Show Results" }).click();
+		await hostPage.getByRole("button", { name: "Start Game" }).click();
+		await hostPage.getByRole("button", { name: "Play/Pause (Space)" }).click();
+		await hostPage.getByRole("button", { name: "Next", exact: true }).click();
+		await hostPage.getByRole("button", { name: "Skip recap" }).click();
+		await hostPage.getByRole("button", { name: "Who submitted it?" }).click();
+		await hostPage.getByRole("button", { name: /Reveal 1st place/i }).click();
 
 		await expect(playerPage.getByRole("heading", { name: "Results" })).toBeVisible();
 

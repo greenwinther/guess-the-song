@@ -13,8 +13,11 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/host/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
+	const hostPagePromise = page.context().waitForEvent("page");
+	await page.getByRole("button", { name: "Open host control" }).click();
+	const hostPage = await hostPagePromise;
+	await hostPage.waitForLoadState();
+	await expect(hostPage).toHaveURL(new RegExp(`/host/${roomCode}(\\?.*)?$`));
 
 	const playerContext = await browser.newContext();
 	const playerPage = await playerContext.newPage();
@@ -26,17 +29,17 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 
-		await expect(page.getByRole("button", { name: "Alice" })).toBeVisible();
+		await expect(hostPage.getByRole("button", { name: "Alice" })).toBeVisible();
 
-		await page.getByRole("button", { name: "Alice" }).click();
-		await page.getByRole("button", { name: "Kick", exact: true }).click();
-		await expect(page.getByRole("heading", { name: "Kick player?" })).toBeVisible();
-		await page.getByRole("button", { name: "Kick" }).click();
+		await hostPage.getByRole("button", { name: "Alice" }).click();
+		await hostPage.getByRole("button", { name: "Kick", exact: true }).click();
+		await expect(hostPage.getByRole("heading", { name: "Kick player?" })).toBeVisible();
+		await hostPage.getByRole("button", { name: "Kick" }).click();
 
 		await expect(
 			playerPage.getByText("You were kicked from this room.", { exact: true }).first()
 		).toBeVisible();
-		await expect(page.getByRole("button", { name: "Alice" })).toHaveCount(0);
+		await expect(hostPage.getByRole("button", { name: "Alice" })).toHaveCount(0);
 
 		await playerPage.getByRole("button", { name: "Back to start" }).click();
 		await expect(playerPage).toHaveURL(/\/$/);

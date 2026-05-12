@@ -14,11 +14,12 @@ test("theme guesses reset between rounds, expose the hint, and persist solved st
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
 	expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
-	await page.goto(`/host/${roomCode}`);
-	await expect(page).toHaveURL(new RegExp(`/host/${roomCode}$`));
-
-	const adminPage = await context.newPage();
-	await adminPage.goto(`/admin/${roomCode}`);
+	const adminPage = page;
+	const hostPagePromise = context.waitForEvent("page");
+	await adminPage.getByRole("button", { name: "Open host control" }).click();
+	const hostPage = await hostPagePromise;
+	await hostPage.waitForLoadState();
+	await expect(hostPage).toHaveURL(new RegExp(`/host/${roomCode}(\\?.*)?$`));
 	await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 
 	await adminPage.getByPlaceholder("Secret theme (e.g., Disney)").fill("Movie Night");
@@ -34,7 +35,7 @@ test("theme guesses reset between rounds, expose the hint, and persist solved st
 		await submitterInput.fill(submitter);
 		await adminPage.getByRole("button", { name: "Add Song" }).click();
 		await expect(songInput).toHaveValue("");
-		await expect(page.getByText(index === 0 ? "1 song added" : "2 songs added")).toBeVisible();
+		await expect(adminPage.getByText(`Submitted by ${submitter}`)).toBeVisible();
 	}
 
 	await expect(adminPage.getByPlaceholder("Secret theme (e.g., Disney)")).toHaveValue("Movie Night");
@@ -50,7 +51,7 @@ test("theme guesses reset between rounds, expose the hint, and persist solved st
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await playerPage.locator("#player-ready").click();
 
-		await page.getByRole("button", { name: "Start Game" }).click();
+		await hostPage.getByRole("button", { name: "Start Game" }).click();
 		await expect(playerPage.getByRole("textbox", { name: "Theme guess" })).toBeVisible();
 
 		await playerPage.getByRole("textbox", { name: "Theme guess" }).fill("Wrong Theme");
@@ -58,8 +59,8 @@ test("theme guesses reset between rounds, expose the hint, and persist solved st
 
 		await expect(playerPage.getByRole("textbox", { name: "Theme guess" })).toBeDisabled();
 
-		await page.getByRole("button", { name: "Play/Pause (Space)" }).click();
-		await page.getByRole("button", { name: "Next", exact: true }).click();
+		await hostPage.getByRole("button", { name: "Play/Pause (Space)" }).click();
+		await hostPage.getByRole("button", { name: "Next", exact: true }).click();
 
 		await expect(playerPage.getByRole("textbox", { name: "Theme guess" })).toBeEnabled();
 
@@ -68,10 +69,10 @@ test("theme guesses reset between rounds, expose the hint, and persist solved st
 
 		await expect(playerPage.getByText("Good job, you solved the theme.")).toBeVisible();
 
-		await page.getByRole("button", { name: "Play/Pause (Space)" }).click();
-		await page.getByRole("button", { name: "Next", exact: true }).click();
+		await hostPage.getByRole("button", { name: "Play/Pause (Space)" }).click();
+		await hostPage.getByRole("button", { name: "Next", exact: true }).click();
 
-		await expect(page.getByRole("button", { name: "Show Results" })).toBeVisible();
+		await expect(hostPage.getByRole("button", { name: "Start recap" })).toBeVisible();
 	} finally {
 		await playerContext.close();
 	}
