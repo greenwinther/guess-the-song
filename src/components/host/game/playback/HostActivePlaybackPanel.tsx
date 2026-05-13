@@ -61,9 +61,9 @@ export default function HostActivePlaybackPanel({
 	const autoPlaybackRunning = recapRunning || revealRunning;
 
 	return (
-		<section className="flex min-h-0 flex-1 flex-col">
-			<div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5">
-				<div className="flex h-16 w-full items-center justify-center text-center sm:h-[4.5rem]">
+		<section className="flex min-h-0 flex-1 flex-col gap-4">
+			<div className="flex min-h-0 flex-1 flex-col gap-4">
+				<div className="flex h-14 w-full items-start justify-center pt-1 text-center sm:h-16">
 					<h2 className="line-clamp-2 max-w-3xl text-lg font-semibold leading-tight text-text sm:text-2xl">
 						{currentSong
 							? currentSong.title ?? "Unknown title"
@@ -71,7 +71,7 @@ export default function HostActivePlaybackPanel({
 					</h2>
 				</div>
 
-				<div className="flex h-[5.5rem] w-full items-center justify-center text-center">
+				<div className="flex h-[5.5rem] w-full items-center justify-center rounded-lg bg-black/15 p-3 text-center shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:p-4">
 					<div
 						className={`space-y-1 transition-all duration-500 ${
 							revealRunning && showRevealDetails
@@ -93,7 +93,7 @@ export default function HostActivePlaybackPanel({
 					</div>
 				</div>
 
-				<div className="flex w-full flex-col gap-6">
+				<div className="flex w-full flex-col gap-4">
 					<HostSongPlaybackDisplay
 						currentSong={currentSong}
 						isPlaying={isPlaying}
@@ -115,7 +115,7 @@ export default function HostActivePlaybackPanel({
 				</div>
 			</div>
 
-			<div className="w-full pt-4">
+			<div className="w-full">
 				{!allPlayed ? (
 					<p className="text-center text-xs text-text-muted sm:text-sm">
 						Played {playedCount}/{totalSongs}

@@ -50,8 +50,8 @@ export default function HostPlaylistPanel({
 	if (!viewRoom) return null;
 
 	return (
-		<aside className="order-2 lg:order-none w-full h-full min-h-0 lg:col-span-3 p-4 sm:p-4 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
-			<div className="mb-2 flex h-16 items-center justify-between gap-3 sm:h-[4.5rem]">
+		<aside className="order-2 lg:order-none w-full h-full min-h-0 lg:col-span-3 p-4 pt-5 sm:p-4 sm:pt-5 border-t lg:border-t-0 lg:border-l border-border flex flex-col gap-4">
+			<div className="flex items-start justify-between gap-3 pt-1">
 				<h2 className="text-lg sm:text-xl font-semibold text-text">Playlist</h2>
 				{onToggleSongArtworkBackground && (
 					<button
@@ -88,7 +88,7 @@ export default function HostPlaylistPanel({
 			{/* Bottom center button: enabled once all tracks are played */}
 			{showRevealControls && (showSubmitterRevealButton || showDetailRevealButton) && (
 				<div
-					className={`mt-4 grid gap-2 ${
+					className={`grid gap-2 ${
 						showSubmitterRevealButton && showDetailRevealButton ? "grid-cols-2" : "grid-cols-1"
 					}`}
 				>
@@ -122,7 +122,7 @@ export default function HostPlaylistPanel({
 				canReveal &&
 				playlistReveals.allSubmittersRevealed &&
 				(!hasDetailQuestion || playlistReveals.allDetailAnswersRevealed) && (
-					<p className="mt-4 text-xs sm:text-sm text-text-muted text-center">
+					<p className="text-xs sm:text-sm text-text-muted text-center">
 						All submitters revealed.
 					</p>
 				)}

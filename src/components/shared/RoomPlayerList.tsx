@@ -43,10 +43,10 @@ export default function RoomPlayerList({
 	return (
 		<div className={`flex min-h-0 flex-col w-full ${className ?? ""}`}>
 			<ul
-				className={`scrollbar-hidden flex min-h-[12rem] flex-1 flex-col gap-1 max-h-64 overflow-y-auto sm:max-h-72 lg:max-h-[calc(100vh-27rem)] ${
+				className={`scrollbar-hidden flex flex-1 flex-col gap-1 overflow-y-auto ${
 					inset
-						? "rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)]"
-						: "pr-1"
+						? "min-h-0 rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)]"
+						: "min-h-[12rem] max-h-64 pr-1 sm:max-h-72 lg:max-h-[calc(100vh-27rem)]"
 				}`}
 			>
 				{hasFallback && (

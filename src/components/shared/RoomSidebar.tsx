@@ -36,14 +36,14 @@ export default function RoomSidebar({
 	onKick?: (player: Member) => void;
 }) {
 	return (
-		<aside className="order-1 lg:order-none w-full h-full min-h-0 lg:col-span-3 border-b lg:border-b-0 lg:border-r border-border p-4 sm:p-4 flex flex-col items-center">
-			<div className="mb-2 flex h-16 w-full items-center justify-center sm:h-[4.5rem]">
-				<h1 className="text-center text-3xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15]">
+		<aside className="order-1 lg:order-none w-full h-full min-h-0 lg:col-span-3 border-b lg:border-b-0 lg:border-r border-border p-4 pt-5 sm:p-4 sm:pt-5 flex flex-col items-center gap-4">
+			<div className="flex w-full items-start justify-center">
+				<h1 className="pb-1 text-center text-3xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15]">
 					Guess the song
 				</h1>
 			</div>
 
-			<div className="mb-3 w-full rounded-lg bg-black/15 p-3 text-center shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:mb-4 sm:p-4">
+			<div className="w-full rounded-lg bg-black/15 p-3 text-center shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:p-4">
 				<p className="text-text-muted text-xs sm:text-sm">Room code</p>
 				<p
 					className="text-3xl sm:text-4xl font-mono font-bold text-secondary cursor-pointer select-none"
@@ -86,7 +86,7 @@ export default function RoomSidebar({
 				onKick={onKick}
 			/>
 			{showGameplayLegend && players.length > 0 && (
-				<div className="mt-auto grid w-full grid-cols-3 gap-2 pt-3 text-[10px] text-text-muted">
+				<div className="grid w-full grid-cols-3 gap-2 text-[10px] text-text-muted">
 					<div
 						className="flex flex-col items-center gap-1 rounded-md border border-border/45 bg-black/10 px-1.5 py-2 text-center"
 						title="Locked current song"

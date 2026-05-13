@@ -198,7 +198,7 @@ export default function HostGameView({
 				onCancel={() => setPlayerToKick(null)}
 			/>
 
-			<main className="lg:col-span-6 p-4 sm:p-4 flex min-h-0 flex-col">
+			<main className="lg:col-span-6 p-4 pt-5 sm:p-4 sm:pt-5 flex min-h-0 flex-col gap-4">
 				<HostPlaybackPanel
 					code={code}
 					currentSong={currentSong ?? null}
