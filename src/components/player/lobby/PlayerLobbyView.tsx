@@ -30,7 +30,11 @@ export default function PlayerLobbyView({
 	const router = useRouter();
 	const { room } = useRoomState();
 	const { submittedPlayers } = useGameRuntime();
-	const { clearJoinDenied, joinDenied } = usePlayerJoinDenied();
+	const { clearJoinDenied, joinDenied } = usePlayerJoinDenied({
+		code: initialRoom.code,
+		playerName: currentUserName,
+		role: "player",
+	});
 
 	useRoomJoinSocket(initialRoom.code, currentUserName);
 	usePlayerLobbySocket(initialRoom);
@@ -51,6 +55,14 @@ export default function PlayerLobbyView({
 	useEffect(() => {
 		setReady(!!me?.ready);
 	}, [me?.ready]);
+
+	useEffect(() => {
+		if (!room || !joinDenied || joinDenied.reason === "kicked") return;
+		const hasMe = room.players.some(
+			(player) => player.name.toLowerCase() === currentUserName.toLowerCase()
+		);
+		if (hasMe) clearJoinDenied();
+	}, [room, joinDenied, currentUserName, clearJoinDenied]);
 
 	const handleHardcoreChange = (next: boolean) => {
 		if (!room) return;

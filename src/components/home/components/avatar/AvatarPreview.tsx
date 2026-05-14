@@ -30,6 +30,7 @@ export default function AvatarPreview({
 	const layerImageClass = "absolute inset-0 object-contain pointer-events-none";
 	const avatarSizeClass = compact ? "w-40 h-40" : "w-48 h-48";
 	const imageSize = compact ? "160px" : "192px";
+	const isBaseLayer = (layer: AvatarLayer) => layer === "base";
 
 	const renderLayer = (layer: AvatarLayer) => {
 		const transition = transitions[layer];
@@ -42,6 +43,8 @@ export default function AvatarPreview({
 							alt=""
 							fill
 							sizes={imageSize}
+							priority={isBaseLayer(layer)}
+							loading={isBaseLayer(layer) ? "eager" : "lazy"}
 							className={clsx(
 								layerImageClass,
 								transition.direction === 1 ? "avatar-layer-out-right" : "avatar-layer-out-left",
@@ -54,6 +57,8 @@ export default function AvatarPreview({
 							alt=""
 							fill
 							sizes={imageSize}
+							priority={isBaseLayer(layer)}
+							loading={isBaseLayer(layer) ? "eager" : "lazy"}
 							className={clsx(
 								layerImageClass,
 								transition.direction === 1 ? "avatar-layer-in-left" : "avatar-layer-in-right",
@@ -66,7 +71,18 @@ export default function AvatarPreview({
 
 		const src = layerSrcs[layer];
 		if (!src) return null;
-		return <Image key={layer} src={src} alt="" fill sizes={imageSize} className={layerImageClass} />;
+		return (
+			<Image
+				key={layer}
+				src={src}
+				alt=""
+				fill
+				sizes={imageSize}
+				priority={isBaseLayer(layer)}
+				loading={isBaseLayer(layer) ? "eager" : "lazy"}
+				className={layerImageClass}
+			/>
+		);
 	};
 
 	return (

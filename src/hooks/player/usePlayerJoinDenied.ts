@@ -1,42 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+	clearJoinDeniedRecordInScope,
+	isJoinDeniedRecordInScope,
+	readJoinDeniedRecord,
+	type JoinDeniedReason,
+	type JoinDeniedScope,
+} from "@/lib/joinDeniedStorage";
 
-export type PlayerJoinDeniedReason =
-	| "kicked"
-	| "closed"
-	| "not_found"
-	| "name_taken"
-	| "unauthorized"
-	| "error";
+export type PlayerJoinDeniedReason = JoinDeniedReason;
 
 export type PlayerJoinDenied = {
 	reason: PlayerJoinDeniedReason;
 	at: number;
 };
 
-export function usePlayerJoinDenied() {
+export function usePlayerJoinDenied(scope: JoinDeniedScope) {
 	const [joinDenied, setJoinDenied] = useState<PlayerJoinDenied | null>(null);
+	const scopedCode = scope.code;
+	const scopedPlayerName = scope.playerName;
+	const scopedRole = scope.role;
 
 	useEffect(() => {
 		const readJoinDenied = () => {
-			try {
-				const raw = localStorage.getItem("gts-join-denied");
-				if (!raw) {
-					setJoinDenied(null);
-					return;
-				}
-
-				const parsed = JSON.parse(raw) as PlayerJoinDenied;
-				if (!parsed?.reason) {
-					setJoinDenied(null);
-					return;
-				}
-
-				setJoinDenied(parsed);
-			} catch {
+			const parsed = readJoinDeniedRecord();
+			if (
+				!isJoinDeniedRecordInScope(parsed, {
+					code: scopedCode,
+					playerName: scopedPlayerName,
+					role: scopedRole,
+				})
+			) {
 				setJoinDenied(null);
+				return;
 			}
+			setJoinDenied({ reason: parsed.reason, at: parsed.at });
 		};
 
 		readJoinDenied();
@@ -47,10 +46,14 @@ export function usePlayerJoinDenied() {
 			window.removeEventListener("gts-join-denied", readJoinDenied);
 			window.removeEventListener("storage", readJoinDenied);
 		};
-	}, []);
+	}, [scopedCode, scopedPlayerName, scopedRole]);
 
 	const clearJoinDenied = () => {
-		localStorage.removeItem("gts-join-denied");
+		clearJoinDeniedRecordInScope({
+			code: scopedCode,
+			playerName: scopedPlayerName,
+			role: scopedRole,
+		});
 		setJoinDenied(null);
 	};
 

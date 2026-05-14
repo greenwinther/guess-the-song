@@ -51,12 +51,22 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const [resultRowPoints, setResultRowPoints] = useState<number[] | null>(null);
 	const [themeBonusPoints, setThemeBonusPoints] = useState<number>(0);
 	const [exportReady, setExportReady] = useState(false);
-	const { clearJoinDenied, joinDenied } = usePlayerJoinDenied();
+	const { clearJoinDenied, joinDenied } = usePlayerJoinDenied({
+		code,
+		playerName,
+		role: "player",
+	});
 	const resolvedPlayerName = useMemo(() => {
 		if (!room) return playerName;
 		const lower = playerName.toLowerCase();
 		return room.players.find((p) => p.name.toLowerCase() === lower)?.name ?? playerName;
 	}, [room, playerName]);
+
+	useEffect(() => {
+		if (!room || !joinDenied || joinDenied.reason === "kicked") return;
+		const hasMe = room.players.some((player) => player.name.toLowerCase() === playerName.toLowerCase());
+		if (hasMe) clearJoinDenied();
+	}, [room, joinDenied, playerName, clearJoinDenied]);
 
 	const { order, submitted, setSubmitted, handleReorder } = useSubmissionOrder(
 		code,

@@ -3,6 +3,11 @@ import { useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useSocket } from "@/contexts/SocketContext";
 import { getStoredAvatar } from "@/lib/avatarStorage";
+import {
+	clearJoinDeniedRecordInScope,
+	type JoinDeniedReason,
+	writeJoinDeniedRecord,
+} from "@/lib/joinDeniedStorage";
 
 const getClientId = () => {
 	const k = "gts-client-id";
@@ -40,17 +45,14 @@ export function useRoomJoinSocket(
 	useEffect(() => {
 		clientIdRef.current = clientIdRef.current || getClientId();
 		if (!socket) return;
-		const emitJoinDenied = (
-			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error"
-		) => {
-			try {
-				localStorage.setItem(
-					"gts-join-denied",
-					JSON.stringify({ reason, at: Date.now() })
-				);
-				window.dispatchEvent(new Event("gts-join-denied"));
-			} catch {}
-		};
+		const role = options?.hostToken ? "host" : "player";
+		const emitJoinDenied = (reason: JoinDeniedReason) =>
+			writeJoinDeniedRecord({
+				reason,
+				code: codeRef.current,
+				playerName: nameRef.current,
+				role,
+			});
 		const onJoinDenied = (data: {
 			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error";
 		}) => {
@@ -111,6 +113,11 @@ export function useRoomJoinSocket(
 						// (optional) toast/console here
 						return;
 					}
+					clearJoinDeniedRecordInScope({
+						code: codeRef.current,
+						playerName: nameRef.current,
+						role,
+					});
 					onJoinSuccessRef.current?.();
 				}
 			);

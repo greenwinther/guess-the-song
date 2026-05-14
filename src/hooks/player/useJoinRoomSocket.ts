@@ -4,6 +4,11 @@ import toast from "react-hot-toast";
 import { useGameRuntime, useRoomState } from "@/contexts/gameContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { getStoredAvatar } from "@/lib/avatarStorage";
+import {
+	clearJoinDeniedRecordInScope,
+	type JoinDeniedReason,
+	writeJoinDeniedRecord,
+} from "@/lib/joinDeniedStorage";
 import { getYouTubeID } from "@/lib/youtube";
 import type { Room } from "@/types/room";
 import type { Member } from "@/types/member";
@@ -36,21 +41,27 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 	useEffect(() => {
 		if (!socket || !code || !playerName || joinedRef.current) return;
 
-		const emitJoinDenied = (
-			reason: "kicked" | "closed" | "not_found" | "name_taken" | "unauthorized" | "error"
-		) => {
-			try {
-				localStorage.setItem(
-					"gts-join-denied",
-					JSON.stringify({ reason, at: Date.now() })
-				);
-				window.dispatchEvent(new Event("gts-join-denied"));
-			} catch {}
-		};
+		const emitJoinDenied = (reason: JoinDeniedReason) =>
+			writeJoinDeniedRecord({
+				reason,
+				code: codeRef.current,
+				playerName: nameRef.current,
+				role: "player",
+			});
 
 		// listeners FIRST (prevents missing fast server emits)
 		const onRoomData = (room: Room) => {
 			setRoom(room);
+			const hasMe = room.players.some(
+				(player) => player.name.toLowerCase() === nameRef.current.toLowerCase()
+			);
+			if (hasMe) {
+				clearJoinDeniedRecordInScope({
+					code: codeRef.current,
+					playerName: nameRef.current,
+					role: "player",
+				});
+			}
 		};
 
 		const onGameStarted = (room: Room) => {
@@ -149,7 +160,15 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 					avatar: avatar ?? undefined,
 				},
 				(ok: boolean) => {
-					if (!ok) joinedRef.current = false;
+					if (!ok) {
+						joinedRef.current = false;
+						return;
+					}
+					clearJoinDeniedRecordInScope({
+						code: codeRef.current,
+						playerName: nameRef.current,
+						role: "player",
+					});
 				}
 			);
 		};

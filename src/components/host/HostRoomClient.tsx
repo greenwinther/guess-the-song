@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import HostGameView from "@/components/host/game/HostGameView";
 import HostLobbyView from "@/components/host/lobby/HostLobbyView";
 import { useRoomState } from "@/contexts/gameContext";
+import { isJoinDeniedRecordInScope, readJoinDeniedRecord } from "@/lib/joinDeniedStorage";
 import type { Room } from "@/types/room";
 
 type Props = {
@@ -62,23 +63,19 @@ export default function HostRoomClient({ code, hostToken }: Props) {
 
 	useEffect(() => {
 		const readDenied = () => {
+			const parsed = readJoinDeniedRecord();
+			if (parsed?.reason !== "unauthorized") return;
+			if (!isJoinDeniedRecordInScope(parsed, { code, role: "host", playerName: "Host" })) return;
+			setUnauthorized(true);
 			try {
-				const raw = localStorage.getItem("gts-join-denied");
-				if (!raw) return;
-				const parsed = JSON.parse(raw) as { reason?: string };
-				if (parsed.reason === "unauthorized") {
-					setUnauthorized(true);
-					try {
-						sessionStorage.removeItem(sessionKey);
-					} catch {}
-					setResolvedHostToken(null);
-				}
+				sessionStorage.removeItem(sessionKey);
 			} catch {}
+			setResolvedHostToken(null);
 		};
 		readDenied();
 		window.addEventListener("gts-join-denied", readDenied);
 		return () => window.removeEventListener("gts-join-denied", readDenied);
-	}, [sessionKey]);
+	}, [code, sessionKey]);
 
 	const hideTokenFromUrl = () => {
 		if (typeof window === "undefined") return;
