@@ -15,6 +15,7 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import HostPlaylistPanel from "@/components/host/common/HostPlaylistPanel";
 import HostLobbyDebugPanel from "@/components/host/lobby/HostLobbyDebugPanel";
 import HostStartGamePanel from "@/components/host/lobby/HostStartGamePanel";
+import { ROOM_SHELL_HEIGHT_CLASS } from "@/components/shared/layout/panelClassNames";
 
 import type { Member } from "@/types/member";
 import type { Room } from "@/types/room";
@@ -58,14 +59,13 @@ export default function HostLobbyView({
 			bgImage={viewRoom.backgroundUrl ?? null}
 			socketError={socketError}
 			shellSize="lobby"
+			contentClassName={ROOM_SHELL_HEIGHT_CLASS}
 		>
 			<RoomSidebar
 				roomCode={viewRoom.code}
 				players={viewRoom.players}
 				submittedPlayers={submittedPlayers}
 				fallbackName="Host"
-				allPlayersReady={allReady && nonHostPlayers.length > 0}
-				playerStatusMode="lobby"
 				onKick={(player) => {
 					setPlayerToKick(player);
 				}}

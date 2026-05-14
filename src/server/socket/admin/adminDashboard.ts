@@ -73,6 +73,7 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 				activeRound?.themeGuesses?.[player.name] ?? themeGuessesThisRound[player.name] ?? null;
 			return {
 				playerName: player.name,
+				totalScore: scoreBoard.byPlayer[player.name]?.total ?? 0,
 				guessOrder,
 				guessLabel: toGuessLabel(guessOrder),
 				locked: !!lockInfo?.locked,

@@ -35,7 +35,7 @@ export default function HostPlaylistSongRow({
 		>
 			<div className="flex items-center gap-2">
 				<span className="font-mono text-secondary text-xs sm:text-sm">{index + 1}.</span>
-				<span className="font-medium text-sm sm:text-base">
+				<span className="font-medium text-xs sm:text-sm">
 					{isTitleRevealed ? song.title ?? song.url : "Guess the song"}
 				</span>
 			</div>

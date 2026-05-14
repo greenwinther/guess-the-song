@@ -1,5 +1,5 @@
-import { GameProvider } from "@/contexts/gameContext";
+import GameProviderLayout from "@/components/shared/GameProviderLayout";
 
 export default function JoinRoomLayout({ children }: { children: React.ReactNode }) {
-	return <GameProvider>{children}</GameProvider>;
+	return <GameProviderLayout>{children}</GameProviderLayout>;
 }

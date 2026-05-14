@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "@/contexts/SocketContext";
+import type { AccessStatus } from "@/lib/accessStatus";
 import type { Room } from "@/types/room";
 import type { Submission } from "@/types/submission";
 
-export type AdminAccessState = "checking" | "authorized" | "unauthorized" | "not_found";
+export type AdminAccessState = "authorized" | AccessStatus;
 
 const getClientId = () => {
 	const key = "gts-client-id";

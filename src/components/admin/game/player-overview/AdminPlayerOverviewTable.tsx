@@ -4,10 +4,17 @@ import { FaLock } from "react-icons/fa6";
 import styles from "@/components/admin/admin.module.css";
 import type { AdminDashboardPayload } from "@/types/socket";
 
+const normalizeGuessLabel = (label: string) => {
+	const trimmed = label.trim();
+	if (trimmed === "-" || trimmed === "—") return "";
+	return label;
+};
+
 function GuessValue({ label, locked }: { label: string; locked: boolean }) {
+	const visibleLabel = normalizeGuessLabel(label);
 	return (
 		<span className="inline-flex items-center gap-2">
-			<span>{label}</span>
+			<span>{visibleLabel}</span>
 			{locked && (
 				<FaLock
 					className="h-3 w-3 shrink-0 text-secondary"
@@ -36,36 +43,57 @@ export default function AdminPlayerOverviewTable({
 		dashboard.theme.enabled ||
 		Boolean(roomTheme?.trim()) ||
 		dashboard.currentSongRows.some((row) => Boolean(row.themeGuess?.trim()));
+	const guessColumnCount = 1 + (dashboard.hasDetailLane ? 1 : 0) + (hasTheme ? 1 : 0);
+	const playerColumnWidth = 20;
+	const scoreColumnWidth = 10;
+	const historyColumnWidth = 12;
+	const guessColumnWidth = `${(100 - playerColumnWidth - scoreColumnWidth - historyColumnWidth) / guessColumnCount}%`;
 
 	const content = (
 		<>
-			<div className={`${styles.insetPanel} scrollbar-hidden max-h-[calc(100vh-25rem)] overflow-auto rounded-xl px-3 py-2`}>
-				<table className="min-w-full text-sm">
-					<thead className="sticky top-0 z-10 bg-[rgb(34_21_48)] shadow-[0_1px_0_rgb(255_255_255/0.08)]">
+			<div
+				className={`${styles.tableInset} ${styles.tableScrollArea}`}
+			>
+				<table className={`min-w-full border-separate border-spacing-0 text-sm ${styles.tableGrid}`}>
+					<colgroup>
+						<col style={{ width: `${playerColumnWidth}%` }} />
+						<col style={{ width: guessColumnWidth }} />
+						{dashboard.hasDetailLane && <col style={{ width: guessColumnWidth }} />}
+						{hasTheme && <col style={{ width: guessColumnWidth }} />}
+						<col style={{ width: `${scoreColumnWidth}%` }} />
+						<col style={{ width: `${historyColumnWidth}%` }} />
+					</colgroup>
+					<thead className={styles.tableHeader}>
 						<tr className="text-left text-text/70 border-b border-border">
-							<th className="py-2 pr-3">Player</th>
-							<th className="py-2 pr-3">Guess</th>
-							{dashboard.hasDetailLane && <th className="py-2 pr-3">Bonus Guess</th>}
-							{hasTheme && <th className="py-2 pr-3">Theme Guess</th>}
-							<th className="py-2 pr-3">History</th>
+							<th className={`${styles.tableHeaderCell} py-2 px-3`}>Player</th>
+							<th className={`${styles.tableHeaderCell} py-2 px-3 text-center`}>Guess</th>
+							{dashboard.hasDetailLane && (
+								<th className={`${styles.tableHeaderCell} py-2 px-3 text-center`}>Bonus Guess</th>
+							)}
+							{hasTheme && (
+								<th className={`${styles.tableHeaderCell} py-2 px-3 text-center`}>Theme Guess</th>
+							)}
+							<th className={`${styles.tableHeaderCell} py-2 px-3 text-center`}>Score</th>
+							<th className={`${styles.tableHeaderCell} py-2 px-3 text-center`}>History</th>
 						</tr>
 					</thead>
 					<tbody>
 						{dashboard.currentSongRows.map((row) => (
-							<tr key={row.playerName} className="border-b border-border/60 last:border-b-0">
-								<td className="py-2 pr-3 text-text">{row.playerName}</td>
-								<td className="py-2 pr-3 text-text">
+							<tr key={row.playerName}>
+								<td className="py-2 px-3 text-text">{row.playerName}</td>
+								<td className="py-2 px-3 text-text text-center">
 									<GuessValue label={row.guessLabel} locked={row.locked} />
 								</td>
 								{dashboard.hasDetailLane && (
-									<td className="py-2 pr-3 text-text">
+									<td className="py-2 px-3 text-text text-center">
 										<GuessValue label={row.detailLabel} locked={row.detailLocked} />
 									</td>
 								)}
 								{hasTheme && (
-									<td className="py-2 pr-3 text-text">{row.themeGuess?.trim() || "-"}</td>
+									<td className="py-2 px-3 text-text text-center">{row.themeGuess?.trim() || ""}</td>
 								)}
-								<td className="py-2 pr-3">
+								<td className="py-2 px-3 text-text text-center">{row.totalScore}</td>
+								<td className="py-2 px-3 text-center">
 									<button
 										type="button"
 										className={`rounded border px-2 py-1 text-xs transition-colors ${

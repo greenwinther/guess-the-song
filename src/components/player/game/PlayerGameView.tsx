@@ -14,6 +14,7 @@ import { useSubmissionOrder } from "@/hooks/player/useSubmissionOrder";
 import { useDetailOrder } from "@/hooks/player/useDetailOrder";
 import BackgroundShell from "@/components/shared/BackgroundShell";
 import RoomSidebar from "@/components/shared/RoomSidebar";
+import StatusNotice from "@/components/shared/StatusNotice";
 
 import PlayerPlaylistPanel from "@/components/player/game/playlist/PlayerPlaylistPanel";
 import { PlayerGuessPanel } from "@/components/player/game/guessing/PlayerGuessPanel";
@@ -23,6 +24,10 @@ import ExportGameReportButton from "@/components/shared/ExportGameReportButton";
 import type { OrderItem } from "@/components/player/game/guessing/PlayerGuessOrderList";
 import { useThemeSocketSync } from "@/hooks/shared/useThemeSocketSync";
 import { PlayerThemeGuessBar } from "@/components/player/game/guessing/PlayerThemeGuessBar";
+import {
+	CENTER_GAME_PANEL_CLASS,
+	ROOM_SHELL_HEIGHT_CLASS,
+} from "@/components/shared/layout/panelClassNames";
 
 interface Props {
 	code: string;
@@ -418,11 +423,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 
 	// Guard: no room yet
 	if (!room) {
-		return (
-			<div className="min-h-screen flex items-center justify-center">
-				<p className="text-lg text-text">Reconnecting to the live room...</p>
-			</div>
-		);
+		return <StatusNotice message="Reconnecting to the live room..." />;
 	}
 
 	// Reorder handler -> update local + notify server for the **current** song
@@ -557,6 +558,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 			socketError={socketError}
 			shellSize="cinema"
 			transitionPreset="cinema-enter"
+			contentClassName={ROOM_SHELL_HEIGHT_CLASS}
 		>
 			{joinDenied && (
 				<PlayerJoinDeniedBanner joinDenied={joinDenied} onBackToStart={handleBackToStart} />
@@ -566,6 +568,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 				roomCode={room.code}
 				players={room.players}
 				submittedPlayers={submittedPlayers}
+				fallbackName="Host"
 				lockedNames={currentLockedNames}
 				lockedCounts={lockedCounts}
 				solvedByTheme={solvedByTheme}
@@ -573,7 +576,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 			/>
 
 			{/* CENTER */}
-			<main className="lg:col-span-6 p-4 sm:p-4 flex flex-col">
+			<main className={CENTER_GAME_PANEL_CLASS}>
 				{isEndedMode ? (
 					<>
 						<PlayerResultsPanel

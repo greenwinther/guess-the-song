@@ -23,6 +23,10 @@ import { useRevealedSongsSync } from "@/hooks/player/useRevealedSongsSync";
 import type { Room } from "@/types/room";
 import type { Member } from "@/types/member";
 import { useThemeSocketSync } from "@/hooks/shared/useThemeSocketSync";
+import {
+	CENTER_GAME_PANEL_CLASS,
+	ROOM_SHELL_HEIGHT_CLASS,
+} from "@/components/shared/layout/panelClassNames";
 
 const RECAP_CLIP_SECONDS = 15;
 const REVEAL_CLIP_SECONDS = 30;
@@ -169,7 +173,7 @@ export default function HostGameView({
 			socketError={socketError}
 			shellSize="cinema"
 			transitionPreset="cinema-enter"
-			contentClassName="h-[calc(100vh-2rem)] sm:h-[calc(100vh-3rem)] lg:h-[calc(100vh-4rem)]"
+			contentClassName={ROOM_SHELL_HEIGHT_CLASS}
 		>
 			<RoomSidebar
 				roomCode={viewRoom?.code ?? code}
@@ -198,7 +202,7 @@ export default function HostGameView({
 				onCancel={() => setPlayerToKick(null)}
 			/>
 
-			<main className="lg:col-span-6 p-4 pt-5 sm:p-4 sm:pt-5 flex min-h-0 flex-col gap-4">
+			<main className={`${CENTER_GAME_PANEL_CLASS} gap-4`}>
 				<HostPlaybackPanel
 					code={code}
 					currentSong={currentSong ?? null}

@@ -15,9 +15,11 @@ import { usePlayerJoinDenied } from "@/hooks/player/usePlayerJoinDenied";
 import { usePlayerLobbySocket } from "@/hooks/player/usePlayerLobbySocket";
 import BackgroundShell from "@/components/shared/BackgroundShell";
 import RoomSidebar from "@/components/shared/RoomSidebar";
+import StatusNotice from "@/components/shared/StatusNotice";
 import PlayerJoinDeniedBanner from "@/components/player/common/PlayerJoinDeniedBanner";
 import PlayerLobbyCard from "@/components/player/lobby/PlayerLobbyCard";
 import PlayerPlaylistPanel from "@/components/player/game/playlist/PlayerPlaylistPanel";
+import { ROOM_SHELL_HEIGHT_CLASS } from "@/components/shared/layout/panelClassNames";
 
 export default function PlayerLobbyView({
 	initialRoom,
@@ -92,21 +94,15 @@ export default function PlayerLobbyView({
 	};
 
 	if (!room) {
-		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<p className="text-lg">Loading room...</p>
-			</div>
-		);
+		return <StatusNotice message="Loading room..." />;
 	}
-
-	const nonHostPlayers = room.players.filter((player) => !player.isHost);
-	const allReady = nonHostPlayers.length > 0 && nonHostPlayers.every((player) => player.ready);
 
 	return (
 		<BackgroundShell
 			bgImage={room.backgroundUrl ?? null}
 			socketError={socketError}
 			shellSize="lobby"
+			contentClassName={ROOM_SHELL_HEIGHT_CLASS}
 		>
 			{joinDenied && (
 				<PlayerJoinDeniedBanner joinDenied={joinDenied} onBackToStart={handleBackToStart} />
@@ -116,10 +112,7 @@ export default function PlayerLobbyView({
 				roomCode={room.code}
 				players={room.players}
 				submittedPlayers={submittedPlayers}
-				allPlayersReady={allReady}
-				showGameplayLegend={false}
-				showLockCounts={false}
-				playerStatusMode="lobby"
+				fallbackName="Host"
 			/>
 
 			<PlayerLobbyCard

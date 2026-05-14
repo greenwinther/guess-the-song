@@ -1,7 +1,6 @@
 "use client";
 
 import type { AdminDashboardPayload } from "@/types/socket";
-import type { Submission } from "@/types/submission";
 import AdminHeader from "@/components/admin/common/AdminHeader";
 import AdminPlayerGuessHistoryPanel from "./guess-history/AdminPlayerGuessHistoryPanel";
 import AdminPlayerOverviewPanel from "./player-overview/AdminPlayerOverviewPanel";
@@ -23,8 +22,6 @@ type HistoryRow = {
 
 type AdminGameViewProps = {
 	dashboard: AdminDashboardPayload;
-	reconnecting: boolean;
-	currentSong: Submission | null;
 	roomTheme?: string | null;
 	selectedHistoryPlayer: string | null;
 	selectedHistoryRows: HistoryRow[];
@@ -33,22 +30,18 @@ type AdminGameViewProps = {
 
 export default function AdminGameView({
 	dashboard,
-	reconnecting,
-	currentSong,
 	roomTheme,
 	selectedHistoryPlayer,
 	selectedHistoryRows,
 	onSelectHistoryPlayer,
 }: AdminGameViewProps) {
 	return (
-		<div className="flex flex-col gap-4">
-			<AdminHeader roomCode={dashboard.code} />
+		<div className="flex h-full min-h-0 flex-col gap-4">
+			<AdminHeader roomCode={dashboard.code} phase={dashboard.phase} />
 
-			<div className="grid gap-4 xl:grid-cols-2">
+			<div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-2">
 				<AdminPlayerOverviewPanel
 					dashboard={dashboard}
-					reconnecting={reconnecting}
-					currentSong={currentSong}
 					roomTheme={roomTheme}
 					selectedHistoryPlayer={selectedHistoryPlayer}
 					onSelectHistoryPlayer={onSelectHistoryPlayer}

@@ -10,7 +10,7 @@ export type JoinDeniedReason =
 
 export type JoinDeniedRole = "player" | "host";
 
-export type JoinDeniedRecord = {
+type JoinDeniedRecord = {
 	reason: JoinDeniedReason;
 	at: number;
 	code?: string;
@@ -29,8 +29,6 @@ const STORAGE_KEY = "gts-join-denied";
 const normalizeText = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
 
 const normalizeCode = (value: string | null | undefined) => (value ?? "").trim().toUpperCase();
-
-export const getJoinDeniedStorageKey = () => STORAGE_KEY;
 
 export function readJoinDeniedRecord(): JoinDeniedRecord | null {
 	try {
@@ -77,7 +75,7 @@ export function isJoinDeniedRecordInScope(
 	return true;
 }
 
-export function clearJoinDeniedRecord() {
+function clearJoinDeniedRecord() {
 	try {
 		localStorage.removeItem(STORAGE_KEY);
 		window.dispatchEvent(new Event("gts-join-denied"));

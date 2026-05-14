@@ -4,20 +4,17 @@ import { FaCheck, FaLock, FaQuestion } from "react-icons/fa6";
 import toast from "react-hot-toast";
 import type { Member } from "@/types/member";
 import RoomPlayerList from "./RoomPlayerList";
+import { LEFT_SIDEBAR_PANEL_CLASS } from "@/components/shared/layout/panelClassNames";
 
 export default function RoomSidebar({
 	roomCode,
 	players,
 	submittedPlayers = [],
-	fallbackName,
-	allPlayersReady,
+	fallbackName = "Host",
 	lockedNames,
 	lockedCounts,
 	solvedByTheme = [],
 	lockedForThisRound = [],
-	showGameplayLegend = true,
-	showLockCounts = true,
-	playerStatusMode = "game",
 	onKick,
 }: {
 	roomCode?: string;
@@ -25,18 +22,14 @@ export default function RoomSidebar({
 	submittedPlayers?: string[];
 	showHostBadge?: boolean;
 	fallbackName?: string;
-	allPlayersReady?: boolean;
 	lockedNames?: string[];
 	lockedCounts?: Record<string, number>;
 	solvedByTheme?: string[];
 	lockedForThisRound?: string[];
-	showGameplayLegend?: boolean;
-	showLockCounts?: boolean;
-	playerStatusMode?: "game" | "lobby";
 	onKick?: (player: Member) => void;
 }) {
 	return (
-		<aside className="order-1 lg:order-none w-full h-full min-h-0 lg:col-span-3 border-b lg:border-b-0 lg:border-r border-border p-4 pt-5 sm:p-4 sm:pt-5 flex flex-col items-center gap-4">
+		<aside className={`${LEFT_SIDEBAR_PANEL_CLASS} flex flex-col items-center gap-4`}>
 			<div className="flex w-full items-start justify-center">
 				<h1 className="pb-1 text-center text-3xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15]">
 					Guess the song
@@ -80,12 +73,10 @@ export default function RoomSidebar({
 				lockedCounts={lockedCounts}
 				solvedByTheme={solvedByTheme}
 				lockedForThisRound={lockedForThisRound}
-				showLockCounts={showLockCounts}
-				statusMode={playerStatusMode}
 				inset
 				onKick={onKick}
 			/>
-			{showGameplayLegend && players.length > 0 && (
+			{players.length > 0 && (
 				<div className="grid w-full grid-cols-3 gap-2 text-[10px] text-text-muted">
 					<div
 						className="flex flex-col items-center gap-1 rounded-md border border-border/45 bg-black/10 px-1.5 py-2 text-center"

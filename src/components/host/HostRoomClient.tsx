@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import HostGameView from "@/components/host/game/HostGameView";
 import HostLobbyView from "@/components/host/lobby/HostLobbyView";
+import StatusNotice from "@/components/shared/StatusNotice";
 import { useRoomState } from "@/contexts/gameContext";
 import { isJoinDeniedRecordInScope, readJoinDeniedRecord } from "@/lib/joinDeniedStorage";
+import { createInitialRoom } from "@/lib/roomDefaults";
 import type { Room } from "@/types/room";
 
 type Props = {
@@ -17,24 +19,7 @@ export default function HostRoomClient({ code, hostToken }: Props) {
 	const [unauthorized, setUnauthorized] = useState(false);
 	const [resolvedHostToken, setResolvedHostToken] = useState<string | null | undefined>(undefined);
 	const sessionKey = useMemo(() => `gts-host-token-${code.toUpperCase()}`, [code]);
-	const initialRoom = useMemo<Room>(
-		() => ({
-			id: 0,
-			code: code.toUpperCase(),
-			theme: "",
-			backgroundUrl: null,
-			hardcoreRequired: false,
-			scoring: {
-				guessPoints: 1,
-				detailGuessPoints: 1,
-				themeGuessPoints: 1,
-				hardcoreMultiplier: 1.5,
-			},
-			players: [],
-			songs: [],
-		}),
-		[code]
-	);
+	const initialRoom = useMemo<Room>(() => createInitialRoom(code), [code]);
 
 	const activeRoom = room?.code === initialRoom.code ? room : initialRoom;
 
@@ -92,19 +77,21 @@ export default function HostRoomClient({ code, hostToken }: Props) {
 		setUnauthorized(false);
 		hideTokenFromUrl();
 	};
+	const unauthorizedLinkMessage = "Unauthorized host link.";
 
 	if (resolvedHostToken === undefined) {
-		return <div className="p-6 text-center text-text">Validating host access...</div>;
+		return <StatusNotice message="Validating host access..." />;
 	}
 
 	if (unauthorized) {
-		return <div className="p-6 text-center text-text">Host access denied for this browser session.</div>;
+		return <StatusNotice message="Host access denied for this browser session." tone="error" />;
+	}
+
+	if (!resolvedHostToken) {
+		return <StatusNotice message={unauthorizedLinkMessage} tone="error" />;
 	}
 
 	if (activeRoom.phase && activeRoom.phase !== "LOBBY") {
-		if (!resolvedHostToken) {
-			return <div className="p-6 text-center text-text">Unauthorized host link.</div>;
-		}
 		return (
 			<HostGameView
 				code={initialRoom.code}
@@ -113,10 +100,6 @@ export default function HostRoomClient({ code, hostToken }: Props) {
 				onJoinSuccess={handleHostJoinSuccess}
 			/>
 		);
-	}
-
-	if (!resolvedHostToken) {
-		return <div className="p-6 text-center text-text">Unauthorized host link.</div>;
 	}
 	return (
 		<HostLobbyView

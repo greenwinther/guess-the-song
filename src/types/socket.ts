@@ -147,6 +147,7 @@ export type AdminDashboardPayload = {
 	}>;
 	currentSongRows: Array<{
 		playerName: string;
+		totalScore: number;
 		guessOrder: string[];
 		guessLabel: string;
 		locked: boolean;

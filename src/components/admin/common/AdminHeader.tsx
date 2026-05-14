@@ -3,19 +3,26 @@
 import Button from "@/components/shared/Button";
 import AdminBrandLink from "./AdminBrandLink";
 import styles from "@/components/admin/admin.module.css";
+import type { Room } from "@/types/room";
 
 type AdminHeaderProps = {
 	roomCode: string;
+	phase?: Room["phase"] | null;
 	hostLink?: string | null;
 	onOpenSettings?: () => void;
 };
 
-export default function AdminHeader({ roomCode, hostLink = null, onOpenSettings }: AdminHeaderProps) {
+export default function AdminHeader({
+	roomCode,
+	phase = null,
+	hostLink = null,
+	onOpenSettings,
+}: AdminHeaderProps) {
 	return (
 		<header
-			className={`${styles.panel} ${styles.panelOpen} ${styles.panelPrimary} z-20 grid items-center gap-4 rounded-b-2xl border border-border/70 border-t-0 p-4 md:grid-cols-[1fr_auto_1fr]`}
+			className={`${styles.panel} ${styles.panelOpen} ${styles.panelPrimary} ${styles.adminHeader} z-20 grid items-center gap-4 rounded-b-2xl border border-border/70 border-t-0 p-4 md:grid-cols-[1fr_auto_1fr]`}
 		>
-			<div />
+			<div aria-hidden="true" />
 			<AdminBrandLink className="justify-self-start text-center md:justify-self-center" />
 			<div className="flex items-center gap-2 self-end justify-self-end">
 				{onOpenSettings && (
@@ -53,6 +60,7 @@ export default function AdminHeader({ roomCode, hostLink = null, onOpenSettings 
 					</>
 				)}
 			</div>
+			<span className={styles.phaseBadge}>Phase {phase ?? "LOBBY"}</span>
 		</header>
 	);
 }

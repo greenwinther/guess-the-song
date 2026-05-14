@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import PlayerGameView from "@/components/player/game/PlayerGameView";
 import PlayerLobbyView from "@/components/player/lobby/PlayerLobbyView";
 import { useRoomState } from "@/contexts/gameContext";
+import { createInitialRoom } from "@/lib/roomDefaults";
 import type { Room } from "@/types/room";
 
 type Props = {
@@ -13,24 +14,7 @@ type Props = {
 
 export default function PlayerRoomClient({ code, playerName }: Props) {
 	const { room, setRoom } = useRoomState();
-	const initialRoom = useMemo<Room>(
-		() => ({
-			id: 0,
-			code: code.toUpperCase(),
-			theme: "",
-			backgroundUrl: null,
-			hardcoreRequired: false,
-			scoring: {
-				guessPoints: 1,
-				detailGuessPoints: 1,
-				themeGuessPoints: 1,
-				hardcoreMultiplier: 1.5,
-			},
-			players: [],
-			songs: [],
-		}),
-		[code]
-	);
+	const initialRoom = useMemo<Room>(() => createInitialRoom(code), [code]);
 
 	const activeRoom = room?.code === initialRoom.code ? room : initialRoom;
 
