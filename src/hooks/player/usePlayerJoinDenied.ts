@@ -35,6 +35,10 @@ export function usePlayerJoinDenied(scope: JoinDeniedScope) {
 				setJoinDenied(null);
 				return;
 			}
+			if (!parsed) {
+				setJoinDenied(null);
+				return;
+			}
 			setJoinDenied({ reason: parsed.reason, at: parsed.at });
 		};
 
