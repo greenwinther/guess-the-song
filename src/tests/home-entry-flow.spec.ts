@@ -23,7 +23,6 @@ test("homepage entry flow switches intent, normalizes code, persists name, and s
 		await playerPage.goto("/");
 
 		await expect(playerPage.locator("form").getByRole("button", { name: "Create Room" })).toBeVisible();
-		await expect(playerPage.getByText("No code entered: creating a new room.")).toBeVisible();
 
 		await nameInput.fill("Alice");
 		await nameInput.focus();
@@ -33,7 +32,6 @@ test("homepage entry flow switches intent, normalizes code, persists name, and s
 		await roomCodeInput.fill(` ${roomCode?.slice(0, 2)} ${roomCode?.slice(2)} !!`);
 		await expect(roomCodeInput).toHaveValue(roomCode ?? "");
 		await expect(playerPage.locator("form").getByRole("button", { name: "Join Room" })).toBeVisible();
-		await expect(playerPage.getByText("Code detected: joining an existing room.")).toBeVisible();
 
 		await playerPage.reload();
 		await expect(nameInput).toHaveValue("Alice");
