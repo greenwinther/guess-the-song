@@ -4,6 +4,7 @@ import { getRoomScores } from "@/lib/score";
 import {
 	getHint,
 	getLockedThisRoundList,
+	normalize,
 	getSolvedList,
 	getThemeGuessesThisRound,
 	isRevealed,
@@ -20,9 +21,9 @@ import type {
 } from "@/types/socket";
 
 const toGuessLabel = (order: string[]) => {
-	if (!order?.length) return "—";
-	if (order.length === 1) return order[0] || "—";
-	return order.filter(Boolean).join(" > ") || "—";
+	if (!order?.length) return "-";
+	if (order.length === 1) return order[0] || "-";
+	return order.filter(Boolean).join(" > ") || "-";
 };
 
 const isMultiplierEligible = (
@@ -45,12 +46,15 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		room.songs.length > 0 &&
 		room.songs.every((song) => (song.detailAnswer ?? "").trim().length > 0);
 
-	const solved = new Set(getSolvedList(code));
+	const solvedList = getSolvedList(code);
+	const solved = new Set(solvedList);
+	const solvedRankByPlayer = new Map(solvedList.map((playerName, index) => [playerName, index + 1]));
 	const guessedThisRound = new Set(getLockedThisRoundList(code));
 	const themeGuessesThisRound = {
 		...getThemeGuessesThisRound(code),
 		...(activeRound?.themeGuesses ?? {}),
 	};
+	const normalizedTheme = normalize(room.theme ?? "");
 
 	const scoreBoard = computeScoreBoard({
 		room,
@@ -61,6 +65,22 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		themeGuessPoints: room.rules.themeGuessPoints,
 		hardcoreMultiplier: room.rules.hardcoreMultiplier,
 	});
+	const solvedThemeByPlayer = new Map<string, { guess: string | null }>();
+	for (const player of room.players) {
+		if (player.isHost) continue;
+		let solvedGuess: string | null = null;
+		if (normalizedTheme) {
+			for (let i = 0; i < room.songs.length; i += 1) {
+				const song = room.songs[i];
+				const guess = rounds[song.id]?.themeGuesses?.[player.name];
+				if (!guess) continue;
+				if (normalize(guess) !== normalizedTheme) continue;
+				solvedGuess = guess;
+				break;
+			}
+		}
+		solvedThemeByPlayer.set(player.name, { guess: solvedGuess });
+	}
 
 	const currentSongRows = room.players
 		.filter((player) => !player.isHost)
@@ -69,8 +89,9 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 			const detailLockInfo = activeRound?.detailLocks?.[player.name];
 			const guessOrder = activeRound?.orders?.[player.name] ?? [];
 			const detailOrder = activeRound?.detailOrders?.[player.name] ?? [];
-			const themeGuess =
+			const roundThemeGuess =
 				activeRound?.themeGuesses?.[player.name] ?? themeGuessesThisRound[player.name] ?? null;
+			const solvedTheme = solvedThemeByPlayer.get(player.name);
 			return {
 				playerName: player.name,
 				totalScore: scoreBoard.byPlayer[player.name]?.total ?? 0,
@@ -84,7 +105,8 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 				detailLockedAt: detailLockInfo?.lockedAt ?? null,
 				themeSolved: solved.has(player.name),
 				themeGuessedThisRound: guessedThisRound.has(player.name),
-				themeGuess,
+				themeSolvedRank: solvedRankByPlayer.get(player.name) ?? null,
+				themeGuess: solvedTheme?.guess ?? roundThemeGuess,
 			};
 		});
 	const playerHistories = room.players
@@ -193,3 +215,4 @@ export async function emitAdminDashboardToHosts(
 		s.emit("ADMIN_DASHBOARD", { dashboard });
 	}
 }
+

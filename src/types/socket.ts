@@ -158,6 +158,7 @@ export type AdminDashboardPayload = {
 		detailLockedAt: number | null;
 		themeSolved: boolean;
 		themeGuessedThisRound: boolean;
+		themeSolvedRank: number | null;
 		themeGuess: string | null;
 	}>;
 	playerHistories: Array<{

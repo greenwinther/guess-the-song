@@ -26,19 +26,30 @@ const normalizeGuessLabel = (label: string) => {
 	return label;
 };
 
+const normalizeForCompare = (value: string | null | undefined) =>
+	(value ?? "")
+		.toLowerCase()
+		.normalize("NFKD")
+		.replace(/[^\p{L}\p{N} ]+/gu, "")
+		.trim();
+
 function GuessValue({
 	label,
 	locked,
 	inProgress,
+	correct = false,
 }: {
 	label: string;
 	locked: boolean;
 	inProgress: boolean;
+	correct?: boolean;
 }) {
 	const visibleLabel = normalizeGuessLabel(label);
 	return (
 		<span className="inline-flex items-center gap-2">
-			<span className={!locked && inProgress ? "text-text/80" : undefined}>{visibleLabel}</span>
+			<span className={correct ? "text-emerald-300" : !locked && inProgress ? "text-text/80" : undefined}>
+				{visibleLabel}
+			</span>
 			{locked && (
 				<FaLock className="h-3 w-3 shrink-0 text-secondary" aria-label="Locked" title="Locked" />
 			)}
@@ -59,6 +70,7 @@ export default function AdminPlayerGuessHistoryPanel({
 	const columnCount = 3 + (dashboard.hasDetailLane ? 2 : 0) + (hasTheme ? 1 : 0);
 	const colSpan = columnCount;
 	const activeSongId = dashboard.activeSongId;
+	const normalizedThemeValue = normalizeForCompare(dashboard.theme.value);
 	const songColumnWidth = 32;
 	const otherColumnCount = Math.max(columnCount - 1, 1);
 	const otherColumnWidth = `${(100 - songColumnWidth) / otherColumnCount}%`;
@@ -67,9 +79,7 @@ export default function AdminPlayerGuessHistoryPanel({
 		<section
 			className={`${styles.panel} ${styles.panelSecondary} flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 p-0 backdrop-blur-xl`}
 		>
-			<div
-				className={`${styles.tableInset} ${styles.tableScrollArea}`}
-			>
+			<div className={`${styles.tableInset} ${styles.tableScrollArea}`}>
 				<table className={`min-w-full border-separate border-spacing-0 text-sm ${styles.tableGrid}`}>
 					<colgroup>
 						<col style={{ width: `${songColumnWidth}%` }} />
@@ -105,13 +115,20 @@ export default function AdminPlayerGuessHistoryPanel({
 						)}
 						{rows.map((row) => {
 							const isActiveSong = activeSongId === row.songId;
+							const isGuessCorrect =
+								row.guessOrder.length > 0 &&
+								normalizeForCompare(row.guessOrder[0]) === normalizeForCompare(row.correctAnswer);
+							const isDetailGuessCorrect =
+								row.detailGuessOrder.length > 0 &&
+								normalizeForCompare(row.detailGuessOrder[0]) ===
+									normalizeForCompare(row.detailCorrectAnswer);
+							const isThemeGuessCorrect =
+								normalizeForCompare(row.themeGuess) !== "" &&
+								normalizedThemeValue !== "" &&
+								normalizeForCompare(row.themeGuess) === normalizedThemeValue;
+
 							return (
-								<tr
-									key={row.songId}
-									className={`${
-										isActiveSong ? "bg-secondary/10" : ""
-									}`}
-								>
+								<tr key={row.songId} className={`${isActiveSong ? "bg-secondary/10" : ""}`}>
 									<td className="py-2 px-3 text-text">
 										#{row.songIndex} {row.songTitle || "Untitled"}
 									</td>
@@ -120,6 +137,7 @@ export default function AdminPlayerGuessHistoryPanel({
 											label={row.guessLabel}
 											locked={row.locked}
 											inProgress={row.guessOrder.length > 0}
+											correct={isGuessCorrect}
 										/>
 									</td>
 									<td className="py-2 px-3 text-text text-center">{row.correctAnswer || ""}</td>
@@ -130,6 +148,7 @@ export default function AdminPlayerGuessHistoryPanel({
 													label={row.detailGuessLabel ?? ""}
 													locked={row.detailLocked}
 													inProgress={row.detailGuessOrder.length > 0}
+													correct={isDetailGuessCorrect}
 												/>
 											</td>
 											<td className="py-2 px-3 text-text text-center">
@@ -138,7 +157,11 @@ export default function AdminPlayerGuessHistoryPanel({
 										</>
 									)}
 									{hasTheme && (
-										<td className="py-2 px-3 text-text text-center">
+										<td
+											className={`py-2 px-3 text-center ${
+												isThemeGuessCorrect ? "text-emerald-300" : "text-text"
+											}`}
+										>
 											{row.themeGuess?.trim() || ""}
 										</td>
 									)}
@@ -151,3 +174,4 @@ export default function AdminPlayerGuessHistoryPanel({
 		</section>
 	);
 }
+
