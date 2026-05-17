@@ -45,8 +45,8 @@ test("admin editor becomes read-only after the live game starts", async ({
 
 		await hostPage.getByRole("button", { name: "Start Game" }).click();
 
-		await expect(adminPage.getByRole("heading", { name: "Guess History" })).toBeVisible();
 		await expect(adminPage.getByRole("heading", { name: "Song Setup" })).toHaveCount(0);
+		await expect(adminPage.getByRole("columnheader", { name: "Score" })).toBeVisible();
 		await expect(adminPage.getByPlaceholder("Secret theme (e.g., Disney)")).toHaveCount(0);
 		await expect(adminPage.getByPlaceholder("Bonus question (e.g., Year released)")).toHaveCount(0);
 		await expect(adminPage.getByRole("button", { name: "Add Song" })).toHaveCount(0);
