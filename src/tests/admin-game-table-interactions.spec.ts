@@ -61,7 +61,12 @@ test("admin game table supports row selection, sorting, and theme solve rank", a
 
 		const aliceRow = adminPage.getByRole("button", { name: "View history for Alice" });
 		await expect(aliceRow.getByTitle("Solve rank 1")).toBeVisible();
-		await expect(adminPage.getByText("Theme rank:").first()).toBeVisible();
+		const themeRankInfo = adminPage.locator('[aria-label="Theme rank info"]');
+		await expect(themeRankInfo).toBeVisible();
+		await expect(themeRankInfo).toHaveAttribute(
+			"title",
+			"Rank number shows solve order: 1 = first solver."
+		);
 
 		const bobRow = adminPage.getByRole("button", { name: "View history for Bob" });
 		await bobRow.click();
