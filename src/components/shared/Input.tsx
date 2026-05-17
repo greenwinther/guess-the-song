@@ -1,8 +1,7 @@
 "use client";
 // src/components/ui/Input.tsx
 
-import { FC, InputHTMLAttributes } from "react";
-import { forwardRef } from "react";
+import { forwardRef, InputHTMLAttributes } from "react";
 import clsx from "clsx";
 
 // Define explicit size and variant types
@@ -33,16 +32,14 @@ const variantStyles: Record<InputVariant, string> = {
 	error: "border border-red-500 focus:border-red-600 focus:ring-red-600",
 };
 
-const Input: FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
-	({ size = "md", variant = "default", className, ...props }, ref) => {
-		return (
-			<input
-				ref={ref}
-				className={clsx(baseStyles, sizeStyles[size], variantStyles[variant], className)}
-				{...props}
-			/>
-		);
-	}
+const Input = forwardRef<HTMLInputElement, InputProps>(
+	({ size = "md", variant = "default", className, ...props }, ref) => (
+		<input
+			ref={ref}
+			className={clsx(baseStyles, sizeStyles[size], variantStyles[variant], className)}
+			{...props}
+		/>
+	)
 );
 
 Input.displayName = "Input";
