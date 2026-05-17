@@ -7,8 +7,8 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 	test.setTimeout(90_000);
 
 	await page.goto("/");
-	await page.getByRole("button", { name: "Host" }).click();
-	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+	await page.fill('input[placeholder="Your Name"]', "Host");
+	await page.locator("form").getByRole("button", { name: "Create Room" }).click();
 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
@@ -25,8 +25,8 @@ test("host can kick a player and the kicked player cannot immediately rejoin", a
 	try {
 		await playerPage.goto("/");
 		await playerPage.fill('input[placeholder="Your Name"]', "Alice");
-		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
-		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
+		await playerPage.fill('input[placeholder="Room Code (Optional)"]', roomCode ?? "");
+		await playerPage.locator("form").getByRole("button", { name: "Join Room" }).click();
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 
 		await expect(hostPage.getByRole("button", { name: "Alice" })).toBeVisible();

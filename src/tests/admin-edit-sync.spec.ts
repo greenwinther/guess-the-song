@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test("admin theme and bonus question edits persist in the editor", async ({ page, context }) => {
 	await page.goto("/");
-	await page.getByRole("button", { name: "Host" }).click();
-	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+	await page.fill('input[placeholder="Your Name"]', "Host");
+	await page.locator("form").getByRole("button", { name: "Create Room" }).click();
 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];

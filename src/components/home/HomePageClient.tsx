@@ -1,11 +1,10 @@
 "use client";
 // src/components/home/HomePageClient.tsx
 
+import { useRef } from "react";
 import AvatarRandomizer from "@/components/home/components/AvatarRandomizer";
 import HomeEntryCard from "@/components/home/components/HomeEntryCard";
 import HomeHero from "@/components/home/components/HomeHero";
-import JoinOrHostToggle from "@/components/home/components/JoinOrHostToggle";
-import CardInsetLabel from "@/components/home/components/CardInsetLabel";
 import styles from "@/components/home/home.module.css";
 import AvatarPicker from "@/components/home/components/AvatarPicker";
 import Input from "@/components/shared/Input";
@@ -17,25 +16,25 @@ export default function HomePageClient() {
 	const {
 		activeEntryLocked,
 		avatarPreviewRef,
+		canSubmit,
 		cardRef,
 		creating,
 		error,
-		handleCreate,
-		handleJoin,
-		handleViewChange,
-		joinCanSubmit,
-		joinCodeError,
-		joinLocked,
-		joinNameError,
+		handleSubmit,
 		joining,
+		isJoiningFlow,
+		isRoomCodeReadyToJoin,
 		name,
+		nameError,
 		randomizeSignal,
 		roomCode,
+		roomCodeError,
 		setName,
 		setRoomCode,
 		triggerRandomize,
-		view,
 	} = useHomePageState();
+	const formRef = useRef<HTMLFormElement | null>(null);
+	const roomCodeInputRef = useRef<HTMLInputElement | null>(null);
 	const sharedAvatarSection = (
 		<>
 			<AvatarRandomizer onRandomize={triggerRandomize} disabled={activeEntryLocked} />
@@ -72,11 +71,6 @@ export default function HomePageClient() {
 					)}
 				>
 					<HomeHero />
-					<JoinOrHostToggle
-						view={view}
-						onViewChange={handleViewChange}
-						className={contentWidthClass}
-					/>
 					{error && (
 						<p
 							className="relative z-10 w-full text-center text-sm text-red-400"
@@ -86,59 +80,70 @@ export default function HomePageClient() {
 						</p>
 					)}
 					<HomeEntryCard
-						onSubmit={view === "join" ? handleJoin : handleCreate}
+						formRef={formRef}
+						onSubmit={handleSubmit}
 						className={clsx("relative z-10", contentWidthClass)}
 						topContent={
-							view === "join" ? (
-								<div className="flex items-stretch gap-2">
-									<Input
-										type="text"
-										variant={joinNameError ? "error" : "default"}
-										placeholder="Your Name"
-										value={name}
-										onChange={(e) => setName(e.target.value)}
-										required
-										className="min-w-0 flex-1"
-										disabled={joinLocked}
-									/>
-								</div>
-							) : (
-								<CardInsetLabel label="Host Ready" />
-							)
+							<div className="flex items-stretch gap-2">
+								<Input
+									type="text"
+									variant={nameError ? "error" : "default"}
+									placeholder="Your Name"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									onKeyDown={(event) => {
+										if (event.key !== "Enter") return;
+										if (!roomCode.trim()) {
+											event.preventDefault();
+											roomCodeInputRef.current?.focus();
+											return;
+										}
+										if (!isRoomCodeReadyToJoin) {
+											event.preventDefault();
+											roomCodeInputRef.current?.focus();
+											return;
+										}
+										event.preventDefault();
+										formRef.current?.requestSubmit();
+									}}
+									required
+									className="min-w-0 flex-1"
+									disabled={activeEntryLocked}
+								/>
+							</div>
 						}
 						topError={
-							view === "join" && joinNameError ? (
-								<p className="-mt-2 text-xs text-red-400">{joinNameError}</p>
-							) : undefined
+							nameError ? <p className="-mt-2 text-xs text-red-400">{nameError}</p> : undefined
 						}
 						middleContent={sharedAvatarSection}
 						bottomContent={
-							view === "join" ? (
+							<div className="flex flex-col gap-1">
 								<Input
 									type="text"
-									variant={joinCodeError ? "error" : "default"}
-									placeholder="Room Code"
+									variant={roomCodeError ? "error" : "default"}
+									placeholder="Room Code (Optional)"
+									ref={roomCodeInputRef}
 									value={roomCode}
-									onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-									required
-									maxLength={4}
+									onChange={(e) => setRoomCode(e.target.value)}
+									maxLength={12}
 									className="w-full"
-									disabled={joinLocked}
+									disabled={activeEntryLocked}
 								/>
-							) : (
-								<CardInsetLabel label="Settings in Lobby" />
-							)
+								<p className="text-xs text-text/70">
+									Enter a code to join, or leave empty to create.
+								</p>
+							</div>
 						}
 						bottomError={
-							view === "join" && joinCodeError ? (
-								<p className="-mt-2 text-xs text-red-400">{joinCodeError}</p>
+							roomCodeError ? (
+								<p className="-mt-2 text-xs text-red-400">{roomCodeError}</p>
 							) : undefined
 						}
-						submitLabel={view === "join" ? "Join Lobby" : "Create Lobby"}
+						submitLabel={isJoiningFlow ? "Join Room" : "Create Room"}
 						submitButtonClassName={styles.homeSubmitButton}
 						disabled={activeEntryLocked}
-						isLoading={view === "join" ? joining : creating}
-						canSubmit={view === "join" ? joinCanSubmit : true}
+						isLoading={isJoiningFlow ? joining : creating}
+						canSubmit={canSubmit}
 					/>
 				</div>
 			</div>

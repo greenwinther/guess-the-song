@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test("host can open the admin editor for a created room", async ({ page, context }) => {
 	await page.goto("/");
-	await page.getByRole("button", { name: "Host" }).click();
-	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+	await page.fill('input[placeholder="Your Name"]', "Host");
+	await page.locator("form").getByRole("button", { name: "Create Room" }).click();
 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
 	await expect(page.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 

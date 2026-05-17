@@ -4,8 +4,8 @@ import { test, expect } from "@playwright/test";
 test("host can create room and player can join", async ({ page, context }) => {
 	// Host flow
 	await page.goto("/");
-	await page.getByRole("button", { name: "Host" }).click();
-	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+	await page.fill('input[placeholder="Your Name"]', "Mia");
+	await page.locator("form").getByRole("button", { name: "Create Room" }).click();
 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
 	await expect(page.getByRole("heading", { name: "Song Setup" })).toBeVisible();
 
@@ -21,10 +21,9 @@ test("host can create room and player can join", async ({ page, context }) => {
 	// Open a second context for the player
 	const playerPage = await context.newPage();
 	await playerPage.goto("/");
-	await expect(playerPage.getByRole("button", { name: "Join", exact: true })).toBeVisible();
 	await playerPage.fill('input[placeholder="Your Name"]', "Alice");
-	await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
-	await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
+	await playerPage.fill('input[placeholder="Room Code (Optional)"]', roomCode ?? "");
+	await playerPage.locator("form").getByRole("button", { name: "Join Room" }).click();
 	await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 
 	// Player ready up

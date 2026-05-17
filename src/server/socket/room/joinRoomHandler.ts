@@ -107,7 +107,7 @@ export const joinRoomHandler = (
 
 				socket.data.roomMeta = { code, playerName: player.name };
 
-				if (created && player.name !== "Host") {
+				if (created && !player.isHost) {
 					io.to(code).emit("playerJoined", player);
 				}
 

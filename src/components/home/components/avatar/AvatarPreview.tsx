@@ -31,10 +31,23 @@ export default function AvatarPreview({
 	const avatarSizeClass = compact ? "w-40 h-40" : "w-48 h-48";
 	const imageSize = compact ? "160px" : "192px";
 	const isBaseLayer = (layer: AvatarLayer) => layer === "base";
+	const transitionClassNames = (layer: AvatarLayer, direction: 1 | -1) => {
+		if (isBaseLayer(layer)) {
+			return {
+				from: "avatar-layer-fade-out",
+				to: "avatar-layer-fade-in",
+			};
+		}
+		return {
+			from: direction === 1 ? "avatar-layer-out-right" : "avatar-layer-out-left",
+			to: direction === 1 ? "avatar-layer-in-left" : "avatar-layer-in-right",
+		};
+	};
 
 	const renderLayer = (layer: AvatarLayer) => {
 		const transition = transitions[layer];
 		if (transition) {
+			const transitionClasses = transitionClassNames(layer, transition.direction);
 			return (
 				<div key={`${layer}-${transition.key}`} className="avatar-layer-stage">
 					{transition.fromSrc && (
@@ -45,10 +58,7 @@ export default function AvatarPreview({
 							sizes={imageSize}
 							priority={isBaseLayer(layer)}
 							loading={isBaseLayer(layer) ? "eager" : "lazy"}
-							className={clsx(
-								layerImageClass,
-								transition.direction === 1 ? "avatar-layer-out-right" : "avatar-layer-out-left",
-							)}
+							className={clsx(layerImageClass, transitionClasses.from)}
 						/>
 					)}
 					{transition.toSrc && (
@@ -59,10 +69,7 @@ export default function AvatarPreview({
 							sizes={imageSize}
 							priority={isBaseLayer(layer)}
 							loading={isBaseLayer(layer) ? "eager" : "lazy"}
-							className={clsx(
-								layerImageClass,
-								transition.direction === 1 ? "avatar-layer-in-left" : "avatar-layer-in-right",
-							)}
+							className={clsx(layerImageClass, transitionClasses.to)}
 						/>
 					)}
 				</div>

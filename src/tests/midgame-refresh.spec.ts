@@ -4,8 +4,8 @@ test("host and player can reload into an active round", async ({ page, context, 
 	test.setTimeout(90_000);
 
 	await page.goto("/");
-	await page.getByRole("button", { name: "Host" }).click();
-	await page.locator("form").getByRole("button", { name: "Create Lobby" }).click();
+	await page.fill('input[placeholder="Your Name"]', "Host");
+	await page.locator("form").getByRole("button", { name: "Create Room" }).click();
 	await expect(page).toHaveURL(/\/admin\/[A-Z0-9]{4}$/);
 
 	const roomCode = page.url().match(/\/admin\/([A-Z0-9]{4})$/)?.[1];
@@ -29,8 +29,8 @@ test("host and player can reload into an active round", async ({ page, context, 
 	try {
 		await playerPage.goto("/");
 		await playerPage.fill('input[placeholder="Your Name"]', "Alice");
-		await playerPage.fill('input[placeholder="Room Code"]', roomCode ?? "");
-		await playerPage.locator("form").getByRole("button", { name: "Join Lobby" }).click();
+		await playerPage.fill('input[placeholder="Room Code (Optional)"]', roomCode ?? "");
+		await playerPage.locator("form").getByRole("button", { name: "Join Room" }).click();
 		await expect(playerPage).toHaveURL(new RegExp(`/join/${roomCode}\\?name=Alice$`));
 		await playerPage.locator("#player-ready").click();
 

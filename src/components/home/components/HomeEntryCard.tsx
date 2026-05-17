@@ -1,11 +1,12 @@
 "use client";
 
 import clsx from "clsx";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent, ReactNode, Ref } from "react";
 import Button from "@/components/shared/Button";
 
 type HomeEntryCardProps = {
 	onSubmit: (e: FormEvent) => void;
+	formRef?: Ref<HTMLFormElement>;
 	className?: string;
 	topContent?: ReactNode;
 	topError?: ReactNode;
@@ -21,6 +22,7 @@ type HomeEntryCardProps = {
 
 export default function HomeEntryCard({
 	onSubmit,
+	formRef,
 	className,
 	topContent,
 	topError,
@@ -37,7 +39,7 @@ export default function HomeEntryCard({
 	const contentClassName = clsx("flex w-full flex-col gap-3", className);
 
 	return (
-		<form onSubmit={onSubmit} className={contentClassName}>
+		<form ref={formRef} onSubmit={onSubmit} className={contentClassName}>
 			{topContent}
 			{topError}
 			{middleContent}

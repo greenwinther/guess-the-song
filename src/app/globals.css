@@ -227,6 +227,24 @@ body {
 	}
 }
 
+@keyframes avatar-layer-fade-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes avatar-layer-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
 .ready-hand {
 	display: inline-flex;
 	animation: raise-hand 1.2s ease-in-out infinite;
@@ -290,11 +308,21 @@ body {
 	animation: avatar-layer-in-right 220ms ease-out both;
 }
 
+.avatar-layer-fade-out {
+	animation: avatar-layer-fade-out 220ms ease-out both;
+}
+
+.avatar-layer-fade-in {
+	animation: avatar-layer-fade-in 220ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.avatar-layer-out-right,
 	.avatar-layer-out-left,
 	.avatar-layer-in-left,
 	.avatar-layer-in-right,
+	.avatar-layer-fade-out,
+	.avatar-layer-fade-in,
 	.ready-pulse,
 	.lobby-status-beacon,
 	.background-shell-cinema-enter {

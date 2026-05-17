@@ -145,6 +145,16 @@ export function joinRoomWithIdentity(
 	pruneKicks(room);
 	const normalizedClientId = normalizeClientId(clientId ?? "");
 	if (!normalizedClientId) throw new Error("Unauthorized");
+	const hasValidHostToken = Boolean(hostToken && hostToken === room.hostAccessToken);
+	if (hasValidHostToken) {
+		const existingHost = room.players.find((player) => player.isHost);
+		if (!existingHost) throw new Error("Unauthorized");
+		if (avatar && !existingHost.avatar) existingHost.avatar = avatar;
+		existingHost.connected = true;
+		touch(room);
+		notifyStateChange();
+		return { player: existingHost, created: false };
+	}
 
 	const displayName = name?.trim() || "Player";
 	const normalized = normalizeName(displayName);

@@ -37,8 +37,7 @@ export default function RoomPlayerList({
 }: PlayerListProps) {
 	const lockedSet = new Set(lockedNames);
 	const [actionForId, setActionForId] = useState<number | null>(null);
-	const hasFallback =
-		!!fallbackName && !players.some((p) => p.name.toLowerCase() === fallbackName.toLowerCase());
+	const hasFallback = !!fallbackName && !players.some((player) => player.isHost);
 	const hasAvatar = (avatar?: Member["avatar"]) => Boolean(avatar?.base);
 	return (
 		<div className={`flex min-h-0 flex-col w-full ${className ?? ""}`}>
@@ -160,14 +159,23 @@ export default function RoomPlayerList({
 								</span>
 							)}
 
-							{/* Songs locked count */}
-							{showLockCounts && (
+							{/* Host role badge or songs locked count */}
+							{p.isHost ? (
 								<span
-									className="ml-auto text-xs opacity-70 tabular-nums"
-									title="Songs locked"
+									className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-secondary/35 bg-secondary/10 text-secondary"
+									title="Host"
 								>
-									{lockCount}
+									HOST
 								</span>
+							) : (
+								showLockCounts && (
+									<span
+										className="ml-auto text-xs opacity-70 tabular-nums"
+										title="Songs locked"
+									>
+										{lockCount}
+									</span>
+								)
 							)}
 
 							{onKick && !p.isHost && actionForId === p.id && (
