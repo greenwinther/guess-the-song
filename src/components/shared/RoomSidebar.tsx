@@ -16,6 +16,7 @@ export default function RoomSidebar({
 	solvedByTheme = [],
 	lockedForThisRound = [],
 	onKick,
+	className,
 }: {
 	roomCode?: string;
 	players: Member[];
@@ -27,9 +28,10 @@ export default function RoomSidebar({
 	solvedByTheme?: string[];
 	lockedForThisRound?: string[];
 	onKick?: (player: Member) => void;
+	className?: string;
 }) {
 	return (
-		<aside className={`${LEFT_SIDEBAR_PANEL_CLASS} flex flex-col items-center gap-4`}>
+		<aside className={`${LEFT_SIDEBAR_PANEL_CLASS} ${className ?? ""} flex flex-col items-center gap-3 sm:gap-4`}>
 			<div className="flex w-full items-start justify-center">
 				<h1 className="pb-1 text-center text-3xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] leading-[1.15]">
 					Guess the song
@@ -77,7 +79,7 @@ export default function RoomSidebar({
 				onKick={onKick}
 			/>
 			{players.length > 0 && (
-				<div className="grid w-full grid-cols-3 gap-2 text-[10px] text-text-muted">
+				<div className="grid w-full grid-cols-3 gap-2 text-[9px] text-text-muted sm:text-[10px]">
 					<div
 						className="flex flex-col items-center gap-1 rounded-md border border-border/45 bg-black/10 px-1.5 py-2 text-center"
 						title="Locked current song"

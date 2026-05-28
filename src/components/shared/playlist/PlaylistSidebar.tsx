@@ -9,6 +9,7 @@ type PlaylistSidebarProps = {
 	title?: string;
 	useSongArtworkBackground?: boolean;
 	onToggleSongArtworkBackground?: () => void;
+	className?: string;
 };
 
 export default function PlaylistSidebar({
@@ -19,10 +20,11 @@ export default function PlaylistSidebar({
 	title = "Playlist",
 	useSongArtworkBackground,
 	onToggleSongArtworkBackground,
+	className,
 }: PlaylistSidebarProps) {
 	return (
-		<aside className={`${RIGHT_PLAYLIST_PANEL_CLASS} gap-4`}>
-			<div className="flex items-start justify-between gap-3 pt-1">
+		<aside className={`${RIGHT_PLAYLIST_PANEL_CLASS} ${className ?? ""} gap-3 sm:gap-4`}>
+			<div className="flex flex-wrap items-start justify-between gap-2 pt-1">
 				<h2 className="text-lg sm:text-xl font-semibold text-text">{title}</h2>
 				{onToggleSongArtworkBackground && (
 					<button

@@ -51,7 +51,7 @@ export default function HomePageClient() {
 	return (
 		<main
 			className="
-			relative isolate min-h-screen overflow-hidden flex flex-col items-center justify-center p-8
+			relative isolate min-h-screen overflow-hidden flex flex-col items-center justify-center p-0 sm:p-8
 			bg-gradient-to-br from-bg to-secondary
 			"
 		>

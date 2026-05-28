@@ -30,8 +30,8 @@ export default function BackgroundShell({
 		: undefined;
 	const canvasClassName =
 		variant === "workspace"
-			? "relative isolate flex min-h-screen justify-center overflow-hidden bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center px-4 pb-4 pt-0 sm:px-6 sm:pb-6 sm:pt-0 lg:px-8 lg:pb-8 lg:pt-0"
-			: "relative isolate flex min-h-screen justify-center overflow-hidden bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8";
+			? "relative isolate flex min-h-screen justify-center overflow-hidden bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center px-0 pb-0 pt-0 sm:px-6 sm:pb-6 sm:pt-0 lg:px-8 lg:pb-8 lg:pt-0"
+			: "relative isolate flex min-h-screen justify-center overflow-hidden bg-gradient-to-br from-bg to-secondary bg-no-repeat bg-cover bg-center px-0 py-0 sm:px-6 sm:py-6 lg:px-8 lg:py-8";
 	const defaultShellSizeClassName =
 		shellSize === "lobby"
 			? "max-w-[80rem]"

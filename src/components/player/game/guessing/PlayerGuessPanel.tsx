@@ -68,7 +68,7 @@ export function PlayerGuessPanel({
 
 			<p className="mb-4 text-sm opacity-80">
 				<span className="sm:hidden">
-					Song {currentIndex + 1} - tap each slot to choose a player, then lock each answer.
+					Tap each slot to choose a player, then lock each answer.
 				</span>
 				<span className="hidden sm:inline">
 					Song {currentIndex + 1} - drag to arrange both lists, then lock each answer.
@@ -97,7 +97,7 @@ export function PlayerGuessPanel({
 						lockedIndices={lockedIndices}
 					/>
 
-					<div className="mt-5 flex w-full max-w-md items-center gap-3">
+					<div className="mt-5 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:items-center">
 						<Button
 							onClick={onLockCurrent}
 							variant="primary"
@@ -109,7 +109,7 @@ export function PlayerGuessPanel({
 						</Button>
 
 						{undoVisible && onUndo && (
-							<Button onClick={onUndo} variant="secondary" size="sm">
+							<Button onClick={onUndo} variant="secondary" size="sm" className="w-full sm:w-auto">
 								Undo (2s)
 							</Button>
 						)}
@@ -135,8 +135,9 @@ export function PlayerGuessPanel({
 							onDragEnd={onDetailReorder}
 							currentIndex={currentIndex}
 							lockedIndices={detailLockedIndices ?? []}
+							showNumbers={false}
 						/>
-						<div className="mt-5 flex w-full max-w-md items-center gap-3">
+						<div className="mt-5 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:items-center">
 							<Button
 								onClick={onLockDetail}
 								variant="primary"
@@ -147,7 +148,12 @@ export function PlayerGuessPanel({
 								{submitted ? "Submitted" : "Lock in bonus"}
 							</Button>
 							{detailUndoVisible && onDetailUndo && (
-								<Button onClick={onDetailUndo} variant="secondary" size="sm">
+								<Button
+									onClick={onDetailUndo}
+									variant="secondary"
+									size="sm"
+									className="w-full sm:w-auto"
+								>
 									Undo (2s)
 								</Button>
 							)}
@@ -160,7 +166,7 @@ export function PlayerGuessPanel({
 					</div>
 				)}
 			</div>
-			<div className="mt-5 flex items-center gap-3">
+			<div className="mt-5 flex w-full max-w-md items-center gap-3">
 				{showSubmitAll && onSubmitAll && (
 					<Button
 						onClick={() => setConfirmSubmitOpen(true)}

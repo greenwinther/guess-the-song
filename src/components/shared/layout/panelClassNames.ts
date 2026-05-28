@@ -8,7 +8,7 @@ export const CENTER_GAME_PANEL_CLASS =
 	"order-2 lg:col-span-6 p-4 pt-5 sm:p-4 sm:pt-5 flex min-h-0 flex-col";
 
 export const CENTER_LOBBY_PANEL_CLASS =
-	"order-2 relative flex min-h-[36rem] w-full flex-col justify-start p-5 pt-10 sm:p-7 sm:pt-14 lg:col-span-6";
+	"order-2 relative flex min-h-0 w-full flex-col justify-start p-5 pt-8 sm:min-h-[36rem] sm:p-7 sm:pt-14 lg:col-span-6";
 
 export const ROOM_SHELL_HEIGHT_CLASS =
 	"h-[calc(100vh-2rem)] sm:h-[calc(100vh-3rem)] lg:h-[calc(100vh-4rem)]";

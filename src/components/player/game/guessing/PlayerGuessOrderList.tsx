@@ -27,6 +27,7 @@ interface PlayerGuessOrderListProps {
 	onDragEnd: (newOrder: OrderItem[]) => void;
 	currentIndex: number;
 	lockedIndices: number[];
+	showNumbers?: boolean;
 }
 
 export default function PlayerGuessOrderList({
@@ -35,6 +36,7 @@ export default function PlayerGuessOrderList({
 	onDragEnd,
 	currentIndex,
 	lockedIndices,
+	showNumbers = true,
 }: PlayerGuessOrderListProps) {
 	const [activeId, setActiveId] = useState<number | null>(null);
 	const [pickerIndex, setPickerIndex] = useState<number | null>(null);
@@ -121,10 +123,7 @@ export default function PlayerGuessOrderList({
 	return (
 		<div className="w-full max-w-md rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] sm:px-1.5 sm:py-1.5">
 			<div className="sm:hidden">
-				<div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-					Tap a slot to choose a player{order.length > 5 ? " • scroll for more" : ""}
-				</div>
-				<ul className="scrollbar-hidden flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
+				<ul className="scrollbar-hidden flex max-h-[min(28rem,68vh)] flex-col gap-1.5 overflow-y-auto pr-1">
 					{order.map((item, index) => {
 						const disabled = submitted || lockedSet.has(index);
 						const isPickerOpen = pickerIndex === index;
@@ -137,7 +136,7 @@ export default function PlayerGuessOrderList({
 										if (!disabled) setPickerIndex(isPickerOpen ? null : index);
 									}}
 									disabled={disabled}
-									className={`flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-colors ${
+									className={`flex w-full items-center ${showNumbers ? "gap-2.5" : "gap-2"} rounded-md border px-2.5 py-1.5 text-left shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-colors ${
 										index === currentIndex
 											? "border-primary bg-primary/15"
 											: "border-border/70 bg-card/45"
@@ -148,25 +147,27 @@ export default function PlayerGuessOrderList({
 									}`}
 									title={disabled ? "Locked" : index === currentIndex ? "Current song" : undefined}
 								>
-									<span
-										className={`grid h-9 w-9 shrink-0 place-items-center rounded-md border font-mono text-sm ${
-											index === currentIndex
-												? "border-primary bg-primary/15 text-secondary"
-												: "border-border/60 bg-black/10 text-text-muted"
-										}`}
-									>
-										{index + 1}.
-									</span>
+									{showNumbers && (
+										<span
+											className={`grid h-8 w-8 shrink-0 place-items-center rounded-md border font-mono text-xs ${
+												index === currentIndex
+													? "border-primary bg-primary/15 text-secondary"
+													: "border-border/60 bg-black/10 text-text-muted"
+											}`}
+										>
+											{index + 1}.
+										</span>
+									)}
 									<div className="min-w-0 flex-1">
 										<p className="truncate font-medium">{item.name}</p>
-										<p className="mt-0.5 text-xs uppercase tracking-[0.14em] text-text-muted">
+											<p className="mt-0.5 text-[11px] uppercase tracking-[0.13em] text-text-muted">
 											{disabled ? "Locked" : isPickerOpen ? "Tap a player below" : "Tap to change"}
 										</p>
 									</div>
 								</button>
 
 								{isPickerOpen && (
-									<div className="mt-2 rounded-md border border-border/70 bg-card/45 p-2 shadow-[inset_0_1px_0_rgb(255_255_255/0.03)]">
+										<div className="mt-1.5 rounded-md border border-border/70 bg-card/45 p-2 shadow-[inset_0_1px_0_rgb(255_255_255/0.03)]">
 										<div className="mb-2 flex items-center justify-between gap-2 px-1">
 											<p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
 												Choose player for slot {index + 1}
@@ -181,7 +182,7 @@ export default function PlayerGuessOrderList({
 												Close
 											</Button>
 										</div>
-										<div className="scrollbar-hidden flex max-h-48 flex-col gap-2 overflow-y-auto">
+											<div className="scrollbar-hidden flex max-h-52 flex-col gap-1.5 overflow-y-auto">
 											{pickerOptions.map(({ item: option, index: optionIndex }) => (
 												<button
 													key={`${option.id}-${optionIndex}`}
@@ -226,6 +227,7 @@ export default function PlayerGuessOrderList({
 									index={index}
 									disabled={submitted || lockedSet.has(index)}
 									isCurrent={index === currentIndex}
+									showNumbers={showNumbers}
 								/>
 							))}
 						</ul>
@@ -242,30 +244,34 @@ function SortableItem({
 	index,
 	disabled,
 	isCurrent,
+	showNumbers,
 }: {
 	id: number;
 	name: string;
 	index: number;
 	disabled: boolean;
 	isCurrent: boolean;
+	showNumbers: boolean;
 }) {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 	const style = { transform: CSS.Transform.toString(transform), transition };
 
 	return (
 		<li
-			className="flex items-center gap-2.5 text-text"
+			className={`flex items-center ${showNumbers ? "gap-2.5" : "gap-2"} text-text`}
 			title={disabled ? "Locked" : isCurrent ? "Current song" : undefined}
 		>
-			<span
-				className={`grid h-9 w-9 shrink-0 place-items-center rounded-md border font-mono text-sm ${
-					isCurrent
-						? "border-primary bg-primary/15 text-secondary"
-						: "border-border/60 bg-black/10 text-text-muted"
-				}`}
-			>
-				{index + 1}.
-			</span>
+			{showNumbers && (
+				<span
+					className={`grid h-9 w-9 shrink-0 place-items-center rounded-md border font-mono text-sm ${
+						isCurrent
+							? "border-primary bg-primary/15 text-secondary"
+							: "border-border/60 bg-black/10 text-text-muted"
+					}`}
+				>
+					{index + 1}.
+				</span>
+			)}
 			<div
 				ref={setNodeRef}
 				style={style}
@@ -287,3 +293,4 @@ function SortableItem({
 		</li>
 	);
 }
+

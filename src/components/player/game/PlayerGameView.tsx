@@ -13,6 +13,8 @@ import { useRevealedSongsSync } from "@/hooks/player/useRevealedSongsSync";
 import { useSubmissionOrder } from "@/hooks/player/useSubmissionOrder";
 import { useDetailOrder } from "@/hooks/player/useDetailOrder";
 import BackgroundShell from "@/components/shared/BackgroundShell";
+import Button from "@/components/shared/Button";
+import MobileSideDrawer from "@/components/shared/MobileSideDrawer";
 import RoomSidebar from "@/components/shared/RoomSidebar";
 import StatusNotice from "@/components/shared/StatusNotice";
 
@@ -24,10 +26,7 @@ import ExportGameReportButton from "@/components/shared/ExportGameReportButton";
 import type { OrderItem } from "@/components/player/game/guessing/PlayerGuessOrderList";
 import { useThemeSocketSync } from "@/hooks/shared/useThemeSocketSync";
 import { PlayerThemeGuessBar } from "@/components/player/game/guessing/PlayerThemeGuessBar";
-import {
-	CENTER_GAME_PANEL_CLASS,
-	ROOM_SHELL_HEIGHT_CLASS,
-} from "@/components/shared/layout/panelClassNames";
+import { CENTER_GAME_PANEL_CLASS } from "@/components/shared/layout/panelClassNames";
 
 interface Props {
 	code: string;
@@ -56,6 +55,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const [resultRowPoints, setResultRowPoints] = useState<number[] | null>(null);
 	const [themeBonusPoints, setThemeBonusPoints] = useState<number>(0);
 	const [exportReady, setExportReady] = useState(false);
+	const [drawer, setDrawer] = useState<"players" | "playlist" | null>(null);
 	const { clearJoinDenied, joinDenied } = usePlayerJoinDenied({
 		code,
 		playerName,
@@ -552,13 +552,16 @@ export default function PlayerGameView({ code, playerName }: Props) {
 		router.push("/");
 	};
 
+	const shellHeightClassName =
+		"h-auto min-h-[calc(100vh-2rem)] overflow-x-hidden overflow-y-auto sm:min-h-[calc(100vh-3rem)] lg:h-[calc(100vh-4rem)] lg:min-h-0 lg:overflow-hidden";
+
 	return (
 		<BackgroundShell
 			bgImage={bgImage}
 			socketError={socketError}
 			shellSize="cinema"
 			transitionPreset="cinema-enter"
-			contentClassName={ROOM_SHELL_HEIGHT_CLASS}
+			contentClassName={shellHeightClassName}
 		>
 			{joinDenied && (
 				<PlayerJoinDeniedBanner joinDenied={joinDenied} onBackToStart={handleBackToStart} />
@@ -573,10 +576,31 @@ export default function PlayerGameView({ code, playerName }: Props) {
 				lockedCounts={lockedCounts}
 				solvedByTheme={solvedByTheme}
 				lockedForThisRound={lockedForThisRound}
+				className="order-2 !hidden lg:!flex lg:order-1 lg:!h-full"
 			/>
 
 			{/* CENTER */}
-			<main className={CENTER_GAME_PANEL_CLASS}>
+			<main className={`${CENTER_GAME_PANEL_CLASS} order-1 lg:order-2`}>
+				<div className="mb-4 mt-14 flex gap-2 sm:mt-0 lg:hidden">
+					<Button
+						type="button"
+						variant="secondary"
+						size="sm"
+						className="flex-1"
+						onClick={() => setDrawer("players")}
+					>
+						Players
+					</Button>
+					<Button
+						type="button"
+						variant="secondary"
+						size="sm"
+						className="flex-1"
+						onClick={() => setDrawer("playlist")}
+					>
+						Playlist
+					</Button>
+				</div>
 				{isEndedMode ? (
 					<>
 						<PlayerResultsPanel
@@ -641,7 +665,41 @@ export default function PlayerGameView({ code, playerName }: Props) {
 				currentSongId={currentSongId}
 				useSongArtworkBackground={useSongArtworkBackground}
 				onToggleSongArtworkBackground={() => setUseSongArtworkBackground((current) => !current)}
+				className="order-3 !hidden lg:!flex lg:order-3 lg:!h-full"
 			/>
+			<MobileSideDrawer
+				open={drawer === "players"}
+				title="Players"
+				side="left"
+				onClose={() => setDrawer(null)}
+			>
+				<RoomSidebar
+					roomCode={room.code}
+					players={room.players}
+					submittedPlayers={submittedPlayers}
+					fallbackName="Host"
+					lockedNames={currentLockedNames}
+					lockedCounts={lockedCounts}
+					solvedByTheme={solvedByTheme}
+					lockedForThisRound={lockedForThisRound}
+					className="!h-full !border-0 !p-4 !pt-4"
+				/>
+			</MobileSideDrawer>
+			<MobileSideDrawer
+				open={drawer === "playlist"}
+				title="Playlist"
+				side="right"
+				onClose={() => setDrawer(null)}
+			>
+				<PlayerPlaylistPanel
+					songs={room.songs}
+					revealedIds={revealedSongs}
+					currentSongId={currentSongId}
+					useSongArtworkBackground={useSongArtworkBackground}
+					onToggleSongArtworkBackground={() => setUseSongArtworkBackground((current) => !current)}
+					className="!h-full !border-0 !p-4 !pt-4"
+				/>
+			</MobileSideDrawer>
 		</BackgroundShell>
 	);
 }

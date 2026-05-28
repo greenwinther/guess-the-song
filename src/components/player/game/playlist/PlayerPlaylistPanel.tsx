@@ -9,6 +9,7 @@ export default function PlayerPlaylistPanel({
 	variant = "game",
 	useSongArtworkBackground,
 	onToggleSongArtworkBackground,
+	className,
 }: {
 	songs: Submission[];
 	revealedIds: number[];
@@ -16,6 +17,7 @@ export default function PlayerPlaylistPanel({
 	variant?: "game" | "lobby";
 	useSongArtworkBackground?: boolean;
 	onToggleSongArtworkBackground?: () => void;
+	className?: string;
 }) {
 	const isLobby = variant === "lobby";
 
@@ -25,6 +27,7 @@ export default function PlayerPlaylistPanel({
 			emptyMessage="Waiting for the host to add songs."
 			onToggleSongArtworkBackground={onToggleSongArtworkBackground}
 			useSongArtworkBackground={useSongArtworkBackground}
+			className={className}
 		>
 			<>
 				{songs.map((s, idx) => (

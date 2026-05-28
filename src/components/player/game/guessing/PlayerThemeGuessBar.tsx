@@ -35,7 +35,7 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 	if (!room?.theme) return null;
 	if (room.phase && room.phase !== "GUESSING" && room.phase !== "RECAP") return null;
 
-	// ✅ If I solved it: show message instead of the form
+	// If I solved it: show message instead of the form
 	if (iSolved) {
 		return (
 			<div
@@ -54,8 +54,8 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 	const placeholder = themeRevealed
 		? "Theme revealed"
 		: iLockedThisRound
-		? "You’ve guessed this round"
-		: "Guess the theme";
+			? "You've guessed this round"
+			: "Guess the theme";
 
 	const onSubmit = (e: FormEvent) => {
 		e.preventDefault();
@@ -73,19 +73,19 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 	};
 
 	return (
-		<form onSubmit={onSubmit} className="flex gap-2 items-center">
+		<form onSubmit={onSubmit} className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
 			<Input
 				value={value}
 				onChange={(e) => setValue(e.target.value)}
 				onKeyDown={onKeyDown}
 				size="md"
 				variant="default"
-				className="flex-1 bg-card text-text placeholder:text-text-muted"
+				className="w-full bg-card text-text placeholder:text-text-muted sm:flex-1"
 				placeholder={placeholder}
 				disabled={disabled}
 				aria-label="Theme guess"
 			/>
-			<Button type="submit" variant="primary" size="md" disabled={disabled}>
+			<Button type="submit" variant="primary" size="md" disabled={disabled} className="w-full sm:w-auto">
 				Lock in theme
 			</Button>
 		</form>

@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import type { ReactNode } from "react";
 import { FaBolt, FaCheck, FaClock, FaThumbsUp } from "react-icons/fa";
 
 import type { Room } from "@/types/room";
@@ -14,6 +15,7 @@ type PlayerLobbyCardProps = {
 	onReadyChange: (checked: boolean) => void;
 	ready: boolean;
 	room: Room;
+	mobileActions?: ReactNode;
 };
 
 export default function PlayerLobbyCard({
@@ -22,6 +24,7 @@ export default function PlayerLobbyCard({
 	onReadyChange,
 	ready,
 	room,
+	mobileActions,
 }: PlayerLobbyCardProps) {
 	const nonHostPlayers = room.players.filter((player) => !player.isHost);
 	const readyCount = nonHostPlayers.filter((player) => player.ready).length;
@@ -51,10 +54,11 @@ export default function PlayerLobbyCard({
 	];
 
 	return (
-		<main className={CENTER_LOBBY_PANEL_CLASS}>
-			<div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center gap-14 text-center">
+		<main className={`${CENTER_LOBBY_PANEL_CLASS} order-1 lg:order-2`}>
+			<div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center gap-8 text-center sm:gap-12">
+				{mobileActions}
 				<div className="flex flex-col items-center gap-5">
-					<h2 className="w-full max-w-[31rem] whitespace-nowrap text-3xl font-extrabold leading-tight text-text sm:text-4xl">
+					<h2 className="w-full max-w-[31rem] text-3xl font-extrabold leading-tight text-text sm:text-4xl">
 						Welcome to the lobby
 					</h2>
 					<p className="max-w-md text-sm leading-relaxed text-text-muted sm:text-base">
