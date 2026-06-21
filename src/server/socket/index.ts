@@ -10,6 +10,7 @@ import { playSongHandler } from "./game/playSongHandler";
 import { revealedSongsHandler } from "./game/revealedSongsHandler";
 import { revealSubmitterHandler } from "./game/revealSubmitterHandler";
 import { showResultHandler } from "./game/showResultsHandler";
+import { songGuessStatsHandler } from "./game/songGuessStatsHandler";
 import { startGameHandler } from "./game/startGameHandler";
 import { lockAnswerHandler } from "./guesses/lockAnswerHandler";
 import { lockDetailAnswerHandler } from "./guesses/lockDetailAnswerHandler";
@@ -54,6 +55,7 @@ export const registerSocketHandlers = (
 	beginRecapHandler(io, socket);
 	finalizeResultsHandler(io, socket);
 	showResultHandler(io, socket);
+	songGuessStatsHandler(io, socket);
 	revealedSongsHandler(io, socket);
 	revealSubmitterHandler(io, socket);
 

@@ -153,6 +153,10 @@ export const finalizeResultsPayloadSchema = z.object({
 	code: roomCodeSchema,
 });
 
+export const getSongGuessStatsPayloadSchema = z.object({
+	code: roomCodeSchema,
+});
+
 export const selectOrderPayloadSchema = z.object({
 	code: roomCodeSchema,
 	songId: songIdSchema,

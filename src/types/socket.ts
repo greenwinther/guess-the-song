@@ -63,6 +63,19 @@ export type NextSongPayload = { code: string };
 export type ShowResultsPayload = { code: string };
 export type FinalizeResultsPayload = { code: string };
 export type BeginRecapPayload = { code: string };
+export type GetSongGuessStatsPayload = { code: string };
+export type SongGuessStats = {
+	songId: number;
+	totalPlayers: number;
+	guessedCount: number;
+	correctGuessers: string[];
+	wrongCount: number;
+	noAnswerCount: number;
+	commonWrongGuesses: Array<{ guess: string; count: number }>;
+};
+export type GetSongGuessStatsResponse =
+	| { ok: true; stats: SongGuessStats[] }
+	| { ok: false; error: "NOT_AUTHORIZED" | "ROOM_NOT_FOUND" | "BAD_REQUEST" };
 
 export type SelectOrderPayload = {
 	code: string;
@@ -211,6 +224,10 @@ export type ClientToServerEvents = {
 	beginRecap: (data: BeginRecapPayload, cb?: (ok: boolean) => void) => void;
 	showResults: (data: ShowResultsPayload, cb: (ok: boolean) => void) => void;
 	finalizeResults: (data: FinalizeResultsPayload, cb?: (ok: boolean) => void) => void;
+	getSongGuessStats: (
+		data: GetSongGuessStatsPayload,
+		cb: (res: GetSongGuessStatsResponse) => void,
+	) => void;
 	selectOrder: (data: SelectOrderPayload, cb?: (ok: boolean) => void) => void;
 	selectDetailOrder: (data: SelectDetailOrderPayload, cb?: (ok: boolean) => void) => void;
 	submitAllOrders: (data: SubmitAllOrdersPayload, cb: (ok: boolean) => void) => void;
