@@ -309,10 +309,10 @@ export default function HostResultsPanel({
 					Final reveal
 				</p>
 				<h2 className="mt-1 font-display text-3xl font-extrabold text-text sm:text-4xl">
-					Podium Moment
+					Final Results
 				</h2>
 				<p className="mt-2 max-w-xl text-sm text-text-muted">
-					Reveal the top score groups from third to first. Tied players share the same step.
+					Podium moment: reveal the top score groups from third to first. Tied players share the same step.
 				</p>
 			</div>
 

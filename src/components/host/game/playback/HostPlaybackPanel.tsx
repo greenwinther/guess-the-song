@@ -88,14 +88,16 @@ export default function HostPlaybackPanel({
 					themeRevealed={themeRevealed}
 					onRevealTheme={() => socket.emit("THEME_REVEAL", { code: room.code })}
 				/>
-				<div className="flex justify-center">
-					<ExportGameReportButton
-						code={room.code || code}
-						scores={scores}
-						theme={resultTheme}
-						variant="secondary"
-					/>
-				</div>
+				{room.phase === "ENDED" && (
+					<div className="flex justify-center">
+						<ExportGameReportButton
+							code={room.code || code}
+							scores={scores}
+							theme={resultTheme}
+							variant="secondary"
+						/>
+					</div>
+				)}
 			</>
 		);
 	}

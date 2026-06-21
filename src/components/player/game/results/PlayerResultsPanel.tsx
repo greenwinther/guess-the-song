@@ -86,8 +86,14 @@ export function PlayerResultsPanel({
 					Final results
 				</p>
 				<h1 className="mt-1 font-display text-3xl font-extrabold text-text sm:text-4xl">
-					{displayScore} pts
+					Results
 				</h1>
+				<p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+					Final score
+				</p>
+				<p className="mt-1 font-display text-3xl font-extrabold text-text sm:text-4xl">
+					{displayScore} pts
+				</p>
 				<div className="mx-auto mt-4 grid max-w-2xl gap-2 sm:grid-cols-3">
 					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
 						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
