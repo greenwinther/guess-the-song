@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-	addSongBodySchema,
 	createRoomBodySchema,
 	roomCodeParamsSchema,
 	validateWithZod,
@@ -48,23 +47,3 @@ test("createRoomBodySchema applies defaults", () => {
 	});
 });
 
-test("addSongBodySchema rejects invalid URLs", () => {
-	const result = validateWithZod(addSongBodySchema, { url: "not-a-url", submitter: "Alice" });
-	assert.equal(result.ok, false);
-	if (result.ok) return;
-	assert.ok(result.issues.some((issue) => issue.path === "url"));
-});
-
-test("addSongBodySchema transforms optional fields", () => {
-	const result = validateWithZod(addSongBodySchema, {
-		url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-		submitter: " Alice ",
-		title: "  Song title  ",
-		detailAnswer: "   ",
-	});
-	assert.equal(result.ok, true);
-	if (!result.ok) return;
-	assert.equal(result.data.submitter, "Alice");
-	assert.equal(result.data.title, "Song title");
-	assert.equal(result.data.detailAnswer, null);
-});

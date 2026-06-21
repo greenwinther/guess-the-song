@@ -1,8 +1,7 @@
 import type { Express, Request, Response } from "express";
-import { addSong, createRoom, getRoom } from "@/lib/rooms";
+import { createRoom, getRoom } from "@/lib/rooms";
 import { toPublicRoom } from "@/server/state/publicRoom";
 import {
-	addSongBodySchema,
 	createRoomBodySchema,
 	roomCodeParamsSchema,
 	validateWithZod,
@@ -194,23 +193,4 @@ export function registerHttpRoutes(app: Express) {
 		}
 	});
 
-	app.post("/api/rooms/:code/songs", async (req: Request, res: Response) => {
-		const params = validateWithZod(roomCodeParamsSchema, req.params, { errorMessage: "Invalid room code" });
-		if (!params.ok) return jsonValidationError(res, params);
-		const body = validateWithZod(addSongBodySchema, req.body, { errorMessage: "Invalid request body" });
-		if (!body.ok) return jsonValidationError(res, body);
-
-		try {
-			const song = await addSong(params.data.code, {
-				url: body.data.url,
-				submitter: body.data.submitter,
-				title: body.data.title,
-				detailAnswer: body.data.detailAnswer,
-			});
-			return res.json(song);
-		} catch (err) {
-			const message = err instanceof Error ? err.message : "Failed to add song";
-			return jsonError(res, 400, message);
-		}
-	});
 }

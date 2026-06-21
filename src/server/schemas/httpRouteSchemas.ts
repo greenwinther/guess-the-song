@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseName, parseOptionalText, parseRequiredUrl, parseRoomCode } from "./inputParsers";
+import { parseName, parseOptionalText, parseRoomCode } from "./inputParsers";
 
 const firstValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
 
@@ -43,24 +43,3 @@ export const createRoomBodySchema = z
 		hostName: parseName(input.hostName, "Host"),
 	}));
 
-export const addSongBodySchema = z
-	.object({
-		url: z.unknown(),
-		submitter: z.unknown().optional(),
-		title: z.unknown().optional(),
-		detailAnswer: z.unknown().optional(),
-	})
-	.transform((input) => ({
-		url: parseRequiredUrl(input.url),
-		submitter: parseName(input.submitter, "Player"),
-		title: parseOptionalText(input.title) ?? "",
-		detailAnswer: parseOptionalText(input.detailAnswer),
-	}))
-	.pipe(
-		z.object({
-			url: z.string().min(1, "Invalid URL"),
-			submitter: z.string(),
-			title: z.string(),
-			detailAnswer: z.string().nullable(),
-		})
-	);

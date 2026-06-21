@@ -157,7 +157,6 @@ Served by the Express backend:
 - `GET /api/youtube-title?id=...`
 - `POST /api/rooms`
 - `GET /api/rooms/:code`
-- `POST /api/rooms/:code/songs`
 
 ## Deployment
 
