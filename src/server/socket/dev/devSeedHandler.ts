@@ -13,6 +13,7 @@ import { toPublicRoom } from "@/server/state/publicRoom";
 import type { AvatarConfig } from "@/types/avatar";
 import { devSeedPayloadSchema, validateWithZod } from "@/server/schemas";
 import { serverConfig } from "@/server/config";
+import { registerDevSeededRoom, seedDevGuessesForRoom } from "./devSeedScoring";
 
 const demoUrls = [
 	{ url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "Never Gonna Give You Up" },
@@ -108,7 +109,9 @@ export const devSeedHandler = (
 			await addSong(code, { url: pick.url, submitter, title, detailAnswer });
 		}
 
+		registerDevSeededRoom(code);
 		const updated = await getRoom(code);
+		if (updated.phase !== "LOBBY") seedDevGuessesForRoom(updated);
 		io.to(code).emit("roomData", toPublicRoom(updated));
 		cb?.(true);
 	});

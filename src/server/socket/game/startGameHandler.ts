@@ -9,6 +9,7 @@ import { toPublicRoom } from "@/server/state/publicRoom";
 import { setPhase } from "@/server/store/roomStore";
 import { scopedLogger } from "@/server/logger";
 import { startGamePayloadSchema, validateWithZod } from "@/server/schemas";
+import { isDevSeededRoom, seedDevGuessesForRoom } from "@/server/socket/dev/devSeedScoring";
 
 const log = scopedLogger("socket.startGame");
 
@@ -61,6 +62,7 @@ export const startGameHandler = (
 				);
 				// Note: we pass the full list of all submitters, but computeScores only cares about correctAnswer.
 			}
+			if (isDevSeededRoom(code)) seedDevGuessesForRoom(room);
 
 			const firstId = room.songs[0]?.id ?? null;
 			const initialRevealedSongs = firstId != null ? [firstId] : [];

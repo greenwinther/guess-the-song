@@ -76,15 +76,44 @@ export function PlayerResultsPanel({
 	const derivedThemeBonus = themeBonusPoints ?? (themeSolved ? 1 : 0);
 	const localScore = (rowPointsTotal ?? (totalCorrect + totalDetailCorrect)) + derivedThemeBonus;
 	const displayScore = finalScore == null ? localScore : Math.max(finalScore, localScore);
+	const totalPossibleRows = totalSongs + (hasDetailResults ? totalSongs : 0);
+	const earnedRows = totalCorrect + totalDetailCorrect;
 
 	return (
 		<section className="flex min-h-0 flex-1 flex-col items-center gap-5">
-			<div className="text-center">
-				<h1 className="text-2xl font-semibold text-text">Results</h1>
-				<p className="mt-1 text-sm text-text-muted">
-					You matched {totalCorrect} of {totalSongs} submitters
-					{hasDetailResults ? ` and ${totalDetailCorrect} bonus answers` : ""}
+			<div className="w-full max-w-4xl rounded-lg border border-border/70 bg-black/20 px-4 py-5 text-center shadow-[0_24px_70px_rgb(0_0_0/0.3),inset_0_1px_0_rgb(255_255_255/0.04)]">
+				<p className="text-xs font-semibold uppercase tracking-[0.22em] text-highlight">
+					Final results
 				</p>
+				<h1 className="mt-1 font-display text-3xl font-extrabold text-text sm:text-4xl">
+					{displayScore} pts
+				</h1>
+				<div className="mx-auto mt-4 grid max-w-2xl gap-2 sm:grid-cols-3">
+					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
+						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+							Submitters
+						</p>
+						<p className="mt-1 text-xl font-extrabold text-text">
+							{totalCorrect}/{totalSongs}
+						</p>
+					</div>
+					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
+						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+							Bonus
+						</p>
+						<p className="mt-1 text-xl font-extrabold text-text">
+							{hasDetailResults ? `${totalDetailCorrect}/${totalSongs}` : "-"}
+						</p>
+					</div>
+					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
+						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+							Matched
+						</p>
+						<p className="mt-1 text-xl font-extrabold text-highlight">
+							{earnedRows}/{totalPossibleRows || totalSongs}
+						</p>
+					</div>
+				</div>
 			</div>
 
 			{hasTheme && (
@@ -118,7 +147,7 @@ export function PlayerResultsPanel({
 				</div>
 			)}
 
-			<div className="scrollbar-hidden w-full max-w-4xl overflow-auto rounded-lg bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] max-h-[min(36rem,calc(100vh-28rem))] min-h-0">
+			<div className="scrollbar-hidden w-full max-w-4xl overflow-auto rounded-lg border border-border/60 bg-black/15 px-2 py-2 shadow-[inset_0_2px_6px_rgb(0_0_0/0.32),inset_0_1px_0_rgb(255_255_255/0.03)] max-h-[min(36rem,calc(100vh-28rem))] min-h-0">
 				<table className="w-full table-fixed text-sm">
 					<colgroup>
 						<col className="w-11" />
@@ -200,12 +229,6 @@ export function PlayerResultsPanel({
 				</table>
 			</div>
 
-			<div className="flex w-full max-w-4xl items-center justify-between rounded-lg border border-border/70 bg-card/45 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.035)]">
-				<p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-					Final score
-				</p>
-				<p className="text-2xl font-extrabold text-text">{displayScore} pts</p>
-			</div>
 		</section>
 	);
 }
