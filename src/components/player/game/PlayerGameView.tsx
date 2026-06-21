@@ -54,6 +54,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const [detailUndoUntil, setDetailUndoUntil] = useState<number | null>(null);
 	const [resultRowPoints, setResultRowPoints] = useState<number[] | null>(null);
 	const [themeBonusPoints, setThemeBonusPoints] = useState<number>(0);
+	const [hardcoreBonusPoints, setHardcoreBonusPoints] = useState<number>(0);
 	const [exportReady, setExportReady] = useState(false);
 	const [drawer, setDrawer] = useState<"players" | "playlist" | null>(null);
 	const { clearJoinDenied, joinDenied } = usePlayerJoinDenied({
@@ -395,6 +396,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 		if (roomPhase !== "ENDED") {
 			setResultRowPoints(null);
 			setThemeBonusPoints(0);
+			setHardcoreBonusPoints(0);
 			setExportReady(false);
 			return;
 		}
@@ -403,6 +405,7 @@ export default function PlayerGameView({ code, playerName }: Props) {
 			if (!res.ok) {
 				setResultRowPoints(null);
 				setThemeBonusPoints(0);
+				setHardcoreBonusPoints(0);
 				setExportReady(false);
 				return;
 			}
@@ -414,10 +417,12 @@ export default function PlayerGameView({ code, playerName }: Props) {
 			if (!history) {
 				setResultRowPoints(null);
 				setThemeBonusPoints(0);
+				setHardcoreBonusPoints(0);
 				return;
 			}
 			setResultRowPoints(history.rounds.map((round) => round.totalPoints ?? 0));
 			setThemeBonusPoints(history.themeBonusPoints ?? 0);
+			setHardcoreBonusPoints(history.hardcoreBonusPoints ?? 0);
 		});
 	}, [socket, roomPhase, roomCode, resolvedPlayerName]);
 
@@ -537,6 +542,9 @@ export default function PlayerGameView({ code, playerName }: Props) {
 	const guessesLockedForPhase = isRevealFlowMode;
 	const correctList = room.songs.map((s) => s.submitter);
 	const detailCorrectList = hasDetailQuestion ? room.songs.map((s) => s.detailAnswer ?? "") : [];
+	const currentPlayerHardcore =
+		room.players.find((player) => player.name.toLowerCase() === resolvedPlayerName.toLowerCase())
+			?.hardcore ?? false;
 
 	// You can hide the legacy submit button now, since Lock is per-song
 	const canLock = Boolean(order[currentIndex]?.name) && !selfLocked.has(currentIndex);
@@ -614,6 +622,11 @@ export default function PlayerGameView({ code, playerName }: Props) {
 							themeRevealed={themeRevealed}
 							themeSolved={solvedByTheme.includes(resolvedPlayerName)}
 							themeBonusPoints={themeBonusPoints}
+							hardcoreBonusPoints={hardcoreBonusPoints}
+							hardcoreRewardMode={room.scoring.hardcoreRules.rewardMode}
+							hardcoreMultiplier={room.scoring.hardcoreRules.multiplier}
+							hardcoreStartBonusPoints={room.scoring.hardcoreRules.startBonusPoints}
+							hardcoreEligible={currentPlayerHardcore && room.scoring.hardcoreRules.enabled}
 							finalScore={scores?.[resolvedPlayerName] ?? null}
 						/>
 						{exportReady && (

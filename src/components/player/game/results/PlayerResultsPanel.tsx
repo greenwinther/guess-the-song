@@ -1,4 +1,5 @@
 import type { OrderItem } from "@/components/player/game/guessing/PlayerGuessOrderList";
+import type { HardcoreRewardMode } from "@/types/room";
 
 type PlayerResultsPanelProps = {
 	order: OrderItem[];
@@ -11,6 +12,11 @@ type PlayerResultsPanelProps = {
 	themeRevealed?: boolean;
 	themeSolved?: boolean;
 	themeBonusPoints?: number;
+	hardcoreBonusPoints?: number;
+	hardcoreRewardMode?: HardcoreRewardMode;
+	hardcoreMultiplier?: number;
+	hardcoreStartBonusPoints?: number;
+	hardcoreEligible?: boolean;
 	finalScore?: number | null;
 };
 
@@ -40,6 +46,11 @@ function GuessValue({ correct, value }: { correct: boolean; value: string }) {
 	);
 }
 
+function formatPoints(points: number) {
+	if (!Number.isFinite(points)) return "0";
+	return Number.isInteger(points) ? points.toString() : points.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
 export function PlayerResultsPanel({
 	order,
 	correctList,
@@ -51,6 +62,11 @@ export function PlayerResultsPanel({
 	themeRevealed = false,
 	themeSolved = false,
 	themeBonusPoints,
+	hardcoreBonusPoints = 0,
+	hardcoreRewardMode = "none",
+	hardcoreMultiplier = 1,
+	hardcoreStartBonusPoints = 0,
+	hardcoreEligible = false,
 	finalScore,
 }: PlayerResultsPanelProps) {
 	const totalCorrect = order.reduce(
@@ -74,10 +90,25 @@ export function PlayerResultsPanel({
 	const hasTheme = Boolean(theme?.trim());
 	const themeText = theme?.trim() ?? "";
 	const derivedThemeBonus = themeBonusPoints ?? (themeSolved ? 1 : 0);
-	const localScore = (rowPointsTotal ?? (totalCorrect + totalDetailCorrect)) + derivedThemeBonus;
+	const rowPointsAlreadyIncludeHardcore =
+		rowPointsTotal != null && hardcoreRewardMode === "multiplier";
+	const localScore =
+		(rowPointsTotal ?? (totalCorrect + totalDetailCorrect)) +
+		derivedThemeBonus +
+		(rowPointsAlreadyIncludeHardcore ? 0 : hardcoreBonusPoints);
 	const displayScore = finalScore == null ? localScore : Math.max(finalScore, localScore);
-	const totalPossibleRows = totalSongs + (hasDetailResults ? totalSongs : 0);
-	const earnedRows = totalCorrect + totalDetailCorrect;
+	const hardcoreLabel =
+		hardcoreEligible && hardcoreRewardMode === "multiplier"
+			? `x${formatPoints(hardcoreMultiplier)}`
+			: hardcoreEligible && hardcoreRewardMode === "startBonus"
+				? `+${formatPoints(hardcoreStartBonusPoints || hardcoreBonusPoints)}`
+				: "0";
+	const hardcoreSubLabel =
+		hardcoreEligible && hardcoreRewardMode === "multiplier"
+			? `+${formatPoints(hardcoreBonusPoints)} pts`
+			: hardcoreEligible && hardcoreRewardMode === "startBonus"
+				? "start bonus"
+				: "no bonus";
 
 	return (
 		<section className="flex min-h-0 flex-1 flex-col items-center gap-5">
@@ -94,7 +125,7 @@ export function PlayerResultsPanel({
 				<p className="mt-1 font-display text-3xl font-extrabold text-text sm:text-4xl">
 					{displayScore} pts
 				</p>
-				<div className="mx-auto mt-4 grid max-w-2xl gap-2 sm:grid-cols-3">
+				<div className="mx-auto mt-4 grid max-w-4xl gap-2 sm:grid-cols-5">
 					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
 						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
 							Submitters
@@ -113,10 +144,29 @@ export function PlayerResultsPanel({
 					</div>
 					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
 						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-							Matched
+							Theme
 						</p>
 						<p className="mt-1 text-xl font-extrabold text-highlight">
-							{earnedRows}/{totalPossibleRows || totalSongs}
+							+{formatPoints(derivedThemeBonus)}
+						</p>
+					</div>
+					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
+						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+							Hardcore
+						</p>
+						<p className="mt-1 text-xl font-extrabold text-highlight">
+							{hardcoreLabel}
+						</p>
+						<p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+							{hardcoreSubLabel}
+						</p>
+					</div>
+					<div className="rounded-lg border border-border/60 bg-card/35 px-3 py-3">
+						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+							Total
+						</p>
+						<p className="mt-1 text-xl font-extrabold text-highlight">
+							{formatPoints(displayScore)} pts
 						</p>
 					</div>
 				</div>

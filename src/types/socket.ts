@@ -189,6 +189,7 @@ export type AdminDashboardPayload = {
 	playerHistories: Array<{
 		playerName: string;
 		themeBonusPoints: number;
+		hardcoreBonusPoints: number;
 		rounds: Array<{
 			songId: number;
 			songIndex: number;

@@ -123,6 +123,7 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		.map((player) => ({
 			playerName: player.name,
 			themeBonusPoints: scoreBoard.byPlayer[player.name]?.themeBonuses ?? 0,
+			hardcoreBonusPoints: scoreBoard.byPlayer[player.name]?.hardcoreBonus ?? 0,
 			rounds: room.songs.map((song, index) => {
 				const rd = rounds[song.id];
 				const lockInfo = rd?.locks?.[player.name];
