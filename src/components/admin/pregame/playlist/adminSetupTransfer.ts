@@ -1,4 +1,4 @@
-import type { Room } from "@/types/room";
+import type { Room, RoomScoring } from "@/types/room";
 
 export type ExportedSong = {
 	url: string;
@@ -17,12 +17,7 @@ export type AdminSetupExportV1 = {
 		theme: string;
 		detailQuestion: string;
 		hardcoreRequired: boolean;
-		scoring: {
-			guessPoints: number;
-			detailGuessPoints: number;
-			themeGuessPoints: number;
-			hardcoreMultiplier: number;
-		};
+		scoring: RoomScoring;
 		songs: ExportedSong[];
 	};
 };
@@ -66,6 +61,19 @@ export const parseAdminSetupImport = (raw: string): AdminSetupExportV1 => {
 	) {
 		throw new Error("Setup file has an invalid shape.");
 	}
+	const scoring = setup.scoring as Partial<RoomScoring>;
+	const hardcoreRules = scoring.hardcoreRules ?? {
+		enabled: true,
+		rewardMode: "multiplier" as const,
+		startBonusPoints: 1,
+		multiplier: scoring.hardcoreMultiplier ?? 1.5,
+	};
+	const themeRules = scoring.themeRules ?? {
+		guessesPerSong: 1,
+		correctThemePoints: scoring.themeGuessPoints ?? 1,
+		firstCorrectThemeBonusEnabled: false,
+		firstCorrectThemePoints: 2,
+	};
 
 	return {
 		version: 1,
@@ -81,10 +89,13 @@ export const parseAdminSetupImport = (raw: string): AdminSetupExportV1 => {
 			detailQuestion: setup.detailQuestion,
 			hardcoreRequired: setup.hardcoreRequired,
 			scoring: {
-				guessPoints: (setup.scoring as Record<string, number>).guessPoints,
-				detailGuessPoints: (setup.scoring as Record<string, number>).detailGuessPoints,
-				themeGuessPoints: (setup.scoring as Record<string, number>).themeGuessPoints,
-				hardcoreMultiplier: (setup.scoring as Record<string, number>).hardcoreMultiplier,
+				guessPoints: scoring.guessPoints ?? 1,
+				detailGuessPoints: scoring.detailGuessPoints ?? 1,
+				themeGuessPoints: themeRules.correctThemePoints,
+				hardcoreMultiplier: hardcoreRules.multiplier,
+				hardcoreRules,
+				themeRules,
+				tieBreaker: scoring.tieBreaker ?? "none",
 			},
 			songs: setup.songs,
 		},
@@ -104,6 +115,9 @@ export const buildAdminSetupExport = (room: Room): AdminSetupExportV1 => ({
 			detailGuessPoints: room.scoring.detailGuessPoints,
 			themeGuessPoints: room.scoring.themeGuessPoints,
 			hardcoreMultiplier: room.scoring.hardcoreMultiplier,
+			hardcoreRules: room.scoring.hardcoreRules,
+			themeRules: room.scoring.themeRules,
+			tieBreaker: room.scoring.tieBreaker,
 		},
 		songs: room.songs.map((song) => ({
 			url: song.url,

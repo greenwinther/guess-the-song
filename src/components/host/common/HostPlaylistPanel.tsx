@@ -52,6 +52,48 @@ function PlayerAvatarBadge({ playerName, player }: { playerName: string; player?
 	);
 }
 
+const formatLockTime = (lockedAt: number | null) => {
+	if (!lockedAt) return "Not locked";
+	return new Date(lockedAt).toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+	});
+};
+
+function ThemeGuessCell({
+	guess,
+	correct,
+}: {
+	guess: string | null;
+	correct: boolean | null;
+}) {
+	const label = guess?.trim() || "-";
+	return (
+		<div className="min-w-0">
+			<p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+				Theme guess
+			</p>
+			<div className="mt-0.5 flex min-w-0 items-center gap-2">
+				<p className="truncate text-sm font-semibold text-text" title={guess ?? ""}>
+					{label}
+				</p>
+				{correct !== null && (
+					<span
+						className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+							correct
+								? "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"
+								: "border-rose-500/35 bg-rose-500/10 text-rose-200"
+						}`}
+					>
+						{correct ? "Correct" : "Wrong"}
+					</span>
+				)}
+			</div>
+		</div>
+	);
+}
+
 function SongGuessStatsModal({
 	onClose,
 	playersByName,
@@ -65,6 +107,15 @@ function SongGuessStatsModal({
 }) {
 	const titleId = useId();
 	const correctCount = stats.correctGuessers.length;
+	const correctGuessRows = stats.guessers.filter((guess) => guess.correct);
+	const wrongGuessRows = stats.guessers.filter((guess) => !guess.correct);
+	const hasThemeGuesses = stats.guessers.some((guess) => Boolean(guess.themeGuess?.trim()));
+	const correctGuessRowGridClass = hasThemeGuesses
+		? "md:grid-cols-[minmax(13rem,1.15fr)_minmax(9rem,0.85fr)_7rem]"
+		: "md:grid-cols-[minmax(13rem,1.15fr)_7rem]";
+	const wrongGuessRowGridClass = hasThemeGuesses
+		? "md:grid-cols-[minmax(13rem,1.15fr)_minmax(9rem,0.85fr)_minmax(9rem,0.85fr)_7rem]"
+		: "md:grid-cols-[minmax(13rem,1.15fr)_minmax(9rem,0.85fr)_7rem]";
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -81,7 +132,7 @@ function SongGuessStatsModal({
 			onMouseDown={onClose}
 		>
 			<section
-				className="flex max-h-[min(42rem,calc(100vh-2rem))] w-full max-w-2xl flex-col rounded-lg border border-border bg-card text-text shadow-2xl"
+				className="flex max-h-[min(42rem,calc(100vh-2rem))] w-full max-w-5xl flex-col rounded-lg border border-border bg-card text-text shadow-2xl"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
@@ -123,16 +174,43 @@ function SongGuessStatsModal({
 
 					<div className="mt-4">
 						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-							Correct guessers
+							Correct guesses
 						</p>
 						{correctCount > 0 ? (
-							<div className="mt-2 grid gap-2 sm:grid-cols-2">
-								{stats.correctGuessers.map((playerName) => (
-									<PlayerAvatarBadge
-										key={playerName}
-										playerName={playerName}
-										player={playersByName.get(playerName.toLowerCase())}
-									/>
+							<div className="mt-2 grid gap-2">
+								{correctGuessRows.map((guess, index) => (
+									<div
+										key={guess.playerName}
+										className={`grid min-w-0 gap-3 rounded-lg border px-3 py-2 md:items-center ${correctGuessRowGridClass} ${
+											guess.fastestCorrectLock
+												? "border-emerald-500/40 bg-emerald-500/10"
+												: "border-border/60 bg-black/15"
+										}`}
+									>
+										<div className="min-w-0 flex-1">
+											<div className="flex min-w-0 items-center gap-2">
+												<span className="w-6 shrink-0 font-mono text-xs text-secondary">
+													{index + 1}.
+												</span>
+												<PlayerAvatarBadge
+													playerName={guess.playerName}
+													player={playersByName.get(guess.playerName.toLowerCase())}
+												/>
+											</div>
+											{guess.fastestCorrectLock && (
+												<p className="mt-1 pl-8 text-xs font-semibold text-emerald-200 md:pl-8">
+												Fastest correct lock
+											</p>
+										)}
+									</div>
+										{hasThemeGuesses && (
+											<ThemeGuessCell guess={guess.themeGuess} correct={guess.themeCorrect} />
+										)}
+										<div className="shrink-0 text-left text-xs text-text-muted md:text-right">
+											<p>{formatLockTime(guess.lockedAt)}</p>
+											{guess.lockOrder != null && <p>Lock #{guess.lockOrder}</p>}
+										</div>
+									</div>
 								))}
 							</div>
 						) : (
@@ -141,6 +219,43 @@ function SongGuessStatsModal({
 							</p>
 						)}
 					</div>
+
+					{wrongGuessRows.length > 0 && (
+						<div className="mt-4">
+							<p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+								Wrong guesses
+							</p>
+							<div className="mt-2 grid gap-2">
+								{wrongGuessRows.map((guess, index) => (
+									<div
+										key={guess.playerName}
+										className={`grid min-w-0 gap-3 rounded-lg border border-border/60 bg-black/15 px-3 py-2 md:items-center ${wrongGuessRowGridClass}`}
+									>
+										<div className="min-w-0">
+											<p className="truncate text-sm font-semibold text-text" title={guess.playerName}>
+												{correctGuessRows.length + index + 1}. {guess.playerName}
+											</p>
+										</div>
+										<div className="min-w-0">
+											<p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+												Song guess
+											</p>
+											<p className="truncate text-sm font-semibold text-text" title={guess.guess}>
+												{guess.guess || "-"}
+											</p>
+										</div>
+										{hasThemeGuesses && (
+											<ThemeGuessCell guess={guess.themeGuess} correct={guess.themeCorrect} />
+										)}
+										<div className="shrink-0 text-left text-xs text-text-muted md:text-right">
+											<p>{formatLockTime(guess.lockedAt)}</p>
+											{guess.lockOrder != null && <p>Lock #{guess.lockOrder}</p>}
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
 
 					{stats.commonWrongGuesses.length > 0 && (
 						<div className="mt-4">

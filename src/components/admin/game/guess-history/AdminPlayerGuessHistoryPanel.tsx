@@ -12,6 +12,8 @@ type HistoryRow = {
 	guessLabel: string;
 	correctAnswer?: string | null;
 	locked: boolean;
+	lockedAt?: number | null;
+	fastestCorrectLock?: boolean;
 	guessOrder: string[];
 	detailGuessLabel?: string;
 	detailCorrectAnswer?: string | null;
@@ -32,6 +34,15 @@ const normalizeForCompare = (value: string | null | undefined) =>
 		.normalize("NFKD")
 		.replace(/[^\p{L}\p{N} ]+/gu, "")
 		.trim();
+
+const formatLockTime = (lockedAt?: number | null) => {
+	if (!lockedAt) return "";
+	return new Date(lockedAt).toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+	});
+};
 
 function GuessValue({
 	label,
@@ -126,6 +137,7 @@ export default function AdminPlayerGuessHistoryPanel({
 								normalizeForCompare(row.themeGuess) !== "" &&
 								normalizedThemeValue !== "" &&
 								normalizeForCompare(row.themeGuess) === normalizedThemeValue;
+							const lockTime = formatLockTime(row.lockedAt);
 
 							return (
 								<tr key={row.songId} className={`${isActiveSong ? "bg-secondary/10" : ""}`}>
@@ -139,6 +151,16 @@ export default function AdminPlayerGuessHistoryPanel({
 											inProgress={row.guessOrder.length > 0}
 											correct={isGuessCorrect}
 										/>
+										{row.fastestCorrectLock && isGuessCorrect && (
+											<span className="ml-2 inline-flex rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
+												Fastest correct lock
+											</span>
+										)}
+										{lockTime && (
+											<span className="ml-2 text-xs text-text/55" title="Final lock time">
+												{lockTime}
+											</span>
+										)}
 									</td>
 									<td className="py-2 px-3 text-text text-center">{row.correctAnswer || ""}</td>
 									{dashboard.hasDetailLane && (

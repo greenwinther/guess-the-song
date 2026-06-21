@@ -10,7 +10,6 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 	const { room } = useRoomState();
 	const { solvedByTheme, lockedForThisRound, themeRevealed } = useGameRuntime();
 	const [value, setValue] = useState("");
-	const [lockedGuess, setLockedGuess] = useState("");
 	const wasLockedThisRoundRef = useRef(false);
 
 	const iSolved = useMemo(() => solvedByTheme.includes(playerName), [solvedByTheme, playerName]);
@@ -27,7 +26,6 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 
 		if (wasLockedThisRoundRef.current) {
 			wasLockedThisRoundRef.current = false;
-			setLockedGuess("");
 			setValue("");
 		}
 	}, [iLockedThisRound]);
@@ -48,13 +46,16 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 		);
 	}
 
-	const hasLockedGuess = Boolean(lockedGuess) || iLockedThisRound;
+	const hasLockedGuess = iLockedThisRound;
 	const disabled = !room?.theme || themeRevealed || hasLockedGuess;
+	const guessesPerSong = room.scoring.themeRules.guessesPerSong;
 
 	const placeholder = themeRevealed
 		? "Theme revealed"
 		: iLockedThisRound
-			? "You've guessed this round"
+			? guessesPerSong === 1
+				? "You've guessed this round"
+				: "No theme guesses left this round"
 			: "Guess the theme";
 
 	const onSubmit = (e: FormEvent) => {
@@ -63,8 +64,7 @@ export function PlayerThemeGuessBar({ code, playerName }: { code: string; player
 		const guess = value.trim();
 		if (!guess) return;
 
-		setLockedGuess(guess);
-		setValue(guess);
+		setValue("");
 		socket.emit("THEME_GUESS", { code, playerName, guess });
 	};
 

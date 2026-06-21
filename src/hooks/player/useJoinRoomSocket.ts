@@ -32,6 +32,8 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 		setRevealedSongs,
 		setSubmittedPlayers,
 		setScores,
+		setFinalTieBreaker,
+		setFinalTieBreakerStats,
 	} = useGameRuntime();
 
 	const codeRef = useRef(code);
@@ -89,7 +91,19 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 		const onPlayerSubmitted = ({ playerName }: { playerName: string }) =>
 			setSubmittedPlayers((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
 
-		const onGameOver = ({ scores }: { scores: Record<string, number> }) => setScores(scores);
+		const onGameOver = ({
+			scores,
+			tieBreaker = "none",
+			tieBreakerStats = {},
+		}: {
+			scores: Record<string, number>;
+			tieBreaker?: "none" | "fastestCorrectLocks";
+			tieBreakerStats?: Record<string, { fastestCorrectLocks: number }>;
+		}) => {
+			setScores(scores);
+			setFinalTieBreaker(tieBreaker);
+			setFinalTieBreakerStats(tieBreakerStats);
+		};
 
 		const onPlayerLeft = (playerId: number) =>
 			setRoom((prev) =>
@@ -198,6 +212,8 @@ export function useJoinRoomSocket(code: string, playerName: string) {
 		setRevealedSongs,
 		setSubmittedPlayers,
 		setScores,
+		setFinalTieBreaker,
+		setFinalTieBreakerStats,
 		code,
 		playerName,
 	]);

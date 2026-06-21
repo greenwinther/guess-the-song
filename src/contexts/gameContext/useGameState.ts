@@ -48,6 +48,10 @@ export const useRuntimeStateValue = (): RuntimeStateContextType => {
 		return window.localStorage.getItem("gts_use_song_artwork_background") !== "0";
 	});
 	const [scores, setScores] = useState<Record<string, number> | null>(null);
+	const [finalTieBreaker, setFinalTieBreaker] = useState<"none" | "fastestCorrectLocks">("none");
+	const [finalTieBreakerStats, setFinalTieBreakerStats] = useState<
+		Record<string, { fastestCorrectLocks: number }>
+	>({});
 	const [revealedSongs, setRevealedSongs] = useState<number[]>([]);
 	const [submittedPlayers, setSubmittedPlayers] = useState<string[]>([]);
 	const [revealedSubmitters, setRevealedSubmitters] = useState<number[]>([]);
@@ -77,6 +81,10 @@ export const useRuntimeStateValue = (): RuntimeStateContextType => {
 		setUseSongArtworkBackground,
 		scores,
 		setScores,
+		finalTieBreaker,
+		setFinalTieBreaker,
+		finalTieBreakerStats,
+		setFinalTieBreakerStats,
 		revealedSongs,
 		setRevealedSongs,
 		submittedPlayers,

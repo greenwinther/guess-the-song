@@ -8,7 +8,10 @@ import {
 	getDetailLockedPlayers,
 	getLockedPlayers,
 	lockCounts,
+	getRoundsForCode,
 } from "@/lib/game";
+import { getRoomScores } from "@/lib/score";
+import { computeScoreBoard } from "@/server/logic/score";
 import { requireHostOrAdmin, requireRoom } from "@/server/logic/guards";
 import { toPublicRoom } from "@/server/state/publicRoom";
 import {
@@ -96,11 +99,35 @@ export const resyncHandler = (
 			}
 			const themeGuesses = getThemeGuessesThisRound(code);
 			for (const playerName of getLockedThisRoundList(code)) {
-				io.to(code).emit("THEME_GUESSED_THIS_ROUND", { playerName, guess: themeGuesses[playerName] });
+				io.to(code).emit("THEME_GUESSED_THIS_ROUND", {
+					playerName,
+					guess: themeGuesses[playerName],
+					lockedForRound: true,
+				});
 			}
 
 			if (gameState.finalScores) {
-				io.to(code).emit("gameOver", { scores: gameState.finalScores });
+				const board = computeScoreBoard({
+					room,
+					rounds: getRoundsForCode(code),
+					themePointsByPlayer: getRoomScores(code),
+					guessPoints: room.rules.guessPoints,
+					detailGuessPoints: room.rules.detailGuessPoints,
+					themeGuessPoints: room.rules.themeGuessPoints,
+					hardcoreMultiplier: room.rules.hardcoreMultiplier,
+					scoring: room.rules,
+				});
+				const hostNames = new Set(room.players.filter((player) => player.isHost).map((player) => player.name));
+				const tieBreakerStats = Object.fromEntries(
+					Object.entries(board.byPlayer)
+						.filter(([name]) => !hostNames.has(name))
+						.map(([name, row]) => [name, { fastestCorrectLocks: row.fastestCorrectLocks }])
+				);
+				io.to(code).emit("gameOver", {
+					scores: gameState.finalScores,
+					tieBreaker: room.rules.tieBreaker,
+					tieBreakerStats,
+				});
 			}
 
 			cb?.(true);

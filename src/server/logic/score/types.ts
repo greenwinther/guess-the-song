@@ -4,6 +4,7 @@ export type ScoreRow = {
 	correctDetailGuesses: number;
 	themeBonuses: number;
 	hardcoreBonus: number;
+	fastestCorrectLocks: number;
 	total: number;
 };
 

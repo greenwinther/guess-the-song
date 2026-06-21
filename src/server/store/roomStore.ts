@@ -1,7 +1,7 @@
 // src/server/store/roomStore.ts
 import type { AvatarConfig } from "@/types/avatar";
 import type { Member } from "@/types/member";
-import type { RoomScoring } from "@/types/room";
+import { DEFAULT_ROOM_SCORING, type RoomScoring } from "@/types/room";
 import type { Submission } from "@/types/submission";
 import type { RoomState } from "@/server/state/roomState";
 import { notifyStateChange } from "@/server/state/saveBus";
@@ -17,12 +17,7 @@ const normalizeCode = (code: string) => code.trim().toUpperCase();
 const normalizeName = (name: string) => name.trim().toLowerCase();
 const normalizeClientId = (clientId: string) => clientId.trim();
 const KICK_TTL_MS = 1000 * 60 * 10; // 10 minutes
-const DEFAULT_SCORING: RoomScoring = {
-	guessPoints: 1,
-	detailGuessPoints: 1,
-	themeGuessPoints: 1,
-	hardcoreMultiplier: 1.5,
-};
+const DEFAULT_SCORING = DEFAULT_ROOM_SCORING;
 
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const generateCode = () => {
@@ -44,6 +39,84 @@ const createAccessToken = () => randomBytes(24).toString("hex");
 const touch = (room: RoomState) => {
 	room.updatedAt = Date.now();
 };
+
+const clampNumber = (value: unknown, fallback: number, min: number, max: number) => {
+	const next = typeof value === "number" ? value : Number(value);
+	if (!Number.isFinite(next)) return fallback;
+	return Math.min(max, Math.max(min, next));
+};
+
+export function normalizeScoringRules(scoring?: Partial<RoomScoring> | null): RoomScoring {
+	const guessPoints = Math.round(clampNumber(scoring?.guessPoints, DEFAULT_SCORING.guessPoints, 0, 100));
+	const detailGuessPoints = Math.round(
+		clampNumber(scoring?.detailGuessPoints, DEFAULT_SCORING.detailGuessPoints, 0, 100)
+	);
+	const legacyThemeGuessPoints = Math.round(
+		clampNumber(scoring?.themeGuessPoints, DEFAULT_SCORING.themeGuessPoints, 0, 100)
+	);
+	const legacyHardcoreMultiplier = clampNumber(
+		scoring?.hardcoreMultiplier,
+		DEFAULT_SCORING.hardcoreMultiplier,
+		1,
+		10
+	);
+	const rawRewardMode = scoring?.hardcoreRules?.rewardMode;
+	const rewardMode =
+		rawRewardMode === "none" || rawRewardMode === "startBonus" || rawRewardMode === "multiplier"
+			? rawRewardMode
+			: DEFAULT_SCORING.hardcoreRules.rewardMode;
+	const rawTieBreaker = scoring?.tieBreaker;
+	const tieBreaker = rawTieBreaker === "fastestCorrectLocks" ? rawTieBreaker : "none";
+	const guessesPerSong = Math.round(
+		clampNumber(scoring?.themeRules?.guessesPerSong, DEFAULT_SCORING.themeRules.guessesPerSong, 1, 3)
+	);
+	const correctThemePoints = Math.round(
+		clampNumber(
+			scoring?.themeRules?.correctThemePoints ?? scoring?.themeGuessPoints,
+			legacyThemeGuessPoints,
+			0,
+			100
+		)
+	);
+	const hardcoreMultiplier = clampNumber(
+		scoring?.hardcoreRules?.multiplier ?? scoring?.hardcoreMultiplier,
+		legacyHardcoreMultiplier,
+		1,
+		10
+	);
+
+	return {
+		guessPoints,
+		detailGuessPoints,
+		themeGuessPoints: correctThemePoints,
+		hardcoreMultiplier,
+		hardcoreRules: {
+			enabled: scoring?.hardcoreRules?.enabled ?? rewardMode !== "none",
+			rewardMode,
+			startBonusPoints: clampNumber(
+				scoring?.hardcoreRules?.startBonusPoints,
+				DEFAULT_SCORING.hardcoreRules.startBonusPoints,
+				0,
+				100
+			),
+			multiplier: hardcoreMultiplier,
+		},
+		themeRules: {
+			guessesPerSong,
+			correctThemePoints,
+			firstCorrectThemeBonusEnabled: !!scoring?.themeRules?.firstCorrectThemeBonusEnabled,
+			firstCorrectThemePoints: Math.round(
+				clampNumber(
+					scoring?.themeRules?.firstCorrectThemePoints,
+					DEFAULT_SCORING.themeRules.firstCorrectThemePoints,
+					0,
+					100
+				)
+			),
+		},
+		tieBreaker,
+	};
+}
 
 const pruneKicks = (room: RoomState) => {
 	if (!room.kicked) return;
@@ -79,7 +152,7 @@ export function createRoom(
 		theme: theme?.trim() || undefined,
 		detailQuestion: undefined,
 		backgroundUrl: backgroundUrl ?? null,
-		scoring: { ...DEFAULT_SCORING },
+		scoring: normalizeScoringRules(DEFAULT_SCORING),
 		players: [host],
 		songs: [],
 		adminAccessToken: createAccessToken(),
@@ -90,10 +163,7 @@ export function createRoom(
 		updatedAt: now,
 		kicked: {},
 		rules: {
-			guessPoints: DEFAULT_SCORING.guessPoints,
-			detailGuessPoints: DEFAULT_SCORING.detailGuessPoints,
-			themeGuessPoints: DEFAULT_SCORING.themeGuessPoints,
-			hardcoreMultiplier: DEFAULT_SCORING.hardcoreMultiplier,
+			...normalizeScoringRules(DEFAULT_SCORING),
 			hardcoreRequired: false,
 		},
 	};
@@ -337,11 +407,13 @@ export function setHardcoreRequired(code: string, required: boolean): RoomState 
 export function setScoringRules(code: string, scoring: RoomScoring): RoomState | null {
 	const room = getRoom(code);
 	if (!room) return null;
-	room.scoring = { ...scoring };
-	room.rules.guessPoints = scoring.guessPoints;
-	room.rules.detailGuessPoints = scoring.detailGuessPoints;
-	room.rules.themeGuessPoints = scoring.themeGuessPoints;
-	room.rules.hardcoreMultiplier = scoring.hardcoreMultiplier;
+	const normalized = normalizeScoringRules(scoring);
+	room.scoring = { ...normalized };
+	room.rules = {
+		...room.rules,
+		...normalized,
+		hardcoreRequired: room.rules.hardcoreRequired,
+	};
 	touch(room);
 	notifyStateChange();
 	return room;
@@ -417,10 +489,7 @@ export function exportRoomStoreState(): RoomStoreSnapshot {
 			hostOwnerClientId: room.hostOwnerClientId ?? null,
 			kicked: room.kicked ? { ...room.kicked } : {},
 			rules: {
-				guessPoints: room.rules.guessPoints,
-				detailGuessPoints: room.rules.detailGuessPoints,
-				themeGuessPoints: room.rules.themeGuessPoints,
-				hardcoreMultiplier: room.rules.hardcoreMultiplier,
+				...normalizeScoringRules(room.rules),
 				hardcoreRequired: room.rules.hardcoreRequired,
 			},
 		})),
@@ -443,15 +512,7 @@ export function importRoomStoreState(snapshot: RoomStoreSnapshot | null | undefi
 		const restored: RoomState = {
 			...room,
 			code: normalized,
-			scoring: {
-				guessPoints: room.scoring?.guessPoints ?? room.rules?.guessPoints ?? DEFAULT_SCORING.guessPoints,
-				detailGuessPoints:
-					room.scoring?.detailGuessPoints ?? room.rules?.detailGuessPoints ?? DEFAULT_SCORING.detailGuessPoints,
-				themeGuessPoints:
-					room.scoring?.themeGuessPoints ?? room.rules?.themeGuessPoints ?? DEFAULT_SCORING.themeGuessPoints,
-				hardcoreMultiplier:
-					room.scoring?.hardcoreMultiplier ?? room.rules?.hardcoreMultiplier ?? DEFAULT_SCORING.hardcoreMultiplier,
-			},
+			scoring: normalizeScoringRules({ ...room.rules, ...room.scoring }),
 			adminAccessToken: room.adminAccessToken ?? createAccessToken(),
 			hostAccessToken: room.hostAccessToken ?? createAccessToken(),
 			adminOwnerClientId: room.adminOwnerClientId ?? null,
@@ -466,10 +527,7 @@ export function importRoomStoreState(snapshot: RoomStoreSnapshot | null | undefi
 			songs: (room.songs ?? []).map((s) => ({ ...s })),
 			kicked: room.kicked ? { ...room.kicked } : {},
 			rules: {
-				guessPoints: room.rules?.guessPoints ?? DEFAULT_SCORING.guessPoints,
-				detailGuessPoints: room.rules?.detailGuessPoints ?? DEFAULT_SCORING.detailGuessPoints,
-				themeGuessPoints: room.rules?.themeGuessPoints ?? DEFAULT_SCORING.themeGuessPoints,
-				hardcoreMultiplier: room.rules?.hardcoreMultiplier ?? DEFAULT_SCORING.hardcoreMultiplier,
+				...normalizeScoringRules({ ...room.scoring, ...room.rules }),
 				hardcoreRequired: room.rules?.hardcoreRequired ?? false,
 			},
 		};

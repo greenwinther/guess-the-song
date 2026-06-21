@@ -39,7 +39,14 @@ export function useThemeSocketSync() {
 			}
 		};
 
-		const onGuessedThisRound = ({ playerName }: { playerName: string }) => {
+		const onGuessedThisRound = ({
+			playerName,
+			lockedForRound,
+		}: {
+			playerName: string;
+			lockedForRound?: boolean;
+		}) => {
+			if (!lockedForRound) return;
 			setLockedForThisRound((prev) => (prev.includes(playerName) ? prev : [...prev, playerName]));
 		};
 

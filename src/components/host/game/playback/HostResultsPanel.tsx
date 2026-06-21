@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/shared/Button";
 import AvatarStack from "@/components/shared/AvatarStack";
 import type { Member } from "@/types/member";
+import type { RoomTieBreaker } from "@/types/room";
 import { useSocket } from "@/contexts/SocketContext";
 import {
 	buildDenseScoreRanking,
@@ -16,6 +17,8 @@ type HostResultsPanelProps = {
 	resultsFinalized: boolean;
 	players: Member[];
 	scores: Record<string, number>;
+	tieBreaker: RoomTieBreaker;
+	tieBreakerStats: Record<string, { fastestCorrectLocks: number }>;
 	theme: string;
 	themeRevealed: boolean;
 	onRevealTheme: () => void;
@@ -215,6 +218,8 @@ export default function HostResultsPanel({
 	resultsFinalized,
 	players,
 	scores,
+	tieBreaker,
+	tieBreakerStats,
 	theme,
 	themeRevealed,
 	onRevealTheme,
@@ -226,7 +231,10 @@ export default function HostResultsPanel({
 		return map;
 	}, [players]);
 
-	const ranking = useMemo(() => buildDenseScoreRanking(scores), [scores]);
+	const ranking = useMemo(
+		() => buildDenseScoreRanking(scores, { tieBreaker, tieBreakerStats }),
+		[scores, tieBreaker, tieBreakerStats]
+	);
 	const rankedRows = ranking.rows;
 	const topGroups = ranking.podiumGroups;
 	const revealGroups = ranking.revealGroups;
@@ -278,6 +286,7 @@ export default function HostResultsPanel({
 		topGroups.length === 0 || topGroups.every((group) => revealedRanks.includes(group.rank));
 	const hasTheme = Boolean(theme?.trim());
 	const requiresThemeReveal = hasTheme && !themeRevealed;
+	const usesFastestLockTieBreaker = tieBreaker === "fastestCorrectLocks";
 	const revealSequenceComplete = allRevealed && !requiresThemeReveal;
 	const revealLabel =
 		requiresThemeReveal
@@ -312,7 +321,8 @@ export default function HostResultsPanel({
 					Final Results
 				</h2>
 				<p className="mt-2 max-w-xl text-sm text-text-muted">
-					Podium moment: reveal the top score groups from third to first. Tied players share the same step.
+					Podium moment: reveal the top score groups from third to first. Tied players share the same step
+					{usesFastestLockTieBreaker ? " unless fastest correct locks break the tie." : "."}
 				</p>
 			</div>
 
@@ -424,6 +434,11 @@ export default function HostResultsPanel({
 											? "Drum roll..."
 											: "Hidden"}
 								</span>
+								{isRevealed && group.decidedByTieBreaker && (
+									<span className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
+										Tiebreak: {group.tieBreakerValue ?? 0} fastest locks
+									</span>
+								)}
 							</button>
 						</div>
 					);
@@ -437,7 +452,7 @@ export default function HostResultsPanel({
 						<colgroup>
 							<col className="w-20" />
 							<col />
-							<col className="w-24" />
+						<col className="w-32" />
 						</colgroup>
 						<thead className="sticky top-0 z-10 bg-[rgb(34_21_48)] shadow-[0_1px_0_rgb(255_255_255/0.08)]">
 							<tr className="text-left text-xs uppercase tracking-[0.14em] text-text-muted">
@@ -454,8 +469,20 @@ export default function HostResultsPanel({
 									</td>
 									<td className="truncate px-3 py-2 font-medium" title={row.name}>
 										{row.name}
+										{row.decidedByTieBreaker && (
+											<span className="ml-2 text-xs font-semibold text-secondary">
+												tiebreak
+											</span>
+										)}
 									</td>
-									<td className="px-3 py-2 text-right font-semibold">{row.score} pts</td>
+									<td className="px-3 py-2 text-right font-semibold">
+										{row.score} pts
+										{usesFastestLockTieBreaker && (
+											<span className="block text-xs font-normal text-text-muted">
+												{row.tieBreakerValue ?? 0} fast locks
+											</span>
+										)}
+									</td>
 								</tr>
 							))}
 							{rankedRows.length === 0 && (

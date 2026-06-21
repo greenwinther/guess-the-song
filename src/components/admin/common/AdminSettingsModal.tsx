@@ -46,7 +46,7 @@ export default function AdminSettingsModal({
 			aria-labelledby="admin-settings-title"
 		>
 			<div
-				className="w-full max-w-2xl rounded-2xl border border-border/70 bg-card/95 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.42)]"
+				className="max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border/70 bg-card/95 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.42)]"
 				onClick={(event) => event.stopPropagation()}
 			>
 				<div className="flex items-start justify-between gap-4">
@@ -74,7 +74,12 @@ export default function AdminSettingsModal({
 							Scoring is read-only once the live game has started.
 						</div>
 					)}
-					<AdminScoringEditor code={room.code} scoring={room.scoring} disabled={!inLobby} />
+					<AdminScoringEditor
+						code={room.code}
+						scoring={room.scoring}
+						disabled={!inLobby}
+						onSaved={onClose}
+					/>
 				</div>
 			</div>
 		</div>

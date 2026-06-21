@@ -3,8 +3,10 @@ import {
 	initThemeState,
 	isRevealed,
 	hasLockedThisRound,
+	getThemeGuessCountThisRound,
 	lockPlayerThisRound,
 	alreadySolved,
+	getSolvedList,
 	markSolved,
 	normalize,
 	storeThemeGuessThisRound,
@@ -71,8 +73,11 @@ export const themeGuessHandler = (
 			return;
 		}
 
-		// One guess per round
-		if (hasLockedThisRound(normalizedCode, resolvedName)) {
+		const guessesPerSong = room.rules.themeRules.guessesPerSong;
+		const guessCount = getThemeGuessCountThisRound(normalizedCode, resolvedName);
+
+		// Configured guesses per round
+		if (hasLockedThisRound(normalizedCode, resolvedName) || guessCount >= guessesPerSong) {
 			socket.emit("THEME_GUESS_RESULT", {
 				playerName: resolvedName,
 				correct: false,
@@ -81,14 +86,20 @@ export const themeGuessHandler = (
 			return;
 		}
 
-		// Consume their single attempt this round
-		lockPlayerThisRound(normalizedCode, resolvedName);
 		storeThemeGuessThisRound(normalizedCode, resolvedName, guess);
+		const nextGuessCount = guessCount + 1;
+		if (nextGuessCount >= guessesPerSong) {
+			lockPlayerThisRound(normalizedCode, resolvedName);
+		}
 		const activeSongId = getRoomGameState(normalizedCode).activeSongId;
 		if (activeSongId != null) {
 			storeThemeGuess(normalizedCode, activeSongId, resolvedName, guess);
 		}
-		io.to(normalizedCode).emit("THEME_GUESSED_THIS_ROUND", { playerName: resolvedName, guess });
+		io.to(normalizedCode).emit("THEME_GUESSED_THIS_ROUND", {
+			playerName: resolvedName,
+			guess,
+			lockedForRound: nextGuessCount >= guessesPerSong,
+		});
 		void emitAdminDashboardToHosts(io, normalizedCode);
 
 		const correct = normalize(guess) === normalize(room.theme);
@@ -96,14 +107,21 @@ export const themeGuessHandler = (
 			socket.emit("THEME_GUESS_RESULT", {
 				playerName: resolvedName,
 				correct: false,
-				lockedForRound: true,
+				lockedForRound: nextGuessCount >= guessesPerSong,
 			});
 			return;
 		}
 
-		// First time solved -> award configured theme points, broadcast solved
+		// First time solved -> award configured theme points, broadcast solved.
+		// Lock this player for the round so a correct solve cannot be farmed with more attempts.
+		lockPlayerThisRound(normalizedCode, resolvedName);
+		const solvedCountBefore = getSolvedList(normalizedCode).length;
 		markSolved(normalizedCode, resolvedName);
-		const newTotal = addPointsByCodeName(normalizedCode, resolvedName, room.rules.themeGuessPoints);
+		const awardedPoints =
+			room.rules.themeRules.firstCorrectThemeBonusEnabled && solvedCountBefore === 0
+				? room.rules.themeRules.firstCorrectThemePoints
+				: room.rules.themeRules.correctThemePoints;
+		const newTotal = addPointsByCodeName(normalizedCode, resolvedName, awardedPoints);
 		io.to(normalizedCode).emit("THEME_SOLVED", { playerName: resolvedName });
 		io.to(normalizedCode).emit("scoreUpdated", { playerName: resolvedName, total: newTotal });
 		void emitAdminDashboardToHosts(io, normalizedCode);

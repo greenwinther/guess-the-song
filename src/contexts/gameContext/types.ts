@@ -1,5 +1,5 @@
 // src/contexts/gameContext/types.ts
-import { Room } from "@/types/room";
+import { Room, type RoomTieBreaker } from "@/types/room";
 import type { Member } from "@/types/member";
 import type { Submission } from "@/types/submission";
 
@@ -32,6 +32,14 @@ export type RuntimeStateContextType = {
 
 	scores: Record<string, number> | null;
 	setScores: React.Dispatch<React.SetStateAction<Record<string, number> | null>>;
+
+	finalTieBreaker: RoomTieBreaker;
+	setFinalTieBreaker: React.Dispatch<React.SetStateAction<RoomTieBreaker>>;
+
+	finalTieBreakerStats: Record<string, { fastestCorrectLocks: number }>;
+	setFinalTieBreakerStats: React.Dispatch<
+		React.SetStateAction<Record<string, { fastestCorrectLocks: number }>>
+	>;
 
 	revealedSongs: number[];
 	setRevealedSongs: React.Dispatch<React.SetStateAction<number[]>>;

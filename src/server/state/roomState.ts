@@ -1,4 +1,4 @@
-import type { Room } from "@/types/room";
+import type { Room, RoomScoring } from "@/types/room";
 
 // Server-only room shape. Add internal-only fields here as needed.
 export type RoomState = Room & {
@@ -8,11 +8,7 @@ export type RoomState = Room & {
 	hostAccessToken: string;
 	adminOwnerClientId?: string | null;
 	hostOwnerClientId?: string | null;
-	rules: {
-		guessPoints: number;
-		detailGuessPoints: number;
-		themeGuessPoints: number;
-		hardcoreMultiplier: number;
+	rules: RoomScoring & {
 		hardcoreRequired: boolean;
 	};
 	kicked?: Record<string, number>; // normalized name -> unix ms until allowed

@@ -1,5 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import { getRoundsForCode } from "@/lib/game";
+import { normalize } from "@/lib/theme";
+import { getFastestCorrectLockPlayerNames } from "@/server/logic/score";
 import {
 	getSongGuessStatsPayloadSchema,
 	validateWithZod,
@@ -14,15 +16,29 @@ import type {
 	SongGuessStats,
 } from "@/types/socket";
 
-const buildSongGuessStats = (code: string, songIds: number[], playerNames: string[]): SongGuessStats[] => {
+const buildSongGuessStats = (
+	code: string,
+	songIds: number[],
+	playerNames: string[],
+	theme?: string | null
+): SongGuessStats[] => {
 	const rounds = getRoundsForCode(code);
+	const normalizedTheme = normalize(theme ?? "");
 
 	return songIds.map((songId) => {
 		const round = rounds[songId];
 		const correctGuessers: string[] = [];
+		const guessers: SongGuessStats["guessers"] = [];
 		const wrongCounts = new Map<string, number>();
 		let guessedCount = 0;
 		let noAnswerCount = 0;
+		const lockedEntries = Object.entries(round?.locks ?? {})
+			.filter(([, lock]) => lock.locked && Number.isFinite(lock.lockedAt))
+			.sort(([, a], [, b]) => (a.lockedAt ?? 0) - (b.lockedAt ?? 0));
+		const lockOrderByPlayer = new Map(
+			lockedEntries.map(([playerName], index) => [playerName, index + 1])
+		);
+		const fastestCorrect = new Set(round ? getFastestCorrectLockPlayerNames(round) : []);
 
 		for (const playerName of playerNames) {
 			const guess = round?.orders[playerName]?.[0] ?? "";
@@ -31,7 +47,24 @@ const buildSongGuessStats = (code: string, songIds: number[], playerNames: strin
 				continue;
 			}
 			guessedCount++;
-			if (guess === round?.correctAnswer) {
+			const correct = guess === round?.correctAnswer;
+			const lock = round?.locks[playerName];
+			const themeGuess = round?.themeGuesses?.[playerName] ?? null;
+			const normalizedThemeGuess = normalize(themeGuess ?? "");
+			guessers.push({
+				playerName,
+				guess,
+				themeGuess,
+				themeCorrect:
+					normalizedTheme && normalizedThemeGuess
+						? normalizedThemeGuess === normalizedTheme
+						: null,
+				correct,
+				lockedAt: lock?.lockedAt ?? null,
+				lockOrder: lockOrderByPlayer.get(playerName) ?? null,
+				fastestCorrectLock: fastestCorrect.has(playerName),
+			});
+			if (correct) {
 				correctGuessers.push(playerName);
 				continue;
 			}
@@ -48,6 +81,12 @@ const buildSongGuessStats = (code: string, songIds: number[], playerNames: strin
 			totalPlayers: playerNames.length,
 			guessedCount,
 			correctGuessers,
+			guessers: guessers.sort((a, b) => {
+				if (a.correct !== b.correct) return a.correct ? -1 : 1;
+				const orderA = a.lockOrder ?? Number.MAX_SAFE_INTEGER;
+				const orderB = b.lockOrder ?? Number.MAX_SAFE_INTEGER;
+				return orderA - orderB || a.playerName.localeCompare(b.playerName);
+			}),
 			wrongCount: guessedCount - correctGuessers.length,
 			noAnswerCount,
 			commonWrongGuesses,
@@ -74,6 +113,6 @@ export const songGuessStatsHandler = (
 
 		const songIds = room.songs.map((song) => song.id);
 		const playerNames = room.players.filter((player) => !player.isHost).map((player) => player.name);
-		cb({ ok: true, stats: buildSongGuessStats(code, songIds, playerNames) });
+		cb({ ok: true, stats: buildSongGuessStats(code, songIds, playerNames, room.theme) });
 	});
 };

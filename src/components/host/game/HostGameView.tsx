@@ -47,6 +47,8 @@ export default function HostGameView({
 	const { room, setRoom } = useRoomState();
 	const {
 		scores,
+		finalTieBreaker,
+		finalTieBreakerStats,
 		revealedSongs,
 		revealedSubmitters,
 		setRevealedSongs,
@@ -218,6 +220,8 @@ export default function HostGameView({
 					onNext={playNext}
 					nextPending={nextPending}
 					scores={scores}
+					tieBreaker={finalTieBreaker}
+					tieBreakerStats={finalTieBreakerStats}
 					playedCount={revealedSongs.filter((id) => (viewRoom?.songs ?? []).some((s) => s.id === id)).length}
 					totalSongs={totalSongs}
 					allPlayed={allPlayed}

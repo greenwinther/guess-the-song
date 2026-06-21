@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ROOM_IDLE_TTL_MS, shouldDeleteRoom } from "@/server/cleanupScheduler";
 import type { RoomState } from "@/server/state/roomState";
+import { DEFAULT_ROOM_SCORING } from "@/types/room";
 
 const baseRoom = (): RoomState => ({
 	id: 1,
@@ -12,13 +13,17 @@ const baseRoom = (): RoomState => ({
 	backgroundUrl: null,
 	players: [{ id: 1, name: "Host", isHost: true, roomId: 1, connected: true }],
 	songs: [],
+	adminAccessToken: "admin",
+	hostAccessToken: "host",
 	createdAt: 1_000,
 	updatedAt: 2_000,
 	kicked: {},
 	rules: {
+		...DEFAULT_ROOM_SCORING,
 		hardcoreMultiplier: 1.5,
 		hardcoreRequired: false,
 	},
+	scoring: { ...DEFAULT_ROOM_SCORING },
 });
 
 test("shouldDeleteRoom keeps recently inactive empty rooms", () => {

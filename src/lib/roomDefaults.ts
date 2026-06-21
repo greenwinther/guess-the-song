@@ -1,11 +1,4 @@
-import type { Room, RoomScoring } from "@/types/room";
-
-const DEFAULT_ROOM_SCORING: RoomScoring = {
-	guessPoints: 1,
-	detailGuessPoints: 1,
-	themeGuessPoints: 1,
-	hardcoreMultiplier: 1.5,
-};
+import { DEFAULT_ROOM_SCORING, type Room } from "@/types/room";
 
 export function createInitialRoom(code: string): Room {
 	return {

@@ -65,6 +65,7 @@ export const nextSongHandler = (
 					detailGuessPoints: room.rules.detailGuessPoints,
 					themeGuessPoints: room.rules.themeGuessPoints,
 					hardcoreMultiplier: room.rules.hardcoreMultiplier,
+					scoring: room.rules,
 				});
 				const hostNames = new Set(room.players.filter((player) => player.isHost).map((player) => player.name));
 				const finalScores = Object.fromEntries(
@@ -72,12 +73,21 @@ export const nextSongHandler = (
 						.filter(([name]) => !hostNames.has(name))
 						.map(([name, row]) => [name, row.total]),
 				);
+				const tieBreakerStats = Object.fromEntries(
+					Object.entries(board.byPlayer)
+						.filter(([name]) => !hostNames.has(name))
+						.map(([name, row]) => [name, { fastestCorrectLocks: row.fastestCorrectLocks }]),
+				);
 
 				setFinalScores(code, finalScores);
 				const allSongIds = room.songs.map((song) => song.id);
 				setRevealedSubmitters(code, allSongIds);
 				const updated = setPhase(code, "RESULTS");
-				io.to(code).emit("gameOver", { scores: finalScores });
+				io.to(code).emit("gameOver", {
+					scores: finalScores,
+					tieBreaker: room.rules.tieBreaker,
+					tieBreakerStats,
+				});
 				io.to(code).emit("revealedSubmitters", allSongIds);
 				if (updated) io.to(code).emit("roomData", toPublicRoom(updated));
 			}

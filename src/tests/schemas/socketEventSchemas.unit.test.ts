@@ -69,4 +69,33 @@ test("scoreRulesPayloadSchema parses scoring values", () => {
 	assert.equal(result.data.detailGuessPoints, 2);
 	assert.equal(result.data.themeGuessPoints, 4);
 	assert.equal(result.data.hardcoreMultiplier, 1.75);
+	assert.equal(result.data.hardcoreRules.rewardMode, "multiplier");
+	assert.equal(result.data.themeRules.guessesPerSong, 1);
+});
+
+test("scoreRulesPayloadSchema parses nested scoring rules", () => {
+	const result = validateWithZod(scoreRulesPayloadSchema, {
+		code: "AB12",
+		guessPoints: "3",
+		detailGuessPoints: "2",
+		hardcoreRules: {
+			enabled: true,
+			rewardMode: "startBonus",
+			startBonusPoints: "1",
+			multiplier: "1.5",
+		},
+		themeRules: {
+			guessesPerSong: "3",
+			correctThemePoints: "1",
+			firstCorrectThemeBonusEnabled: true,
+			firstCorrectThemePoints: "2",
+		},
+		tieBreaker: "fastestCorrectLocks",
+	});
+	assert.equal(result.ok, true);
+	if (!result.ok) return;
+	assert.equal(result.data.hardcoreRules.rewardMode, "startBonus");
+	assert.equal(result.data.themeRules.guessesPerSong, 3);
+	assert.equal(result.data.themeRules.firstCorrectThemeBonusEnabled, true);
+	assert.equal(result.data.tieBreaker, "fastestCorrectLocks");
 });

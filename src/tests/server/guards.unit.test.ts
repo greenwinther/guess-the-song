@@ -4,6 +4,7 @@ import { requireHost, requireMember, requireNonHostMember, requireRoom } from "@
 import { importRoomStoreState } from "@/server/store/roomStore";
 import type { RoomState } from "@/server/state/roomState";
 import type { SocketData } from "@/types/socket";
+import { DEFAULT_ROOM_SCORING } from "@/types/room";
 
 type FakeSocket = {
 	data: SocketData;
@@ -21,13 +22,17 @@ const baseRoom = (): RoomState => ({
 		{ id: 2, name: "Alice", isHost: false, roomId: 1, connected: true, ready: false, hardcore: false },
 	],
 	songs: [],
+	adminAccessToken: "admin",
+	hostAccessToken: "host",
 	createdAt: Date.now(),
 	updatedAt: Date.now(),
 	kicked: {},
 	rules: {
+		...DEFAULT_ROOM_SCORING,
 		hardcoreMultiplier: 1.5,
 		hardcoreRequired: false,
 	},
+	scoring: { ...DEFAULT_ROOM_SCORING },
 });
 
 const withRoomStore = (room: RoomState) => {

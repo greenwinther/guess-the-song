@@ -5,6 +5,7 @@ import { useGameRuntime, useRoomState } from "@/contexts/gameContext";
 import { useThemeSocketSync } from "@/hooks/shared/useThemeSocketSync";
 import { useHostRecapPlayback } from "@/hooks/host/useHostRecapPlayback";
 import type { Submission } from "@/types/submission";
+import type { RoomTieBreaker } from "@/types/room";
 import ExportGameReportButton from "@/components/shared/ExportGameReportButton";
 import HostActivePlaybackPanel from "./HostActivePlaybackPanel";
 import HostResultsPanel from "./HostResultsPanel";
@@ -22,6 +23,8 @@ type HostPlaybackPanelProps = {
 	onNext: () => void;
 	nextPending?: boolean;
 	scores: Record<string, number> | null;
+	tieBreaker: RoomTieBreaker;
+	tieBreakerStats: Record<string, { fastestCorrectLocks: number }>;
 	playedCount: number;
 	totalSongs: number;
 	allPlayed: boolean;
@@ -47,6 +50,8 @@ export default function HostPlaybackPanel({
 	onNext,
 	nextPending = false,
 	scores,
+	tieBreaker,
+	tieBreakerStats,
 	playedCount,
 	totalSongs,
 	allPlayed,
@@ -84,6 +89,8 @@ export default function HostPlaybackPanel({
 					resultsFinalized={room.phase === "ENDED"}
 					players={room.players}
 					scores={scores}
+					tieBreaker={tieBreaker}
+					tieBreakerStats={tieBreakerStats}
 					theme={resultTheme}
 					themeRevealed={themeRevealed}
 					onRevealTheme={() => socket.emit("THEME_REVEAL", { code: room.code })}

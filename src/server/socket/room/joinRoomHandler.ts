@@ -1,4 +1,5 @@
-import { activeRounds, detailLockCounts, getDetailLockedPlayers, getLockedPlayers, lockCounts } from "@/lib/game";
+import { activeRounds, detailLockCounts, getDetailLockedPlayers, getLockedPlayers, getRoundsForCode, lockCounts } from "@/lib/game";
+import { getRoomScores } from "@/lib/score";
 import { getRoom, joinRoomWithIdentity } from "@/lib/rooms";
 import type { Server, Socket } from "socket.io";
 import { getRoomGameState } from "@/server/state/gameState";
@@ -13,8 +14,29 @@ import {
 } from "@/lib/theme";
 import { scopedLogger } from "@/server/logger";
 import { joinRoomPayloadSchema, validateWithZod } from "@/server/schemas";
+import { computeScoreBoard } from "@/server/logic/score";
+import type { RoomState } from "@/server/state/roomState";
 
 const log = scopedLogger("socket.joinRoom");
+
+const buildTieBreakerStats = (code: string, room: RoomState) => {
+	const board = computeScoreBoard({
+		room,
+		rounds: getRoundsForCode(code),
+		themePointsByPlayer: getRoomScores(code),
+		guessPoints: room.rules.guessPoints,
+		detailGuessPoints: room.rules.detailGuessPoints,
+		themeGuessPoints: room.rules.themeGuessPoints,
+		hardcoreMultiplier: room.rules.hardcoreMultiplier,
+		scoring: room.rules,
+	});
+	const hostNames = new Set(room.players.filter((player) => player.isHost).map((player) => player.name));
+	return Object.fromEntries(
+		Object.entries(board.byPlayer)
+			.filter(([name]) => !hostNames.has(name))
+			.map(([name, row]) => [name, { fastestCorrectLocks: row.fastestCorrectLocks }])
+	);
+};
 
 export const joinRoomHandler = (
 	io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -86,10 +108,18 @@ export const joinRoomHandler = (
 				}
 				const themeGuesses = getThemeGuessesThisRound(code);
 				for (const playerName of getLockedThisRoundList(code)) {
-					socket.emit("THEME_GUESSED_THIS_ROUND", { playerName, guess: themeGuesses[playerName] });
+					socket.emit("THEME_GUESSED_THIS_ROUND", {
+						playerName,
+						guess: themeGuesses[playerName],
+						lockedForRound: true,
+					});
 				}
 				if (gameState.finalScores) {
-					socket.emit("gameOver", { scores: gameState.finalScores });
+					socket.emit("gameOver", {
+						scores: gameState.finalScores,
+						tieBreaker: room.rules.tieBreaker,
+						tieBreakerStats: buildTieBreakerStats(code, room),
+					});
 				}
 					callback?.(true);
 					return;
@@ -142,11 +172,19 @@ export const joinRoomHandler = (
 				}
 				const themeGuesses = getThemeGuessesThisRound(code);
 				for (const playerName of getLockedThisRoundList(code)) {
-					socket.emit("THEME_GUESSED_THIS_ROUND", { playerName, guess: themeGuesses[playerName] });
+					socket.emit("THEME_GUESSED_THIS_ROUND", {
+						playerName,
+						guess: themeGuesses[playerName],
+						lockedForRound: true,
+					});
 				}
 
 				if (gameState.finalScores) {
-					socket.emit("gameOver", { scores: gameState.finalScores });
+					socket.emit("gameOver", {
+						scores: gameState.finalScores,
+						tieBreaker: room.rules.tieBreaker,
+						tieBreakerStats: buildTieBreakerStats(code, room),
+					});
 				}
 
 				callback?.(true);

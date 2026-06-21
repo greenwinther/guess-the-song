@@ -63,10 +63,7 @@ export function useAdminSetupImport({
 					"SCORE_RULES",
 					{
 						code: room.code,
-						guessPoints: imported.setup.scoring.guessPoints,
-						detailGuessPoints: imported.setup.scoring.detailGuessPoints,
-						themeGuessPoints: imported.setup.scoring.themeGuessPoints,
-						hardcoreMultiplier: imported.setup.scoring.hardcoreMultiplier,
+						...imported.setup.scoring,
 					},
 					cb,
 				),

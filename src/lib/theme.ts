@@ -3,7 +3,7 @@ import { notifyStateChange } from "@/server/state/saveBus";
 
 const solvedBy: Record<string, Set<string>> = {}; // code -> Set(playerName)
 const lockedThisRound: Record<string, Set<string>> = {}; // code -> Set(playerName)
-const guessesThisRound: Record<string, Record<string, string>> = {}; // code -> playerName -> guess
+const guessesThisRound: Record<string, Record<string, string[]>> = {}; // code -> playerName -> guesses
 const revealed: Record<string, boolean> = {}; // code -> revealed?
 const hint: Record<string, string> = {}; // code -> obfuscated string
 
@@ -31,12 +31,16 @@ export function lockPlayerThisRound(code: string, playerName: string) {
 }
 export function storeThemeGuessThisRound(code: string, playerName: string, guess: string) {
 	initThemeState(code);
-	guessesThisRound[code][playerName] = guess;
+	guessesThisRound[code][playerName] = [...(guessesThisRound[code][playerName] ?? []), guess];
 	notifyStateChange();
 }
 export function hasLockedThisRound(code: string, playerName: string) {
 	initThemeState(code);
 	return lockedThisRound[code].has(playerName);
+}
+export function getThemeGuessCountThisRound(code: string, playerName: string) {
+	initThemeState(code);
+	return guessesThisRound[code][playerName]?.length ?? 0;
 }
 export function clearRoundLocks(code: string) {
 	initThemeState(code);
@@ -102,13 +106,24 @@ export function getLockedThisRoundList(code: string) {
 }
 export function getThemeGuessesThisRound(code: string) {
 	initThemeState(code);
-	return { ...guessesThisRound[code] };
+	return Object.fromEntries(
+		Object.entries(guessesThisRound[code]).map(([playerName, guesses]) => [
+			playerName,
+			guesses[guesses.length - 1] ?? "",
+		])
+	);
+}
+export function getThemeGuessListsThisRound(code: string) {
+	initThemeState(code);
+	return Object.fromEntries(
+		Object.entries(guessesThisRound[code]).map(([playerName, guesses]) => [playerName, [...guesses]])
+	);
 }
 
 type PersistedThemeState = {
 	solvedBy: Record<string, string[]>;
 	lockedThisRound: Record<string, string[]>;
-	guessesThisRound: Record<string, Record<string, string>>;
+	guessesThisRound: Record<string, Record<string, string | string[]>>;
 	revealed: Record<string, boolean>;
 	hint: Record<string, string>;
 };
@@ -116,13 +131,17 @@ type PersistedThemeState = {
 export function exportThemeState(): PersistedThemeState {
 	const solved: Record<string, string[]> = {};
 	const locked: Record<string, string[]> = {};
-	const guesses: Record<string, Record<string, string>> = {};
+	const guesses: Record<string, Record<string, string[]>> = {};
 	const revealedMap: Record<string, boolean> = {};
 	const hints: Record<string, string> = {};
 
 	for (const [code, set] of Object.entries(solvedBy)) solved[code] = Array.from(set);
 	for (const [code, set] of Object.entries(lockedThisRound)) locked[code] = Array.from(set);
-	for (const [code, values] of Object.entries(guessesThisRound)) guesses[code] = { ...values };
+	for (const [code, values] of Object.entries(guessesThisRound)) {
+		guesses[code] = Object.fromEntries(
+			Object.entries(values).map(([playerName, list]) => [playerName, [...list]])
+		);
+	}
 	for (const [code, value] of Object.entries(revealed)) revealedMap[code] = !!value;
 	for (const [code, value] of Object.entries(hint)) hints[code] = value ?? "";
 
@@ -151,7 +170,10 @@ export function importThemeState(snapshot: PersistedThemeState | null | undefine
 		lockedThisRound[code] = new Set(list ?? []);
 	}
 	for (const [code, guesses] of Object.entries(snapshot.guessesThisRound ?? {})) {
-		guessesThisRound[code] = { ...(guesses ?? {}) };
+		guessesThisRound[code] = {};
+		for (const [playerName, value] of Object.entries(guesses ?? {})) {
+			guessesThisRound[code][playerName] = Array.isArray(value) ? [...value] : [value ?? ""];
+		}
 	}
 	for (const [code, value] of Object.entries(snapshot.revealed ?? {})) {
 		revealed[code] = !!value;

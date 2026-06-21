@@ -13,6 +13,8 @@ type HistoryRow = {
 	guessLabel: string;
 	correctAnswer?: string | null;
 	locked: boolean;
+	lockedAt?: number | null;
+	fastestCorrectLock?: boolean;
 	guessOrder: string[];
 	detailGuessLabel?: string;
 	detailCorrectAnswer?: string | null;

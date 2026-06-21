@@ -26,6 +26,8 @@ export function useHostGameSocket(
 	const {
 		setCurrentClip,
 		setScores,
+		setFinalTieBreaker,
+		setFinalTieBreakerStats,
 		setCurrentSong,
 		setSubmittedPlayers,
 		setBgThumbnail,
@@ -109,12 +111,22 @@ export function useHostGameSocket(
 
 	// gameOver -> final scores
 	useEffect(() => {
-		const onGameOver = ({ scores }: { scores: Record<string, number> }) => {
+		const onGameOver = ({
+			scores,
+			tieBreaker = "none",
+			tieBreakerStats = {},
+		}: {
+			scores: Record<string, number>;
+			tieBreaker?: "none" | "fastestCorrectLocks";
+			tieBreakerStats?: Record<string, { fastestCorrectLocks: number }>;
+		}) => {
 			setScores(scores);
+			setFinalTieBreaker(tieBreaker);
+			setFinalTieBreakerStats(tieBreakerStats);
 		};
 		socket.on("gameOver", onGameOver);
 		return () => {
 			socket.off("gameOver", onGameOver);
 		};
-	}, [socket, setScores]);
+	}, [socket, setScores, setFinalTieBreaker, setFinalTieBreakerStats]);
 }

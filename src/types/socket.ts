@@ -69,6 +69,16 @@ export type SongGuessStats = {
 	totalPlayers: number;
 	guessedCount: number;
 	correctGuessers: string[];
+	guessers: Array<{
+		playerName: string;
+		guess: string;
+		themeGuess: string | null;
+		themeCorrect: boolean | null;
+		correct: boolean;
+		lockedAt: number | null;
+		lockOrder: number | null;
+		fastestCorrectLock: boolean;
+	}>;
 	wrongCount: number;
 	noAnswerCount: number;
 	commonWrongGuesses: Array<{ guess: string; count: number }>;
@@ -122,6 +132,7 @@ export type ThemeGuessPayload = {
 export type ThemeRevealPayload = { code: string };
 export type HardcoreRequiredPayload = { code: string; required: boolean };
 export type ScoreRulesPayload = { code: string } & RoomScoring;
+export type FinalTieBreakerStats = Record<string, { fastestCorrectLocks: number }>;
 export type PlayerHardcorePayload = { code: string; hardcore: boolean };
 export type PlayerReadyPayload = { code: string; ready: boolean };
 export type RevealedSongsPayload = { code: string; revealed: number[] };
@@ -165,6 +176,7 @@ export type AdminDashboardPayload = {
 		guessLabel: string;
 		locked: boolean;
 		lockedAt: number | null;
+		fastestCorrectLock: boolean;
 		detailOrder: string[];
 		detailLabel: string;
 		detailLocked: boolean;
@@ -186,6 +198,7 @@ export type AdminDashboardPayload = {
 			correctAnswer: string;
 			locked: boolean;
 			lockedAt: number | null;
+			fastestCorrectLock: boolean;
 			detailGuessOrder: string[];
 			detailGuessLabel: string;
 			detailCorrectAnswer: string | null;
@@ -291,7 +304,11 @@ export type ServerToClientEvents = {
 		lockedNames: string[];
 	}) => void;
 	playerSubmitted: (data: { playerName: string }) => void;
-	gameOver: (data: { scores: Record<string, number> }) => void;
+	gameOver: (data: {
+		scores: Record<string, number>;
+		tieBreaker?: RoomScoring["tieBreaker"];
+		tieBreakerStats?: FinalTieBreakerStats;
+	}) => void;
 	scoreUpdated: (data: { playerName: string; total: number }) => void;
 	THEME_UPDATED: (data: { theme?: string }) => void;
 	THEME_SOLVED: (data: { playerName: string }) => void;
@@ -305,7 +322,7 @@ export type ServerToClientEvents = {
 	}) => void;
 	THEME_HINT_READY: (data: { obfuscated: string }) => void;
 	THEME_REVEALED: () => void;
-	THEME_GUESSED_THIS_ROUND: (data: { playerName: string; guess?: string }) => void;
+	THEME_GUESSED_THIS_ROUND: (data: { playerName: string; guess?: string; lockedForRound?: boolean }) => void;
 	HARDCORE_REQUIRED_UPDATED: (data: { required: boolean }) => void;
 	submitterRevealed: (data: { songId: number }) => void;
 	submitterRevealedAll: (data: { songIds: number[] }) => void;

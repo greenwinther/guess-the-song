@@ -9,7 +9,11 @@ import {
 	getThemeGuessesThisRound,
 	isRevealed,
 } from "@/lib/theme";
-import { computeScoreBoard } from "@/server/logic/score";
+import {
+	computeScoreBoard,
+	getFastestCorrectLockPlayerNames,
+	isMultiplierEligible,
+} from "@/server/logic/score";
 import { getRoom } from "@/server/store/roomStore";
 import { getRoomGameState } from "@/server/state/gameState";
 import type {
@@ -25,10 +29,6 @@ const toGuessLabel = (order: string[]) => {
 	if (order.length === 1) return order[0] || "-";
 	return order.filter(Boolean).join(" > ") || "-";
 };
-
-const isMultiplierEligible = (
-	lock: { multiplierEligible?: boolean; hardcoreEligible?: boolean } | undefined
-) => lock?.multiplierEligible ?? lock?.hardcoreEligible ?? false;
 
 export function buildAdminDashboard(code: string): AdminDashboardPayload | null {
 	const room = getRoom(code);
@@ -55,6 +55,12 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		...(activeRound?.themeGuesses ?? {}),
 	};
 	const normalizedTheme = normalize(room.theme ?? "");
+	const fastestCorrectBySong = new Map(
+		Object.entries(rounds).map(([songId, round]) => [
+			Number(songId),
+			new Set(getFastestCorrectLockPlayerNames(round)),
+		])
+	);
 
 	const scoreBoard = computeScoreBoard({
 		room,
@@ -64,6 +70,7 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 		detailGuessPoints: room.rules.detailGuessPoints,
 		themeGuessPoints: room.rules.themeGuessPoints,
 		hardcoreMultiplier: room.rules.hardcoreMultiplier,
+		scoring: room.rules,
 	});
 	const solvedThemeByPlayer = new Map<string, { guess: string | null }>();
 	for (const player of room.players) {
@@ -99,6 +106,8 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 				guessLabel: toGuessLabel(guessOrder),
 				locked: !!lockInfo?.locked,
 				lockedAt: lockInfo?.lockedAt ?? null,
+				fastestCorrectLock:
+					activeSongId != null && !!fastestCorrectBySong.get(activeSongId)?.has(player.name),
 				detailOrder,
 				detailLabel: toGuessLabel(detailOrder),
 				detailLocked: !!detailLockInfo?.locked,
@@ -130,12 +139,14 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 				const submitterPoints = submitterCorrect ? room.rules.guessPoints : 0;
 				const detailPoints = detailCorrect ? room.rules.detailGuessPoints : 0;
 				const multiplierBonus =
-					(submitterCorrect && isMultiplierEligible(lockInfo)
-						? room.rules.guessPoints * (room.rules.hardcoreMultiplier - 1)
-						: 0) +
-					(detailCorrect && isMultiplierEligible(detailLockInfo)
-						? room.rules.detailGuessPoints * (room.rules.hardcoreMultiplier - 1)
-						: 0);
+					room.rules.hardcoreRules.enabled && room.rules.hardcoreRules.rewardMode === "multiplier"
+						? (submitterCorrect && isMultiplierEligible(lockInfo)
+							? room.rules.guessPoints * (room.rules.hardcoreRules.multiplier - 1)
+							: 0) +
+							(detailCorrect && isMultiplierEligible(detailLockInfo)
+								? room.rules.detailGuessPoints * (room.rules.hardcoreRules.multiplier - 1)
+								: 0)
+						: 0;
 				const totalPoints = Math.round((submitterPoints + detailPoints + multiplierBonus) * 100) / 100;
 				return {
 					songId: song.id,
@@ -146,6 +157,7 @@ export function buildAdminDashboard(code: string): AdminDashboardPayload | null 
 					correctAnswer,
 					locked: !!lockInfo?.locked,
 					lockedAt: lockInfo?.lockedAt ?? null,
+					fastestCorrectLock: !!fastestCorrectBySong.get(song.id)?.has(player.name),
 					detailGuessOrder,
 					detailGuessLabel: toGuessLabel(detailGuessOrder),
 					detailCorrectAnswer,

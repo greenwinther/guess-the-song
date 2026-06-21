@@ -23,6 +23,16 @@ const playerNameSchema = z.preprocess((value) => parseName(value, "Player"), z.s
 const orderSchema = z.array(z.string());
 const boolSchema = (fallback = false) =>
 	z.preprocess((value) => parseBool(value, fallback), z.boolean());
+const decimalSchema = (fallback: number, min: number, max: number) =>
+	z.preprocess((value) => {
+		if (value == null || value === "") return fallback;
+		if (typeof value === "number") return value;
+		if (typeof value === "string") {
+			const parsed = Number(value);
+			return Number.isFinite(parsed) ? parsed : value;
+		}
+		return value;
+	}, z.number().min(min).max(max));
 
 const optionalRoomCodeSchema = z.preprocess(
 	(value) => {
@@ -214,21 +224,55 @@ export const hardcoreRequiredPayloadSchema = z.object({
 	required: boolSchema(false),
 });
 
-export const scoreRulesPayloadSchema = z.object({
-	code: roomCodeSchema,
-	guessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
-	detailGuessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
-	themeGuessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
-	hardcoreMultiplier: z.preprocess((value) => {
-		if (value == null || value === "") return undefined;
-		if (typeof value === "number") return value;
-		if (typeof value === "string") {
-			const parsed = Number(value);
-			return Number.isFinite(parsed) ? parsed : value;
-		}
-		return value;
-	}, z.number().min(1).max(10)),
+const hardcoreRulesSchema = z.object({
+	enabled: boolSchema(true),
+	rewardMode: z.enum(["none", "startBonus", "multiplier"]),
+	startBonusPoints: decimalSchema(1, 0, 100),
+	multiplier: decimalSchema(1.5, 1, 10),
 });
+
+const themeRulesSchema = z.object({
+	guessesPerSong: z.preprocess((value) => parseIntSafe(value), z.number().int().min(1).max(3)),
+	correctThemePoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
+	firstCorrectThemeBonusEnabled: boolSchema(false),
+	firstCorrectThemePoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
+});
+
+export const scoreRulesPayloadSchema = z
+	.object({
+		code: roomCodeSchema,
+		guessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
+		detailGuessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)),
+		themeGuessPoints: z.preprocess((value) => parseIntSafe(value), z.number().int().min(0).max(100)).optional(),
+		hardcoreMultiplier: decimalSchema(1.5, 1, 10).optional(),
+		hardcoreRules: hardcoreRulesSchema.optional(),
+		themeRules: themeRulesSchema.optional(),
+		tieBreaker: z.enum(["none", "fastestCorrectLocks"]).optional(),
+	})
+	.transform((input) => {
+		const correctThemePoints = input.themeRules?.correctThemePoints ?? input.themeGuessPoints ?? 1;
+		const multiplier = input.hardcoreRules?.multiplier ?? input.hardcoreMultiplier ?? 1.5;
+		return {
+			code: input.code,
+			guessPoints: input.guessPoints,
+			detailGuessPoints: input.detailGuessPoints,
+			themeGuessPoints: correctThemePoints,
+			hardcoreMultiplier: multiplier,
+			hardcoreRules: input.hardcoreRules ?? {
+				enabled: true,
+				rewardMode: "multiplier" as const,
+				startBonusPoints: 1,
+				multiplier,
+			},
+			themeRules: input.themeRules ?? {
+				guessesPerSong: 1,
+				correctThemePoints,
+				firstCorrectThemeBonusEnabled: false,
+				firstCorrectThemePoints: 2,
+			},
+			tieBreaker: input.tieBreaker ?? "none" as const,
+		};
+	});
 
 export const playerHardcorePayloadSchema = z.object({
 	code: roomCodeSchema,
