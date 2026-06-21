@@ -1,4 +1,4 @@
-import type { Room, RoomScoring } from "@/types/room";
+import { DEFAULT_ROOM_SCORING, type HardcoreRewardMode, type Room, type RoomScoring, type RoomTieBreaker } from "@/types/room";
 
 export type ExportedSong = {
 	url: string;
@@ -33,6 +33,81 @@ const isExportedSong = (value: unknown): value is ExportedSong => {
 	);
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	!!value && typeof value === "object" && !Array.isArray(value);
+
+const readNumber = (value: unknown, fallback: number) =>
+	typeof value === "number" && Number.isFinite(value) ? value : fallback;
+
+const readBoolean = (value: unknown, fallback: boolean) =>
+	typeof value === "boolean" ? value : fallback;
+
+const readHardcoreRewardMode = (value: unknown): HardcoreRewardMode | null =>
+	value === "none" || value === "startBonus" || value === "multiplier" ? value : null;
+
+const readTieBreaker = (value: unknown): RoomTieBreaker =>
+	value === "fastestCorrectLocks" ? value : "none";
+
+const parseSetupScoring = (value: unknown): RoomScoring => {
+	if (!isRecord(value)) {
+		throw new Error("Setup file has an invalid shape.");
+	}
+
+	const guessPoints = readNumber(value.guessPoints, Number.NaN);
+	const detailGuessPoints = readNumber(value.detailGuessPoints, Number.NaN);
+	if (!Number.isFinite(guessPoints) || !Number.isFinite(detailGuessPoints)) {
+		throw new Error("Setup file has an invalid shape.");
+	}
+
+	const legacyThemeGuessPoints = readNumber(
+		value.themeGuessPoints,
+		DEFAULT_ROOM_SCORING.themeGuessPoints,
+	);
+	const legacyHardcoreMultiplier = readNumber(
+		value.hardcoreMultiplier,
+		DEFAULT_ROOM_SCORING.hardcoreMultiplier,
+	);
+	const rawHardcoreRules = isRecord(value.hardcoreRules) ? value.hardcoreRules : {};
+	const rawThemeRules = isRecord(value.themeRules) ? value.themeRules : {};
+	const rewardMode =
+		readHardcoreRewardMode(rawHardcoreRules.rewardMode) ??
+		DEFAULT_ROOM_SCORING.hardcoreRules.rewardMode;
+	const hardcoreMultiplier = readNumber(rawHardcoreRules.multiplier, legacyHardcoreMultiplier);
+	const correctThemePoints = readNumber(rawThemeRules.correctThemePoints, legacyThemeGuessPoints);
+
+	return {
+		guessPoints,
+		detailGuessPoints,
+		themeGuessPoints: correctThemePoints,
+		hardcoreMultiplier,
+		hardcoreRules: {
+			enabled: readBoolean(rawHardcoreRules.enabled, rewardMode !== "none"),
+			rewardMode,
+			startBonusPoints: readNumber(
+				rawHardcoreRules.startBonusPoints,
+				DEFAULT_ROOM_SCORING.hardcoreRules.startBonusPoints,
+			),
+			multiplier: hardcoreMultiplier,
+		},
+		themeRules: {
+			guessesPerSong: readNumber(
+				rawThemeRules.guessesPerSong,
+				DEFAULT_ROOM_SCORING.themeRules.guessesPerSong,
+			),
+			correctThemePoints,
+			firstCorrectThemeBonusEnabled: readBoolean(
+				rawThemeRules.firstCorrectThemeBonusEnabled,
+				DEFAULT_ROOM_SCORING.themeRules.firstCorrectThemeBonusEnabled,
+			),
+			firstCorrectThemePoints: readNumber(
+				rawThemeRules.firstCorrectThemePoints,
+				DEFAULT_ROOM_SCORING.themeRules.firstCorrectThemePoints,
+			),
+		},
+		tieBreaker: readTieBreaker(value.tieBreaker),
+	};
+};
+
 export const parseAdminSetupImport = (raw: string): AdminSetupExportV1 => {
 	const parsed = JSON.parse(raw) as unknown;
 	if (!parsed || typeof parsed !== "object") {
@@ -53,27 +128,11 @@ export const parseAdminSetupImport = (raw: string): AdminSetupExportV1 => {
 		typeof setup.theme !== "string" ||
 		typeof setup.detailQuestion !== "string" ||
 		typeof setup.hardcoreRequired !== "boolean" ||
-		typeof (setup.scoring as Record<string, unknown> | undefined)?.guessPoints !== "number" ||
-		typeof (setup.scoring as Record<string, unknown> | undefined)?.detailGuessPoints !== "number" ||
-		typeof (setup.scoring as Record<string, unknown> | undefined)?.themeGuessPoints !== "number" ||
-		typeof (setup.scoring as Record<string, unknown> | undefined)?.hardcoreMultiplier !== "number" ||
 		!setup.songs.every(isExportedSong)
 	) {
 		throw new Error("Setup file has an invalid shape.");
 	}
-	const scoring = setup.scoring as Partial<RoomScoring>;
-	const hardcoreRules = scoring.hardcoreRules ?? {
-		enabled: true,
-		rewardMode: "multiplier" as const,
-		startBonusPoints: 1,
-		multiplier: scoring.hardcoreMultiplier ?? 1.5,
-	};
-	const themeRules = scoring.themeRules ?? {
-		guessesPerSong: 1,
-		correctThemePoints: scoring.themeGuessPoints ?? 1,
-		firstCorrectThemeBonusEnabled: false,
-		firstCorrectThemePoints: 2,
-	};
+	const scoring = parseSetupScoring(setup.scoring);
 
 	return {
 		version: 1,
@@ -88,15 +147,7 @@ export const parseAdminSetupImport = (raw: string): AdminSetupExportV1 => {
 			theme: setup.theme,
 			detailQuestion: setup.detailQuestion,
 			hardcoreRequired: setup.hardcoreRequired,
-			scoring: {
-				guessPoints: scoring.guessPoints ?? 1,
-				detailGuessPoints: scoring.detailGuessPoints ?? 1,
-				themeGuessPoints: themeRules.correctThemePoints,
-				hardcoreMultiplier: hardcoreRules.multiplier,
-				hardcoreRules,
-				themeRules,
-				tieBreaker: scoring.tieBreaker ?? "none",
-			},
+			scoring,
 			songs: setup.songs,
 		},
 	};
